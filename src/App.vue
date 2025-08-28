@@ -1,18 +1,25 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-    <AppHeader />
-    <main class="flex-1">
-      <router-view />
+  <div class="app">
+    <header class="site">
+      <div class="inner container">
+        <h1 class="brand">NexGenTech</h1>
+        <Navbar/>
+      </div>
+    </header>
+
+    <main class="container" style="min-height:60vh">
+      <router-view/>
     </main>
-    <AppFooter />
+
+    <Footer/>
   </div>
 </template>
 
 <script setup>
-import AppHeader from './components/AppHeader.vue'
-import AppFooter from './components/AppFooter.vue'
+import Navbar from './components/Navbar.vue'
+import Footer from './components/Footer.vue'
 </script>
 
-<style>
-/* 可放全局变量/字体等 */
+<style scoped>
+.brand{margin:0;font-size:18px;font-weight:900;letter-spacing:.3px}
 </style>

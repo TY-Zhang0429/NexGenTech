@@ -1,0 +1,11 @@
+/* 轻量 reset + 排版 */
+img{max-width:100%;display:block}
+button{cursor:pointer}
+header.site{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--gray-100)}
+header.site .inner{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+nav a{color:var(--gray-700);text-decoration:none;font-weight:600;padding:8px 10px;border-radius:10px}
+nav a.router-link-active{background:var(--indigo);color:#fff}
+footer.site{border-top:1px solid var(--gray-100);padding:20px 0;color:var(--gray-500)}
+/* 常用过渡 */
+.fade-enter-active,.fade-leave-active{transition:opacity var(--fade)}
+.fade-enter-from,.fade-leave-to{opacity:0}
