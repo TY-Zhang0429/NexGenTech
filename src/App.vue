@@ -1,11 +1,18 @@
-<script setup></script>
-
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div class="min-h-screen flex flex-col">
+    <AppHeader />
+    <main class="flex-1">
+      <router-view />
+    </main>
+    <AppFooter />
+  </div>
 </template>
 
-<style scoped></style>
+<script setup>
+import AppHeader from './components/AppHeader.vue'
+import AppFooter from './components/AppFooter.vue'
+</script>
+
+<style>
+/* 可放全局变量/字体等 */
+</style>
