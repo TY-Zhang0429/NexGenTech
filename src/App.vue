@@ -1,11 +1,20 @@
-<script setup></script>
-
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div class="app">
+    <TopNav />
+    <router-view />
+  </div>
 </template>
 
-<style scoped></style>
+<script setup>
+import TopNav from '@/components/TopNav.vue'
+</script>
+
+<style>
+:root{
+  --border:#1e1e1e33;
+}
+*{ box-sizing:border-box }
+html,body,#app,.app{ height:100%; }
+body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+</style>
+
