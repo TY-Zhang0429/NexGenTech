@@ -13,7 +13,7 @@
       ref="doorRef"
       class="door"
       :class="{ glow: doorGlow }"
-      src="/assets/door.png"
+      :src="currentDoorImage"
       alt="door"
     />
   </div>
@@ -38,7 +38,12 @@ const state = reactive({
   ty: 0,
   running: false,
   doorGlow: false,
+  isDoorClosed: true  // 默认关闭状态
 })
+
+// 门的图片资源
+const doorOpenImage = '/assets/door.png'      // 修改对应关系
+const doorClosedImage = '/assets/doorclose.png'
 
 // 计算属性
 const avatarStyle = computed(() => ({
@@ -48,10 +53,15 @@ const avatarStyle = computed(() => ({
 
 const doorGlow = computed(() => state.doorGlow)
 
+const currentDoorImage = computed(() => {
+  return state.isDoorClosed ? doorClosedImage : doorOpenImage
+})
+
 // 方法
 function reset() {
   state.doorGlow = false
   state.running = false
+  state.isDoorClosed = true  // reset时关闭门
   
   // 直接重置位置，无过渡动画
   avatarRef.value.style.transition = 'none'
@@ -85,6 +95,7 @@ function runToDoor() {
   state.ty = 0
   state.doorGlow = false
   state.running = false
+  state.isDoorClosed = false  // spin时立即打开门
   
   // 强制重绘
   avatarRef.value.offsetHeight
@@ -145,7 +156,7 @@ defineExpose({ runToDoor, reset })
   right: 2%;
   bottom: 6%;
   width: clamp(80px, 13vw, 140px);
-  transition: filter .3s var(--ease), transform .3s var(--ease);
+  transition: all .3s var(--ease);
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
 }
 
