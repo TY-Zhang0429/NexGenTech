@@ -1,20 +1,9 @@
 <template>
-  <div class="wheel-wrap">
-    <!-- 轮盘本体（只让图转动） -->
+  <div class="wheel-wrap" @click="!spinning && onSpin()">
     <div class="wheel" :style="wheelStyle">
       <img class="wheel-img" src="@/assets/wheel.png" alt="wheel" />
+      <div class="spin-text" v-if="!spinning">SPIN</div>
     </div>
-
-    <!-- 居中的 spin 按钮（不跟着转） -->
-    <button
-      class="spin-btn"
-      :disabled="spinning"
-      @click="onSpin"
-    >
-      spin
-    </button>
-
-    <!-- 指针覆盖在最上层 -->
     <img class="needle" src="@/assets/needle.png" alt="needle" />
   </div>
 </template>
@@ -59,68 +48,83 @@ defineExpose({ reset })
 </script>
 
 <style scoped>
-.wheel-wrap{
-  position:relative;
+.wheel-wrap {
+  position: relative;
   width: clamp(260px, 30vw, 420px);
   aspect-ratio: 1/1;
-  margin: 70px auto;
-  isolation: isolate; /* 保证内部 z-index 正确 */
+  margin: 30px auto;
+  isolation: isolate;
+  cursor: pointer;
 }
 
-/* 轮盘本体：柔光 + 内阴影 */
-.wheel{
-  position:absolute; inset:0;
-  border-radius:50%;
+.wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
   background: radial-gradient(120% 120% at 20% 15%, rgba(124,240,255,.1), transparent 60%), #151b2c;
-  overflow:hidden;
+  overflow: hidden;
   box-shadow:
     inset 0 10px 20px rgba(255,255,255,.03),
     inset 0 -10px 20px rgba(0,0,0,.35),
     0 22px 40px rgba(0,0,0,.35);
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
 }
-.wheel-img{
-  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none;
+
+.wheel:hover {
+  opacity: 1;
+}
+
+.wheel-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
   filter: saturate(1.02) contrast(1.02);
 }
 
-/* 悬停时出现柔光环 */
-.wheel-wrap::after{
-  content:""; position:absolute; inset:-6%;
-  background: radial-gradient(60% 60% at 50% 40%, rgba(124,240,255,.15), transparent 60%);
-  opacity: 0; transition: opacity .25s ease;
-  z-index: 1;
+.spin-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
 }
-.wheel-wrap:hover::after{ opacity: 1; }
 
-/* 指针：永远覆盖最上层，不旋转 */
-.needle{
-  position:absolute; inset: 0;
-  margin:auto; width: 22%;
+.wheel:hover .spin-text {
+  opacity: 1;
+}
+
+.needle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18%;
   transform: translateY(-100%) rotate(180deg);
-  z-index: 4; pointer-events:none;
+  z-index: 4;
+  pointer-events: none;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.4));
 }
 
-/* 居中 SPIN 按钮：渐变 + 悬浮 */
-.spin-btn{
-  position:absolute; inset:0; margin:auto;
-  width: 5.2rem; height: 5.2rem; border-radius:999px;
-  color:#0b1020; font-weight:800; letter-spacing:.06em;
-  background-image: linear-gradient(135deg, var(--brand), var(--brand-2));
-  box-shadow: 0 14px 30px rgba(108,180,255,.28);
-  border:0; cursor:pointer;
-  z-index: 3;
-  opacity:0; transform: translateY(2px);
-  transition: opacity .25s ease, transform .2s ease, box-shadow .2s ease;
+.wheel-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  background: radial-gradient(60% 60% at 50% 40%, rgba(124,240,255,.15), transparent 60%);
+  opacity: 0;
+  transition: opacity .25s ease;
+  z-index: 1;
 }
-.wheel-wrap:hover .spin-btn{ opacity:1; transform: translateY(0); }
-.spin-btn:hover{ box-shadow: 0 18px 34px rgba(108,180,255,.36); }
-.spin-btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-/* 结果标题（若由此组件渲染） */
-.result{
-  position:absolute; left:50%; bottom: -2.8rem; transform: translateX(-50%);
-  font-weight:700; color: var(--text);
-  text-shadow: 0 6px 18px rgba(0,0,0,.35);
+.wheel-wrap:hover::after {
+  opacity: 1;
 }
 </style>

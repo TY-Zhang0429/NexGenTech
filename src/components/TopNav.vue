@@ -18,32 +18,56 @@
 
 <style scoped>
 .nav {
-  position: sticky; 
-  top: 0; 
+  position: sticky;
+  top: 0;
   z-index: 50;
-  display: flex; 
-  align-items: center; 
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 8px 20px; /* 减小上下内边距 */
-  background: linear-gradient(180deg, #0e1a2e, #0c1526);
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 8px 20px;
+  background: linear-gradient(180deg, rgba(29, 53, 43, 0.95), rgba(21, 39, 32, 0.92));
+  border-bottom: 1px solid rgba(255,255,255,.08);
   backdrop-filter: saturate(1.1) blur(8px);
 }
-.logo { 
-  width: 60px; /* 稍微缩小 logo */
-  height: auto; 
+
+.logo {
+  width: 60px;
+  height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 14px rgba(0,0,0,.25));
 }
-.nav__right{ display:flex; gap:26px; }
-.link{
-  color: var(--text); text-decoration:none; font-weight:600; opacity:.9; position:relative;
+
+.nav__right {
+  display: flex;
+  gap: 26px;
 }
-.link:hover{ opacity:1; }
-.link::after{
-  content:""; position:absolute; left:0; right:0; bottom:-6px; height:2px;
+
+.link {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.link:hover {
+  color: rgba(255,255,255,1);
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
-  transform:scaleX(0); transform-origin:left; transition:transform .22s var(--ease);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .22s var(--ease);
 }
-.link:hover::after{ transform:scaleX(1); }
+
+.link:hover::after {
+  transform: scaleX(1);
+}
 </style>
