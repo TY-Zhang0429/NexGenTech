@@ -170,16 +170,17 @@ function doReset(){
 
 /* 修改 AvatarDoor 组件中的场景尺寸和布局 */
 :deep(.scene) {
-  width: 100%;
+  width: 140%;
   height: clamp(180px, 32vh, 300px);
   margin-top: 90px;
   position: relative;
   overflow: hidden;
+  margin-left: -20%;
 }
 
 /* 调整人物和门的位置 */
 :deep(.avatar) {
-  left: 5% !important;
+  left: -15% !important;
   bottom: 10px !important;
 }
 

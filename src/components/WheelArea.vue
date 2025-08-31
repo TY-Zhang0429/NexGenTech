@@ -63,7 +63,7 @@ defineExpose({ reset })
   position:relative;
   width: clamp(260px, 30vw, 420px);
   aspect-ratio: 1/1;
-  margin: 0 auto;
+  margin: 70px auto;
   isolation: isolate; /* 保证内部 z-index 正确 */
 }
 
@@ -95,8 +95,8 @@ defineExpose({ reset })
 /* 指针：永远覆盖最上层，不旋转 */
 .needle{
   position:absolute; inset: 0;
-  margin:auto; width: 16%;
-  transform: translateY(-90%);
+  margin:auto; width: 22%;
+  transform: translateY(-100%) rotate(180deg);
   z-index: 4; pointer-events:none;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.4));
 }

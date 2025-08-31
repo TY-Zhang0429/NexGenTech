@@ -149,11 +149,12 @@ defineExpose({ runToDoor, reset })
   margin: 6px auto 0;
   border-radius: var(--radius);
   background: transparent;
+  overflow: visible !important; 
 }
 
 .door {
   position: absolute;
-  right: 2%;
+  right: -15%;
   bottom: 6%;
   width: clamp(80px, 13vw, 140px);
   transition: all .3s var(--ease);
@@ -167,7 +168,7 @@ defineExpose({ runToDoor, reset })
 
 .avatar {
   position: absolute;
-  left: 18px;
+  left: -15%;
   bottom: 6%;
   width: 96px;
   height: 96px;
