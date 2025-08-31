@@ -65,19 +65,7 @@ body{
 
 /* 只在首页使用的背景：不加任何底色，不变暗 */
 
-/* 如果你之前在 theme.css 的 body 上有径向渐变/底色，这里覆盖掉 */
-body.home-bg { background-color: transparent; }
-
-body.home-bg{
-  background-image: url("/assets/background.png");
-  background-position: center center;   /* 居中 */
-  background-repeat: no-repeat;         /* 不平铺 */
-  background-size: cover;               /* 关键：始终铺满，必要时会裁剪 */
-  background-attachment: fixed;         /* 滚动时保持视觉稳定（桌面端友好） */
-  background-color: transparent !important;
-}
-
-/* 移动端上，fixed 可能卡顿或不生效，自动降级 */
-@media (max-width: 900px){
-  body.home-bg{ background-attachment: scroll; }
+/* Home page specific styles */
+body.home-bg { 
+  background-color: var(--bg);
 }

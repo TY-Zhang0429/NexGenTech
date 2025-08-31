@@ -57,7 +57,7 @@ defineExpose({ reset })
 <style scoped>
 .wheel-wrap {
   position: relative;
-  width: clamp(260px, 30vw, 420px);
+  width: clamp(260px, min(30vw, 85vw), 420px);
   aspect-ratio: 1/1;
   margin: 30px auto;
   isolation: isolate;
@@ -97,14 +97,18 @@ defineExpose({ reset })
 /* 文字样式 */
 .spin-text {
   color: #000000;
-  font-size: 3.5rem;
-  font-weight: bold;
+  font-size: 3.8rem;
+  font-family: 'Slackey', cursive;
   text-transform: uppercase;
   letter-spacing: 3px;
   transition: opacity 0.3s ease;
   opacity: 0;
   text-align: center;
   line-height: 1.2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 /* 悬浮时显示遮罩和文字 */

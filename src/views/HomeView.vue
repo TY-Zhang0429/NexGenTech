@@ -2,14 +2,17 @@
   <main class="home">
     <!-- 顶部随机标题 -->
     <div class="title-banner" :class="{ visible: selectedTitle }">
-      <span>{{ selectedTitle || 'Spin the wheel to pick: Try a game now! / Five boss / Create avatar' }}</span>
+      <span>{{ selectedTitle || 'What adventure will you get?' }}</span>
     </div>
 
     <section class="content">
       <!-- 左侧：指引图片和Avatar & Door -->
       <div class="left-section">
         <img class="guide-img" src="@/assets/guide.png" alt="guide" />
-        <AvatarDoor ref="avatarDoorRef" />
+        <div class="scene-container">
+          <img class="backbottom" src="@/assets/backbottom.png" alt="backbottom" />
+          <AvatarDoor ref="avatarDoorRef" />
+        </div>
       </div>
 
       <!-- 中央转盘区域 -->
@@ -23,7 +26,10 @@
 
       <!-- 右侧头像预览 -->
       <aside class="side-box">
-        <img class="avatar-preview" src="@/assets/avatar.png" alt="avatar preview" />
+        <div class="boss-container">
+          <img class="bossguide-preview" src="@/assets/bossguide.png" alt="boss guide" />
+          <img class="boss-preview" src="@/assets/boss1.png" alt="boss preview" />
+        </div>
       </aside>
     </section>
   </main>
@@ -34,6 +40,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import WheelArea from '@/components/WheelArea.vue'
 import AvatarDoor from '@/components/AvatarDoor.vue'
+
 
 const router = useRouter()
 const titles = ['Try a game now!','Five boss','Create avatar']
@@ -76,19 +83,30 @@ function doReset(){
   max-width: 1200px;
   margin: 0 auto;
   padding: clamp(16px, 3vw, 24px);
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .title-banner {
   width: min(640px, 92%);
-  margin: 8px auto 10px;
-  padding: 12px 16px;
+  margin: 8px auto 48px;
+  padding: 16px 16px;
   text-align: center;
-  color: var(--text);
+  color: #00515c;
+  font-family: 'Slackey', cursive;
+  font-size: 2rem;
   transition: opacity .2s ease;
-  opacity: .85;
+  opacity: 1;
   background: none;
   border: none;
   backdrop-filter: none;
+  line-height: 1.4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .content {
@@ -103,16 +121,21 @@ function doReset(){
   display: flex;
   flex-direction: column;
   gap: 30px;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
 }
 
 .guide-img {
-  width: 120%;
-  max-width: 460px;
+  width: clamp(280px, 120%, 460px);
   height: auto;
   margin: 0px 0 0px auto;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
   transition: transform 0.3s ease, filter 0.3s ease;
   cursor: pointer;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
 }
 
 .guide-img:hover {
@@ -125,12 +148,17 @@ function doReset(){
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  margin-top: -20px;
+  position: relative;
+  z-index: 1;
 }
 
 .side-box { 
   display: flex; 
-  align-items: center; 
-  justify-content: center;
+  align-items: flex-start;  /* 改为顶部对齐 */
+  justify-content: flex-start;  /* 改为左对齐 */
+  position: relative;  /* 添加相对定位 */
+  margin-top: 180px;  /* 增加向下移动的距离 */
 }
 
 
@@ -150,38 +178,28 @@ function doReset(){
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #1a472a, #2d5a40);
+  background: linear-gradient(135deg, #b85c2e, #a84c1a);
   color: white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(184,92,46,0.18);
+  font-family: 'Joti One', cursive;
 }
 
 .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  filter: brightness(1.1);
-}
-
-.btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn {
-  composes: btn from global;
+  transform: scale(1.12) translateY(-2px);
+  box-shadow: 0 8px 24px rgba(184,92,46,0.28);
+  filter: brightness(1.08);
 }
 
 .btn.btn-ghost {
-  composes: btn-ghost from global;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .btn.btn-primary {
-  composes: btn-primary from global;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: var(--text);
+  border: none;
 }
 
 .avatar-preview {
@@ -190,20 +208,69 @@ function doReset(){
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
 }
 
+.boss-container {
+  position: relative;
+  width: fit-content;
+}
+
+.boss-preview {
+  width: clamp(260px, 30vw, 350px);  /* 增加尺寸范围 */
+  height: auto;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
+  transition: transform 0.3s ease;
+  transform-origin: center;
+  position: relative;
+  z-index: 2;
+}
+
+.bossguide-preview {
+  position: absolute;
+  top: -70%;  /* 调整到更靠近 boss1 的位置 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: auto;
+  z-index: 3;
+  opacity: 0;  /* 默认隐藏 */
+  transition: opacity 0.3s ease;
+  pointer-events: none;  /* 防止图片影响鼠标悬停事件 */
+}
+
+.boss-container:hover .bossguide-preview {
+  opacity: 1;  /* 鼠标悬停时显示 */
+}
+
+.boss-preview:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.3));
+}
+
 
 /* 修改 AvatarDoor 组件中的场景尺寸和布局 */
 :deep(.scene) {
   width: 140%;
   height: clamp(180px, 32vh, 300px);
-  margin-top: -30px;  /* 减小上边距 */
+  margin-top: -50 px;  /* 减小上边距 */
   position: relative;
   overflow: hidden;
   margin-left: -20%;
 }
 
+.backbottom {
+  position: absolute;
+  left: 50%;
+  bottom: 8.5px;
+  transform: translateX(-50%);
+  width: 100%;
+  height: auto;
+  z-index: -1;
+  pointer-events: none;
+  object-fit: contain;
+}
+
 /* 调整人物和门的位置 */
 :deep(.avatar) {
-  left: -15% !important;
+  left: -5% !important;
   bottom: 30px !important;  /* 提高位置 */
   transform-origin: bottom center;
 }
@@ -219,7 +286,7 @@ function doReset(){
   .content {
     grid-template-columns: 1fr;
     gap: 24px;
-    padding: 0 16px;
+    padding: 0 clamp(16px, 4vw, 32px);
   }
   
   .left-section {
@@ -228,14 +295,25 @@ function doReset(){
   }
 
   .guide-img {
-    width: 100%;
-    max-width: 340px;
+    width: clamp(240px, 80vw, 340px);
     margin: 0 auto;
   }
   
   .center-section {
     order: 1;
+    margin-top: 0;
   }
+
+  .backbottom {
+    width: 120%;
+  }
+}
+
+@media (max-width: 480px) {
+  .backbottom {
+    width: 150%;
+  }
+}
   
   .side-box:last-child {
     order: 3;
@@ -257,12 +335,8 @@ function doReset(){
     transform: scale(0.9);
   }
 
-  .title-banner {
-    font-size: 0.9rem;
-    padding: 10px;
-    margin: 4px auto 8px;
-  }
-}
+
+
 
 @media (max-width: 480px) {
   .guide-img {
@@ -289,5 +363,18 @@ function doReset(){
 
 .title-banner.visible .options {
   display: none;
+}
+
+.scene-container {
+  position: relative;
+  width: 100%;
+  height: auto;
+  z-index: 2;
+}
+
+.scene-container {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;  /* 创建新的层叠上下文 */
 }
 </style>

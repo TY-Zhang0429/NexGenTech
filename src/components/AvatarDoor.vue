@@ -144,36 +144,68 @@ defineExpose({ runToDoor, reset })
 <style scoped>
 .scene {
   position: relative;
-  width: min(1000px, 95vw);
+  width: 100%;
   height: clamp(180px, 34vh, 320px);
-  margin: 6px auto 0;
+  margin: 0;
   border-radius: var(--radius);
   background: transparent;
-  overflow: visible !important; 
+  overflow: visible !important;
+  isolation: isolate;
+  /* 添加内边距来为光晕效果留出空间 */
+  padding: 40px;
+  margin: -40px;
 }
 
 .door {
   position: absolute;
-  right: -15%;
-  bottom: 6%;
+  right: 15%;
+  bottom: 0;
   width: clamp(80px, 13vw, 140px);
   transition: all .3s var(--ease);
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
+  transform-origin: bottom center;
+  z-index: 1;
+}
+
+.door::before {
+  content: '';
+  position: absolute;
+  inset: -80%;  /* 增加光晕范围 */
+  background: radial-gradient(
+    circle at center, 
+    rgba(255,210,90,0) 20%, 
+    rgba(255,210,90,0.25) 50%,  /* 增加中间区域的亮度 */
+    rgba(255,210,90,0) 70%
+  );
+  opacity: 0;
+  transition: opacity .3s var(--ease);
+  z-index: -1;
+  transform: scale(2);  /* 增加整体缩放 */
+  pointer-events: none;
 }
 
 .door.glow {
-  filter: drop-shadow(0 0 36px rgba(255,210,90,.45));
+  filter: 
+    drop-shadow(0 0 25px rgba(255,210,90,0.9))  /* 增加内层光晕强度和范围 */
+    drop-shadow(0 0 50px rgba(255,210,90,0.5))  /* 增加中层光晕强度和范围 */
+    drop-shadow(0 0 75px rgba(255,210,90,0.3)); /* 增加外层光晕强度和范围 */
   transform: translateY(-1px) scale(1.02);
+}
+
+.door.glow::before {
+  opacity: 1;
 }
 
 .avatar {
   position: absolute;
-  left: -15%;
-  bottom: 6%;
-  width: 96px;
-  height: 96px;
+  left: 5%;
+  bottom: 0;
+  width: clamp(80px, 10vw, 96px);
+  height: auto;
+  aspect-ratio: 1/1;
   overflow: hidden;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
+  transform-origin: bottom center;
 }
 
 .sprite-img {

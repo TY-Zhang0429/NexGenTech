@@ -25,18 +25,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 20px;
-  opacity:0.9;
-  background: linear-gradient(180deg, 
-    rgba(29, 53, 43, 0.85), 
-    rgba(21, 39, 32, 0.82)
-  );
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  opacity:0.97;
+  background: linear-gradient(180deg, rgb(59, 65, 62), rgba(164, 181, 173, 1));
   backdrop-filter: saturate(1.1) blur(8px);
+  box-shadow: 0 6px 24px 0 rgba(40, 40, 40, 0.18), 0 1.5px 0 rgba(0,0,0,0.08);
 }
 
 
 .logo {
-  width: 60px;
+  width: 100px;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 14px rgba(0,0,0,.25));
@@ -44,13 +41,32 @@
 
 .nav__right {
   display: flex;
-  gap: 26px;
+  gap: clamp(14px, 4vw, 26px);
+}
+
+@media (max-width: 480px) {
+  .nav {
+    padding: 6px 12px;
+  }
+  
+  .logo {
+    width: 50px;
+  }
+  
+  .nav__right {
+    gap: 12px;
+  }
+  
+  .link {
+    font-size: 0.9rem;
+  }
 }
 
 .link {
   color: rgba(255,255,255,0.85);
   text-decoration: none;
   font-weight: 600;
+  font-family: 'Joti One', cursive;
   transition: all 0.3s ease;
   position: relative;
 }
