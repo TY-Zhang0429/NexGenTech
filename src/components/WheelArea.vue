@@ -1,8 +1,10 @@
 <template>
-  <div class="wheel-wrap" @click="!spinning && onSpin()">
-    <div class="wheel" :style="wheelStyle">
+  <div class="wheel-wrap" @click="canSpin && onSpin()">
+    <div class="wheel" :class="{ spun: hasSpun }" :style="wheelStyle">
       <img class="wheel-img" src="@/assets/wheel.png" alt="wheel" />
-      <div class="spin-text" v-if="!spinning">SPIN</div>
+      <div class="wheel-overlay">
+        <span class="spin-text">SPIN NOW</span>
+      </div>
     </div>
     <img class="needle" src="@/assets/needle.png" alt="needle" />
   </div>
@@ -15,8 +17,11 @@ const props = defineProps({ titles: { type: Array, default: () => [] } })
 const emit = defineEmits(['spun'])
 
 const spinning = ref(false)
+const hasSpun = ref(false)
 const rotateDeg = ref(0)
 let spinTimer = null
+
+const canSpin = computed(() => !spinning.value && !hasSpun.value)
 
 const wheelStyle = computed(() => ({
   transform: `rotate(${rotateDeg.value}deg)`,
@@ -24,7 +29,7 @@ const wheelStyle = computed(() => ({
 }))
 
 function onSpin(){
-  if(spinning.value) return
+  if(!canSpin.value) return
   spinning.value = true
   const baseTurns = 360 * 4
   const randomTail = Math.floor(Math.random() * 360)
@@ -32,6 +37,7 @@ function onSpin(){
 
   spinTimer = setTimeout(() => {
     spinning.value = false
+    hasSpun.value = true
     const picked = props.titles[Math.floor(Math.random() * props.titles.length)]
     emit('spun', picked)
   }, 2000)
@@ -40,6 +46,7 @@ function onSpin(){
 function reset(){
   if (spinTimer) clearTimeout(spinTimer)
   spinning.value = false
+  hasSpun.value = false
   rotateDeg.value = 0
 }
 
@@ -61,18 +68,10 @@ defineExpose({ reset })
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(120% 120% at 20% 15%, rgba(124,240,255,.1), transparent 60%), #151b2c;
   overflow: hidden;
-  box-shadow:
-    inset 0 10px 20px rgba(255,255,255,.03),
-    inset 0 -10px 20px rgba(0,0,0,.35),
-    0 22px 40px rgba(0,0,0,.35);
-  opacity: 0.85;
-  transition: opacity 0.3s ease;
-}
-
-.wheel:hover {
-  opacity: 1;
+  cursor: pointer;
+  transform: scale(1);
+  transition: transform 0.3s ease;
 }
 
 .wheel-img {
@@ -81,34 +80,56 @@ defineExpose({ reset })
   width: 100%;
   height: 100%;
   object-fit: cover;
-  pointer-events: none;
-  filter: saturate(1.02) contrast(1.02);
 }
 
-.spin-text {
+/* 遮罩层样式 */
+.wheel-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 2rem;
-  font-weight: bold;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  inset: 0;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 5;
+  transition: all 0.3s ease;
 }
 
+/* 文字样式 */
+.spin-text {
+  color: #000000;
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* 悬浮时显示遮罩和文字 */
+.wheel:hover .wheel-overlay,
 .wheel:hover .spin-text {
   opacity: 1;
+}
+
+/* 旋转后的状态 */
+.wheel.spun .wheel-overlay {
+  opacity: 1;
+  background: rgba(51, 51, 51, 0.75);
+}
+
+/* 旋转后隐藏文字 */
+.wheel.spun .spin-text {
+  opacity: 0;
 }
 
 .needle {
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 18%;
-  transform: translateY(-100%) rotate(180deg);
+  width: 15%;
+  transform: translateY(-143%) rotate(180deg);
   z-index: 4;
   pointer-events: none;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.4));

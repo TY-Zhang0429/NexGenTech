@@ -6,9 +6,9 @@
     </div>
 
     <section class="content">
-      <!-- 左侧：提示文字和Avatar & Door -->
+      <!-- 左侧：指引图片和Avatar & Door -->
       <div class="left-section">
-        <div class="start-hint">Start: hover the wheel to reveal <b>spin</b></div>
+        <img class="guide-img" src="@/assets/guide.png" alt="guide" />
         <AvatarDoor ref="avatarDoorRef" />
       </div>
 
@@ -23,9 +23,7 @@
 
       <!-- 右侧头像预览 -->
       <aside class="side-box">
-        <div class="box-inner img">
-          <img src="@/assets/avatar.png" alt="avatar preview" />
-        </div>
+        <img class="avatar-preview" src="@/assets/avatar.png" alt="avatar preview" />
       </aside>
     </section>
   </main>
@@ -107,13 +105,19 @@ function doReset(){
   gap: 30px;
 }
 
-.start-hint {
-  color: var(--text);
-  font-size: 1.05rem;
-  opacity: 0.85;
-  font-weight: 500;
-  margin: 20px 0;
-  text-align: center;
+.guide-img {
+  width: 120%;
+  max-width: 460px;
+  height: auto;
+  margin: 0px 0 0px auto;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+  transition: transform 0.3s ease, filter 0.3s ease;
+  cursor: pointer;
+}
+
+.guide-img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.3));
 }
 
 .center-section {
@@ -129,25 +133,6 @@ function doReset(){
   justify-content: center;
 }
 
-.box-inner.img { 
-  padding: 10px;
-  width: 100%;
-  max-width: 280px;
-  min-height: 180px;
-  text-align: center;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-2);
-  background: color-mix(in oklab, var(--panel), #fff 4%);
-  border: 1px solid color-mix(in oklab, var(--panel), #fff 8%);
-}
-
-.box-inner.img img { 
-  width: 120px;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,.3));
-}
 
 .btn-row {
   display: flex;
@@ -199,11 +184,18 @@ function doReset(){
   composes: btn-primary from global;
 }
 
+.avatar-preview {
+  width: 120px;
+  height: auto;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+}
+
+
 /* 修改 AvatarDoor 组件中的场景尺寸和布局 */
 :deep(.scene) {
   width: 140%;
   height: clamp(180px, 32vh, 300px);
-  margin-top: 90px;
+  margin-top: -30px;  /* 减小上边距 */
   position: relative;
   overflow: hidden;
   margin-left: -20%;
@@ -212,12 +204,14 @@ function doReset(){
 /* 调整人物和门的位置 */
 :deep(.avatar) {
   left: -15% !important;
-  bottom: 10px !important;
+  bottom: 30px !important;  /* 提高位置 */
+  transform-origin: bottom center;
 }
 
 :deep(.door) {
   right: 5% !important;
-  bottom: 0px !important;
+  bottom: 20px !important;  /* 提高位置 */
+  transform-origin: bottom center;
 }
 
 /* 响应式布局 */
@@ -225,14 +219,18 @@ function doReset(){
   .content {
     grid-template-columns: 1fr;
     gap: 24px;
+    padding: 0 16px;
   }
   
   .left-section {
     order: 2;
+    align-items: center;
   }
-  
-  .start-hint {
-    margin-top: 10px;
+
+  .guide-img {
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
   }
   
   .center-section {
@@ -244,15 +242,48 @@ function doReset(){
   }
 
   :deep(.scene) {
+    width: 100%;
     height: clamp(160px, 28vh, 260px);
+    margin: 0 auto;
   }
   
   :deep(.avatar) {
-    left: 8% !important;
+    left: 0% !important;
+    transform: scale(0.9);
   }
   
   :deep(.door) {
-    right: 8% !important;
+    right: 0% !important;
+    transform: scale(0.9);
+  }
+
+  .title-banner {
+    font-size: 0.9rem;
+    padding: 10px;
+    margin: 4px auto 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .guide-img {
+    max-width: 280px;
+  }
+
+  :deep(.scene) {
+    height: clamp(140px, 25vh, 220px);
+  }
+
+  .btn-row {
+    margin-top: -10px;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+
+  .avatar-preview {
+    width: 100px;
   }
 }
 

@@ -25,10 +25,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 20px;
-  background: linear-gradient(180deg, rgba(29, 53, 43, 0.95), rgba(21, 39, 32, 0.92));
+  opacity:0.9;
+  background: linear-gradient(180deg, 
+    rgba(29, 53, 43, 0.85), 
+    rgba(21, 39, 32, 0.82)
+  );
   border-bottom: 1px solid rgba(255,255,255,.08);
   backdrop-filter: saturate(1.1) blur(8px);
 }
+
 
 .logo {
   width: 60px;
