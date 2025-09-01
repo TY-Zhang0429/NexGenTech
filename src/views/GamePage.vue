@@ -55,7 +55,7 @@ import AvatarDoor from '@/components/AvatarDoor.vue'
 const router = useRouter()
 
 // 扇区标题与路由（一一对应，按顺时针顺序）
-const sectorTitles = ['Try a game now!', 'Five boss', 'Create avatar']
+const sectorTitles = ['Game1', 'Game2', 'Game3']
 const sectorRoutes = ['/blank1', '/blank2', '/blank3']
 
 // 兼容你原来的逻辑
@@ -85,9 +85,9 @@ function onSectorClick(p) {
 
 function goBegin() {
   const map = {
-    'Try a game now!': '/blank1',
-    'Five boss': '/blank2',
-    'Create avatar': '/blank3',
+    'Game1': '/blank1',
+    'Game2': '/blank2',
+    'Game3': '/blank3',
   }
   router.push(map[selectedTitle.value] || '/blank1')
 }
@@ -164,8 +164,8 @@ function doReset() {
 .avatar-preview { width: 120px; height: auto; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); }
 
 .boss-container { position: relative; width: fit-content; }
-.boss-preview { width: clamp(260px, 30vw, 350px); height: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25)); transition: transform 0.3s ease; transform-origin: center; position: relative; z-index: 2; }
-.bossguide-preview { position: absolute; top: -70%; left: 50%; transform: translateX(-50%); width: 100%; height: auto; z-index: 3; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+.boss-preview { width: clamp(260px, 30vw, 350px); height: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25)); transition: transform 0.3s ease; transform-origin: center; position: relative; z-index: 2; margin-top: -60px; }
+.bossguide-preview { position: absolute; top: -50%; left: 50%; transform: translateX(-50%); width: 100%; height: auto; z-index: 3; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
 .boss-container:hover .bossguide-preview { opacity: 1; }
 .boss-preview:hover { transform: scale(1.05); filter: drop-shadow(0 12px 24px rgba(0,0,0,0.3)); }
 

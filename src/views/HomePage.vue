@@ -1,16 +1,17 @@
 <template>
   <div class="home">
+    <video autoplay loop muted playsinline class="background-video">
+      <source src="../assets/backsample.mp4" type="video/mp4">
+    </video>
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-content">
-        <h1 class="hero-title">NexGen: Fun, Interactive Nutrition for the Next Generation</h1>
-        <p class="hero-subtitle">Because the next generation deserves to be healthy, confident, and informed. 
-          NexGen makes nutrition fun and interactive — no boring lectures, just games, challenges, 
-          and your own evolving avatar that grows with your progress.</p>
-        <h2 class="hero-tagline">Because being healthy doesn't need to be boring.</h2>
+        <h1 class="hero-title" style="color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.2);">NexGen Levels You Up with Smarter Food Choices</h1>
+        <p class="hero-subtitle">“Every choice matters — swap junk for power-ups, fuel your body with the right foods, and watch your health (and your avatar) level up. With NexGen, healthy eating is no longer boring, it's your new adventure.”</p>
+        <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
       </div>
       <div class="hero-avatar">
-        <img src="../assets/avatar.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="../assets/avatardef.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-bg-animation"></div>
@@ -20,19 +21,45 @@
     <section class="how-it-works">
       <h2>How It Works</h2>
       <div class="steps-container">
-        <div class="step-card">
-          <div class="step-icon">🐢</div>
-          <h3>Create or choose your avatar</h3>
+        <div class="step-card" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-image-container">
+            <img src="../assets/howwork1.png" alt="Create Avatar" class="step-image" />
+            <div class="step-content">
+              <h3>Create or choose your avatar</h3>
+              <p class="step-description">Start your journey by creating your unique avatar companion</p>
+            </div>
+          </div>
           <div class="card-glow"></div>
         </div>
-        <div class="step-card">
-          <div class="step-icon">🎮</div>
-          <h3>Play challenges & make swaps</h3>
+        <div class="step-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+        <div class="step-card" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-image-container">
+            <img src="../assets/howwork2.png" alt="Play Challenges" class="step-image" />
+            <div class="step-content">
+              <h3>Play challenges & make swaps</h3>
+              <p class="step-description">Complete fun challenges and learn about healthy food choices</p>
+            </div>
+          </div>
           <div class="card-glow"></div>
         </div>
-        <div class="step-card">
-          <div class="step-icon">📈</div>
-          <h3>Watch your avatar evolve</h3>
+        <div class="step-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+        <div class="step-card" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-image-container">
+            <img src="../assets/howwork3.png" alt="Avatar Evolution" class="step-image" />
+            <div class="step-content">
+              <h3>Watch your avatar evolve</h3>
+              <p class="step-description">See your avatar grow stronger as you make healthier choices</p>
+            </div>
+          </div>
           <div class="card-glow"></div>
         </div>
       </div>
@@ -40,21 +67,34 @@
 
     <!-- Highlights Section -->
     <section class="highlights">
+      <h2 class="highlights-title">Highlights</h2>
       <div class="highlights-grid">
         <div class="highlight-card" @click="navigateToGames">
-          <img src="../assets/wheel.png" alt="Spin Wheel" class="highlight-image" />
-          <h3>Discover Games</h3>
-          <p>Spin the Wheel to try fun challenges like food Wordle or Speed Scramble — test your knowledge and level up while you play.</p>
+          <div class="highlight-image-container">
+            <img src="../assets/wheel.png" alt="Spin Wheel" class="highlight-image" />
+            <div class="highlight-overlay">
+              <h3>Discover Games</h3>
+              <p>Spin the Wheel to try fun challenges like food Wordle or Speed Scramble — test your knowledge and level up while you play.</p>
+            </div>
+          </div>
         </div>
         <div class="highlight-card">
-          <div class="highlight-icon">🥑</div>
-          <h3>Healthier Swaps</h3>
-          <p>Give us food (like chips) and get smarter, healthier swap options (like popcorn) — plus fun facts and nutrition insights.</p>
+          <div class="highlight-image-container">
+            <img src="../assets/highlight2.png" alt="Healthier Swaps" class="highlight-image" />
+            <div class="highlight-overlay">
+              <h3>Healthier Swaps</h3>
+              <p>Give us food (like chips) and get smarter, healthier swap options (like popcorn) — plus fun facts and nutrition insights.</p>
+            </div>
+          </div>
         </div>
         <div class="highlight-card">
-          <img src="../assets/avatar.png" alt="Sol Avatar" class="highlight-image" />
-          <h3>Your Avatar</h3>
-          <p>Meet your avatar! It represents you during every activity, and it changes as you progress. Watch it evolve as you complete challenges and build healthier habits.</p>
+          <div class="highlight-image-container">
+            <img src="../assets/highlight.png" alt="Your Avatar" class="highlight-image" />
+            <div class="highlight-overlay">
+              <h3>Your Avatar</h3>
+              <p>Meet your avatar! It represents you during every activity, and it changes as you progress. Watch it evolve as you complete challenges and build healthier habits.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -63,14 +103,15 @@
     <section class="qa-section">
       <h2>Frequently Asked Questions</h2>
       <div class="faq-container">
-        <div class="faq-item" v-for="(faq, index) in faqs" :key="index" :class="{ active: activeFaq === index }">
-          <div class="faq-question" @click="toggleFaq(index)">
-            <span class="faq-icon">{{ faq.icon }}</span>
-            <h3>{{ faq.question }}</h3>
-            <span class="arrow">›</span>
-          </div>
-          <div class="faq-answer" v-show="activeFaq === index">
-            <p>{{ faq.answer }}</p>
+        <div class="faq-list">
+          <div class="faq-item" v-for="(faq, index) in faqs" :key="index" :class="{ active: activeFaq === index }">
+            <div class="faq-question" @click="toggleFaq(index)">
+              <h3>{{ faq.question }}</h3>
+              <span class="arrow">›</span>
+            </div>
+            <div class="faq-answer" v-show="activeFaq === index">
+              <p>{{ faq.answer }}</p>
+            </div>
           </div>
         </div>
         <button class="btn btn-primary" @click="showMoreFaqs">See More Questions →</button>
@@ -89,17 +130,14 @@ const activeFaq = ref(null)
 
 const faqs = ref([
   {
-    icon: '🎮',
     question: 'How do the games work?',
     answer: 'Our games are designed to be fun and educational. From spinning the wheel to playing food-themed word games, each activity helps you learn about nutrition in an engaging way.'
   },
   {
-    icon: '🔄',
     question: 'What are food swaps?',
     answer: 'Food swaps are healthier alternatives to common snacks and meals. We suggest tasty options that maintain the enjoyment while improving nutritional value.'
   },
   {
-    icon: '🐢',
     question: 'How does my avatar evolve?',
     answer: 'Your avatar grows and changes as you complete challenges and learn new things about nutrition. The more you engage, the more your avatar transforms!'
   }
@@ -123,6 +161,11 @@ const navigateToGames = () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
+  font-family: 'Joti One', cursive;
+}
+
+.home h1, .home h2, .home h3, .home p, .home button {
+  font-family: 'Joti One', cursive;
 }
 
 /* Hero Section */
@@ -149,6 +192,7 @@ const navigateToGames = () => {
   background-clip: text;
   color: transparent;
   margin-bottom: 1.5rem;
+  font-family: 'Joti One', cursive;
 }
 
 .hero-subtitle {
@@ -156,12 +200,14 @@ const navigateToGames = () => {
   color: var(--muted);
   margin-bottom: 2rem;
   line-height: 1.6;
+  font-family: 'Joti One', cursive;
 }
 
 .hero-tagline {
   font-size: 1.5rem;
   color: var(--text);
   font-weight: 600;
+  font-family: 'Joti One', cursive;
 }
 
 .hero-avatar {
@@ -190,8 +236,43 @@ const navigateToGames = () => {
 
 /* How It Works Section */
 .how-it-works {
-  padding: 80px 0;
+  position: relative;
   text-align: center;
+  margin: 80px calc(-50vw + 50%);
+  padding: 80px calc(50vw - 50%);
+  background: rgb(163, 179, 148);
+  backdrop-filter: blur(8px);
+  border-top: 8px solid rgb(139, 119, 101);
+  border-bottom: 8px solid rgb(139, 119, 101);
+}
+
+.how-it-works::before,
+.how-it-works::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(139, 119, 101, 0.3);
+}
+
+.how-it-works::before {
+  top: 4px;
+}
+
+.how-it-works::after {
+  bottom: 4px;
+}
+
+.how-it-works h2,
+.how-it-works h3 {
+  font-family: 'Joti One', cursive;
+  color: rgba(255,255,255,0.85);
+}
+
+.how-it-works h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .steps-container {
@@ -204,21 +285,99 @@ const navigateToGames = () => {
 .step-card {
   position: relative;
   flex: 1;
-  padding: 32px;
+  padding: 20px;
   background: var(--panel);
   border-radius: var(--radius);
-  transition: transform 0.3s var(--ease);
+  transition: all 0.4s var(--ease);
   cursor: pointer;
   overflow: hidden;
+  animation: fadeInUp 0.6s var(--ease) backwards;
 }
+
+.step-card:nth-child(1) { animation-delay: 0.2s; }
+.step-card:nth-child(3) { animation-delay: 0.4s; }
+.step-card:nth-child(5) { animation-delay: 0.6s; }
 
 .step-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.step-image-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.step-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s var(--ease);
+}
+
+.step-card:hover .step-image {
+  transform: scale(1.05);
+}
+
+.step-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s var(--ease);
+  padding: 20px;
+  text-align: center;
+}
+
+.step-card:hover .step-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.step-number {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Joti One', cursive;
+  font-size: 1.2rem;
+  z-index: 2;
 }
 
 .step-icon {
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin: 1.5rem 0;
+  transition: transform 0.3s var(--ease);
+}
+
+.step-card:hover .step-icon {
+  transform: scale(1.1);
+}
+
+.step-description {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+  font-family: 'Joti One', cursive;
 }
 
 .card-glow {
@@ -237,6 +396,59 @@ const navigateToGames = () => {
   opacity: 0.1;
 }
 
+.step-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  animation: fadeIn 0.6s var(--ease) backwards;
+  animation-delay: 0.8s;
+}
+
+.arrow-line {
+  height: 10px;
+  width: 50px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  position: relative;
+  animation: expandWidth 1.5s var(--ease) infinite;
+}
+
+.arrow-head {
+  width: 30px;
+  height: 30px;
+  border-top: 10px solid var(--brand-2);
+  border-right: 10px solid var(--brand-2);
+  transform: rotate(45deg);
+  margin-left: -5px;
+  animation: bounce 1.5s var(--ease) infinite;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes expandWidth {
+  0% { transform: scaleX(0.7); }
+  50% { transform: scaleX(1); }
+  100% { transform: scaleX(0.7); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: rotate(45deg) translate(-2px, -2px); }
+  50% { transform: rotate(45deg) translate(2px, 2px); }
+}
+
 /* Highlights Section */
 .highlights {
   padding: 80px 0;
@@ -244,44 +456,154 @@ const navigateToGames = () => {
 
 .highlights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.highlights-title {
+  font-family: 'Joti One', cursive;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .highlight-card {
   background: var(--panel);
   border-radius: var(--radius);
-  padding: 32px;
-  text-align: center;
-  transition: transform 0.3s var(--ease);
+  overflow: hidden;
   cursor: pointer;
+  font-family: 'Joti One', cursive;
+  height: 450px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s var(--ease);
 }
 
 .highlight-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.highlight-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .highlight-image {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  margin-bottom: 1.5rem;
+  transition: transform 0.4s var(--ease);
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.highlight-icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
+.highlight-card:hover .highlight-image {
+  transform: scale(1.05);
+}
+
+.highlight-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s var(--ease);
+}
+
+.highlight-card:hover .highlight-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.highlight-overlay h3 {
+  font-family: 'Joti One', cursive;
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.highlight-overlay p {
+  font-family: 'Joti One', cursive;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+/* Responsive design for highlights */
+@media (max-width: 1024px) {
+  .highlights-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .highlight-card {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .highlights-grid {
+    grid-template-columns: 1fr;
+    padding: 0 15px;
+  }
+  .highlight-card {
+    height: 350px;
+  }
+  .highlights-title {
+    font-size: 2rem;
+  }
 }
 
 /* Q&A Section */
 .qa-section {
-  padding: 80px 0;
-  background: linear-gradient(180deg, 
-    color-mix(in oklab, var(--panel), transparent 80%) 0%,
-    transparent 100%
-  );
-  border-radius: var(--radius);
-  margin-bottom: 40px;
+  position: relative;
+  text-align: center;
+  margin: 80px calc(-50vw + 50%);
+  padding: 80px calc(50vw - 50%);
+  background: rgb(41, 75, 10);
+  backdrop-filter: blur(8px);
+  border-top: 8px solid rgb(139, 119, 101);
+  border-bottom: 8px solid rgb(139, 119, 101);
+}
+
+.qa-section::before,
+.qa-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(139, 119, 101, 0.3);
+}
+
+.qa-section::before {
+  top: 4px;
+}
+
+.qa-section::after {
+  bottom: 4px;
+}
+
+.qa-section h2 {
+  font-family: 'Joti One', cursive;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .faq-container {
@@ -289,33 +611,39 @@ const navigateToGames = () => {
   margin: 40px auto;
 }
 
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .faq-item {
-  margin-bottom: 16px;
+  font-family: 'Joti One', cursive;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s var(--ease);
 }
 
 .faq-question {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: var(--panel);
-  border-radius: var(--radius);
+  justify-content: space-between;
+  padding: 20px;
   cursor: pointer;
-  transition: background-color 0.2s var(--ease);
+  transition: all 0.3s var(--ease);
 }
 
-.faq-question:hover {
-  background: color-mix(in oklab, var(--panel), #fff 5%);
-}
-
-.faq-icon {
-  font-size: 1.5rem;
+.faq-question h3 {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
 }
 
 .arrow {
-  margin-left: auto;
   font-size: 1.5rem;
-  transition: transform 0.2s var(--ease);
+  color: rgba(255, 255, 255, 0.7);
+  transition: transform 0.3s var(--ease);
 }
 
 .faq-item.active .arrow {
@@ -323,8 +651,31 @@ const navigateToGames = () => {
 }
 
 .faq-answer {
-  padding: 16px;
-  color: var(--muted);
+  padding: 0 20px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+.btn-primary {
+  margin-top: 30px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s var(--ease);
+}
+
+.btn-primary:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.tagline {
+  margin-top: 40px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
 }
 
 .tagline {
@@ -333,10 +684,32 @@ const navigateToGames = () => {
   margin-top: 40px;
 }
 
+.background-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  filter: blur(3px) brightness(0.55);
+  transform: scale(1.1); /* 防止模糊效果在边缘产生空白 */
+}
+
 @keyframes pulse {
   0% { opacity: 0.2; }
   50% { opacity: 0.4; }
   100% { opacity: 0.2; }
+}
+
+/* 增强标题可见度 */
+.hero-title, .hero-subtitle, .hero-tagline {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: 'Joti One', cursive;
+}
+
+.hero-content {
+  padding: 2rem;
 }
 
 /* Responsive Design */
@@ -359,3 +732,4 @@ const navigateToGames = () => {
   }
 }
 </style>
+
