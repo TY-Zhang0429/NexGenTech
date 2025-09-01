@@ -84,7 +84,7 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   titles: { type: Array, default: () => [] },
-  routes: { type: Array, default: () => [] },
+  routes: { type: Array, default: () => [] },      // 点击扇区时会用它跳转
   colors: { type: Array, default: () => [] },
   startAtTop: { type: Boolean, default: true },
   enableSpin: { type: Boolean, default: true },
@@ -94,6 +94,7 @@ const props = defineProps({
   labelSize: { type: Number, default: 6 }          // 文本大小（px）
 })
 const emit = defineEmits(['spun', 'sector-click'])
+
 const router = useRouter()
 
 const spinning = ref(false)
@@ -115,8 +116,8 @@ function onSpin() {
   rotateDeg.value = (rotateDeg.value + baseTurns + randomTail) % 360
   spinTimer = setTimeout(() => {
     spinning.value = false
-    const idx = angleToIndex(0) // 指针在上方
-    gotoByIndex(idx, { from: 'spin' })
+    const idx = angleToIndex(0)           // 指针在上方
+    gotoByIndex(idx, { from: 'spin' })    // 只 emit，不跳转
   }, props.spinMs)
 }
 
@@ -126,12 +127,16 @@ function angleToIndex(angleDeg) {
   return Math.floor(effective / size)
 }
 
+/** 点击/键盘：立刻跳转；Spin：不跳转，只通知父组件 */
 function gotoByIndex(index, meta = {}) {
   const title = props.titles?.[index]
   const route = props.routes?.[index]
   emit('sector-click', { index, title, route, ...meta })
   if (title) emit('spun', title)
-  if (route) router.push(route)
+
+  if ((meta.from === 'click' || meta.from === 'kbd') && route) {
+    router.push(route)
+  }
 }
 
 /* ===== 扇形 path ===== */
@@ -177,17 +182,12 @@ function labelArcPath(i) {
   const aEndBase   = end   - ANG_PAD
   const rText = 50 * props.outerRatio - RAD_MARGIN
 
-  // 屏幕上的中心角（考虑初始偏移 + 当前旋转）
   const screenMid = (mid + initialOffset.value + (rotateDeg.value % 360) + 360) % 360
   const isBottom = screenMid > 90 && screenMid < 270
 
-  // 上半圈：顺时针；下半圈：逆时针。都用“小弧”(large-arc-flag=0)
   let a1, a2, sweep
-  if (!isBottom) {
-    a1 = aStartBase; a2 = aEndBase; sweep = 1
-  } else {
-    a1 = aEndBase;   a2 = aStartBase; sweep = 0
-  }
+  if (!isBottom) { a1 = aStartBase; a2 = aEndBase; sweep = 1 }  // 上半圈：顺时针
+  else           { a1 = aEndBase;   a2 = aStartBase; sweep = 0 } // 下半圈：逆时针
 
   const toPt = (r, a) => {
     const rad = (a * Math.PI) / 180
@@ -196,7 +196,6 @@ function labelArcPath(i) {
   const p1 = toPt(rText, a1)
   const p2 = toPt(rText, a2)
 
-  // large-arc-flag 固定 0，确保小弧；sweep 决定方向
   return `M ${p1.x} ${p1.y} A ${rText} ${rText} 0 0 ${sweep} ${p2.x} ${p2.y}`
 }
 
@@ -286,7 +285,7 @@ defineExpose({ reset, onSpin })
 /* 指针（尖头朝下，轴心在小圆心处） */
 .pointer {
   animation: bob 2.2s ease-in-out infinite;
-  transform-origin: 0 -49px; /* 轴心=上方小圆心 */
+  transform-origin: 0 -49px;
 }
 @keyframes bob {
   0%,100% { transform: translateY(0); }
