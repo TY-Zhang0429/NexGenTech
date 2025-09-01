@@ -28,3 +28,14 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# --- Environment files (keep secrets out of git) ---
+# Backend/API
+/backend/.env
+/backend/.env.*
+!/backend/.env.example   # keep a template in git
+
+# Root-level envs (just in case)
+.env
+.env.*
+!.env.example            # keep a template in git
