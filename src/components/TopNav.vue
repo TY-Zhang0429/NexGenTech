@@ -6,7 +6,7 @@
 
     <nav class="nav__right">
       <RouterLink to="/" class="link">Home</RouterLink>
-      <RouterLink to="/blank1" class="link">Game List</RouterLink>
+      <RouterLink to="/game" class="link">Game List</RouterLink>
       <RouterLink to="/blank2" class="link">Avatar</RouterLink>
       <RouterLink to="/blank3" class="link">FAQ</RouterLink>
     </nav>

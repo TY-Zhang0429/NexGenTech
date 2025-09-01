@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <div class="video-background" v-if="$route.name === 'home'">
+    <div class="video-background" v-if="$route.path === '/game'">
       <video autoplay muted loop playsinline>
         <source src="@/assets/back.mp4" type="video/mp4">
       </video>
