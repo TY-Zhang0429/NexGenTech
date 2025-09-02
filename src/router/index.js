@@ -8,6 +8,7 @@ import GamePage from '@/views/GamePage.vue'
 const routes = [
   { path: '/', name: 'home', component: HomePage  },
   { path: '/game', name: 'game', component: GamePage  },
+  { path: '/blank1', name: 'blank1', component: Blank1View  },
   { path: '/blank2', name: 'blank2', component: Blank2View  },
   { path: '/blank3', name: 'blank3', component: Blank3View },
 ]
