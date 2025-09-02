@@ -33,9 +33,31 @@ app.get("/api/health", async (_req, res) => {
 // example data route
 app.get("/api/words", async (_req, res) => {
   try {
-    const [rows] = await pool.query(
-      "SELECT word, difficulty FROM speed_scramble_word ORDER BY word LIMIT 20"
-    );
+    const [rows] = await pool.query(`
+      SELECT word, difficulty, hint
+  FROM (
+    SELECT s.word, s.difficulty, s.hint,
+           CASE s.difficulty
+             WHEN 'easy'   THEN (@e:=@e+1)
+             WHEN 'medium' THEN (@m:=@m+1)
+             WHEN 'hard'   THEN (@h:=@h+1)
+           END AS rn
+    FROM (SELECT @e:=0, @m:=0, @h:=0) vars,
+         (SELECT word, difficulty, hint
+            FROM wordle_seed
+           WHERE difficulty IN ('easy','medium','hard')
+           ORDER BY RAND()
+         ) s
+  ) ranked
+  ORDER BY
+    CASE WHEN difficulty='easy'   AND rn=1 THEN 1
+         WHEN difficulty='medium' AND rn=1 THEN 1
+         WHEN difficulty='hard'   AND rn=1 THEN 1
+         ELSE 2
+    END,
+    RAND()
+  LIMIT 20
+    `);
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
