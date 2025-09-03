@@ -100,7 +100,7 @@ async function fetchSwaps() {
   error.value = null
   
   try {
-    const response = await fetch('https://nexgentech-api.onrender.com/api/swaps/grouped-sql')
+    const response = await fetch('https://nexgentech-api.onrender.com/api/food/db-test')
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
