@@ -148,7 +148,7 @@ const toggleFaq = (index) => {
 }
 
 const showMoreFaqs = () => {
-  // TODO: Implement full FAQ page navigation
+  router.push('/blank3')
 }
 
 const navigateToGames = () => {

@@ -64,5 +64,48 @@ app.get("/api/words", async (_req, res) => {
   }
 });
 
+app.get("/api/swaps/grouped-sql", async (req, res) => {
+  const { from_code, from } = req.query;
+
+  let sql = `
+    SELECT
+      from_code,
+      from_name_short AS from_food,
+      from_img,
+      CAST(
+        CONCAT(
+          '[',
+          GROUP_CONCAT(
+            JSON_OBJECT(
+              'to_code', to_code,
+              'to_food', to_name_short,
+              'to_img', to_img,
+              'reason_tag', reason_tag,
+              'rationale_short', rationale_short
+            )
+            ORDER BY to_name_short SEPARATOR ','
+          ),
+          ']'
+        ) AS JSON
+      ) AS swaps
+    FROM food_swaps_curated
+    GROUP BY from_code, from_name_short, from_img
+    ORDER BY from_name_short;
+
+  `;
+  const params = [];
+  if (from_code) { sql += " AND from_code = ?"; params.push(String(from_code)); }
+  if (from)      { sql += " AND from_name_short LIKE ?"; params.push(`%${String(from)}%`); }
+  sql += " GROUP BY from_code, from_food, from_img ORDER BY from_food";
+
+  try {
+    const [rows] = await pool.query(sql, params);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`API listening on :${port}`));
