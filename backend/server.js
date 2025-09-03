@@ -70,24 +70,13 @@ app.get("/api/swaps/grouped-sql", async (req, res) => {
   let sql = `
     SELECT
       from_code,
+      to_code,
       from_name_short AS from_food,
+      to_name_short AS to_food,
       from_img,
-      CAST(
-        CONCAT(
-          '[',
-          GROUP_CONCAT(
-            JSON_OBJECT(
-              'to_code', to_code,
-              'to_food', to_name_short,
-              'to_img', to_img,
-              'reason_tag', reason_tag,
-              'rationale_short', rationale_short
-            )
-            ORDER BY to_name_short SEPARATOR ','
-          ),
-          ']'
-        ) AS JSON
-      ) AS swaps
+      to_img,
+      reason_tag,
+      rationale_short
     FROM food_swaps_curated
   `;
   
@@ -107,14 +96,33 @@ app.get("/api/swaps/grouped-sql", async (req, res) => {
     sql += " WHERE " + conditions.join(" AND ");
   }
   
-  sql += `
-    GROUP BY from_code, from_name_short, from_img
-    ORDER BY from_name_short
-  `;
+  sql += " ORDER BY from_name_short, to_name_short";
 
   try {
     const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    
+    // Group the results by from_food
+    const grouped = {};
+    rows.forEach(row => {
+      if (!grouped[row.from_code]) {
+        grouped[row.from_code] = {
+          from_code: row.from_code,
+          from_food: row.from_food,
+          from_img: row.from_img,
+          swaps: []
+        };
+      }
+      
+      grouped[row.from_code].swaps.push({
+        to_code: row.to_code,
+        to_food: row.to_food,
+        to_img: row.to_img,
+        reason_tag: row.reason_tag,
+        rationale_short: row.rationale_short
+      });
+    });
+    
+    res.json(Object.values(grouped));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
