@@ -64,14 +64,18 @@ app.get("/api/words", async (_req, res) => {
   }
 });
 
-// Simple test endpoint first
-app.get("/api/swaps/test", async (req, res) => {
-  res.json({ message: "Swaps endpoint is working!", timestamp: new Date().toISOString() });
+// Test endpoint - exactly like /api/words structure
+app.get("/api/swaps/test", async (_req, res) => {
+  try {
+    res.json({ message: "Swaps endpoint is working!", timestamp: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get("/api/swaps/grouped-sql", async (req, res) => {
+// Test database connection
+app.get("/api/swaps/db-test", async (_req, res) => {
   try {
-    // First, let's just test if we can connect to the database
     const [rows] = await pool.query("SELECT COUNT(*) as count FROM food_swaps_curated");
     res.json({ 
       message: "Database connection successful", 
