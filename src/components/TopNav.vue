@@ -77,7 +77,7 @@
 }
 
 .link {
-  color: #ffffff;
+  color: #2A4D3E;
   text-decoration: none;
   font-weight: 600;
   font-family: 'Merriweather', serif;
