@@ -44,7 +44,7 @@
         </template>
       </div>
 
-      <!-- 移动端隐藏输入（只用来唤起软键盘） -->
+      <!-- 移动端隐藏输入（仅唤起软键盘） -->
       <input
         ref="mobileInput"
         class="wd-hidden-input"
@@ -62,14 +62,35 @@
     <!-- 屏幕键盘 -->
     <footer class="wd-kbd" v-if="!loading">
       <div class="wd-row">
-        <button v-for="k in row1" :key="k" class="wd-key" @click="press(k)">{{ k }}</button>
+        <button
+          v-for="k in row1"
+          :key="k"
+          class="wd-key"
+          :class="keyState[k.toLowerCase()]"
+          :disabled="keyState[k.toLowerCase()] === 'absent'"
+          @click="press(k)"
+        >{{ k }}</button>
       </div>
       <div class="wd-row">
-        <button v-for="k in row2" :key="k" class="wd-key" @click="press(k)">{{ k }}</button>
+        <button
+          v-for="k in row2"
+          :key="k"
+          class="wd-key"
+          :class="keyState[k.toLowerCase()]"
+          :disabled="keyState[k.toLowerCase()] === 'absent'"
+          @click="press(k)"
+        >{{ k }}</button>
       </div>
       <div class="wd-row">
         <button class="wd-key wd-wide" @click="press('Enter')">Enter</button>
-        <button v-for="k in row3" :key="k" class="wd-key" @click="press(k)">{{ k }}</button>
+        <button
+          v-for="k in row3"
+          :key="k"
+          class="wd-key"
+          :class="keyState[k.toLowerCase()]"
+          :disabled="keyState[k.toLowerCase()] === 'absent'"
+          @click="press(k)"
+        >{{ k }}</button>
         <button class="wd-key wd-wide" @click="press('Backspace')">Back</button>
       </div>
     </footer>
@@ -79,41 +100,52 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
-const API_BASE = ''; // 同域 CloudFront
+const API_BASE = ''; // 同域（经 CloudFront 代理）
 
-/* ---------- 状态 ---------- */
+/* ---------- 基础状态 ---------- */
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);            // [{word, difficulty, hint}]
+const wordsRaw = ref([]);           // [{word, difficulty, hint}]
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);        // ['apple', ...]
-const status  = reactive([]);        // [['pending'|'correct'|'present'|'absent', ...], ...]
+const guesses = reactive([]);       // ['apple', ...]
+const status  = reactive([]);       // [['pending'|'correct'|'present'|'absent', ...], ...]
 const cur = ref('');
 const statusMsg = ref('');
 
 /* ---------- 动画控制 ---------- */
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP   = 140;            // 每格开始翻的间隔(ms)
-const SINGLE_FLIP  = 250;            // 单格翻转总时长(ms)
-const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2); // 在 50% 时上色
+const REVEAL_GAP   = 140;                          // 每格开始翻的间隔(ms)
+const SINGLE_FLIP  = 250;                          // 单格翻转总时长(ms)
+const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2);  // 50% 时刻
 
-/* ---------- 礼花（全屏） ---------- */
+/* ---------- 键盘状态（绿>黄>灰） ---------- */
+const keyState = reactive(Object.fromEntries(
+  'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])
+));
+function updateKeyState(letter, newState) {
+  const cur = keyState[letter];
+  if (cur === 'correct') return;                         // 最高优先级
+  if (cur === 'present' && newState === 'absent') return; // 黄不能被灰覆盖
+  keyState[letter] = newState;
+}
+
+/* ---------- 礼花 ---------- */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* ---------- 移动端输入 ---------- */
+/* ---------- 输入设备 ---------- */
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* ---------- 屏幕键盘 ---------- */
+/* ---------- 屏幕键盘布局 ---------- */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
@@ -167,6 +199,8 @@ function resetBoard() {
   statusMsg.value = '';
   hintVisible.value = false;
   revealingRowIndex.value = -1;
+  // 清空键盘状态
+  Object.keys(keyState).forEach(k => keyState[k] = '');
   stopConfetti();
 }
 function startGame() {
@@ -181,6 +215,13 @@ function startGame() {
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
+
+  // 屏蔽“已灰”的字母（实体键盘）
+  if (/^[a-zA-Z]$/.test(key) && keyState[key.toLowerCase()] === 'absent') {
+    e.preventDefault?.();
+    return;
+  }
+
   if (/^[a-zA-Z]$/.test(key)) {
     if (cur.value.length < targetLen.value) cur.value += key.toLowerCase();
     e.preventDefault?.();
@@ -194,12 +235,14 @@ function press(k) {
   if (k === 'Enter') return submitGuess();
   if (k === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
   if (/^[A-Z]$/.test(k)) {
-    if (cur.value.length < targetLen.value) cur.value += k.toLowerCase();
+    const ch = k.toLowerCase();
+    if (keyState[ch] === 'absent') return; // 屏幕键盘灰键禁用（保险）
+    if (cur.value.length < targetLen.value) cur.value += ch;
   }
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* ---------- 提交：逐格翻 + 在 50% 上色 ---------- */
+/* ---------- 提交：逐格翻，50% 才变色 & 同步键盘 ---------- */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) return;
 
@@ -209,21 +252,23 @@ function submitGuess() {
 
   guesses.push(guess);
 
-  // 1) 先把状态设为 'pending'，防止先上色
+  // 1) 全行 pending，防止先上色
   status.push(Array(targetLen.value).fill('pending'));
   cur.value = '';
 
-  // 2) 让这一行开始翻（每格有 delay）
+  // 2) 开始逐格翻
   revealingRowIndex.value = rowIndex;
 
-  // 3) 在每个格子的翻转进行到 50% 时，把该格状态替换为最终颜色
+  // 3) 每格到 50% 的时刻再上色 + 更新键盘状态
   for (let i = 0; i < targetLen.value; i++) {
     setTimeout(() => {
-      status[rowIndex][i] = res[i];            // 切色发生在半程
+      const st = res[i];
+      status[rowIndex][i] = st;          // 该格切色
+      updateKeyState(guess[i], st);      // 同步键盘
     }, i * REVEAL_GAP + HALF_FLIP);
   }
 
-  // 4) 整行翻完后再判定胜负
+  // 4) 行动画结束后判定胜负
   const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
   setTimeout(() => {
     revealingRowIndex.value = -1;
@@ -264,11 +309,8 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  // 静态颜色类：pending / correct / present / absent
-  if (r < status.length) base.push(status[r][c]);
-  // 正在翻转的行
-  if (r === revealingRowIndex.value) base.push('flipping');
-  // 当前输入行高亮
+  if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
+  if (r === revealingRowIndex.value) base.push('flipping'); // 正在翻
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
     base.push('active');
   }
@@ -289,7 +331,7 @@ function resizeCanvas() {
 }
 async function launchConfetti() {
   confettiRunning.value = true;
-  await nextTick(); // 等 canvas 挂载
+  await nextTick();
   const cvs = confettiCanvas.value;
   if (!cvs) return;
 
@@ -329,47 +371,67 @@ function stopConfetti() {
 </script>
 
 <style scoped>
-.wordly { --cell: 52px; max-width: 860px; margin: 24px auto; padding: 0 16px 48px; color: #e6e6eb; position: relative; }
+.wordly {
+  --cell: 52px;
+  max-width: 860px;
+  margin: 24px auto;
+  padding: 0 16px 48px;
+  color: #e6e6eb;
+  position: relative;
+}
 
-/* 工具栏 */
-.wd-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.wd-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* 工具栏：始终一行，右侧 Hint 自动靠右并省略号 */
+.wd-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:12px;
+  margin-bottom:16px;
+  flex-wrap:nowrap;
+}
+.wd-left{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.wd-status{ white-space:nowrap; }
+.wd-right{ margin-left:auto; flex:0 1 auto; }
+.wd-right .wd-hint{
+  display:flex; align-items:center; gap:10px;
+  background:#1b1c22; border:1px dashed #343644;
+  padding:8px 12px; border-radius:10px;
+  max-width:min(60vw, 560px);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.wd-hint-content{ opacity:.95; overflow:hidden; text-overflow:ellipsis; }
+
 .wd-label { opacity: .85; margin-right: 4px; }
-.wd-select { background: #1e1f26; color: #e6e6eb; border: 1px solid #343644; padding: 6px 10px; border-radius: 8px; outline: none; }
-.wd-btn { background: #4f46e5; color: white; border: 0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.wd-btn.ghost { background: transparent; border: 1px dashed #4f46e5; color: #cfd3ff; padding: 4px 8px; }
-.wd-btn:hover { filter: brightness(1.07); }
-.wd-status { margin-left: 6px; opacity: .9; }
+.wd-select { background:#1e1f26; color:#e6e6eb; border:1px solid #343644; padding:6px 10px; border-radius:8px; outline:none; }
+.wd-btn { background:#4f46e5; color:#fff; border:0; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+.wd-btn.ghost { background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; padding:4px 8px; }
+.wd-btn:hover { filter:brightness(1.07); }
 
-/* Hint */
-.wd-right .wd-hint { display: flex; align-items: center; gap: 10px; background: #1b1c22; border: 1px dashed #343644; padding: 8px 12px; border-radius: 10px; }
-.wd-hint-content { opacity: .95; }
-
-/* 提示 */
-.wd-notice { background: #1b1c22; border: 1px solid #343644; padding: 10px 12px; border-radius: 10px; margin: 8px 0 16px; }
-.wd-error { border-color: #b91c1c; color: #fecaca; }
+/* 提示卡片/错误 */
+.wd-notice { background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
+.wd-error { border-color:#b91c1c; color:#fecaca; }
 
 /* 棋盘 */
-.wd-board-wrap { display: flex; justify-content: center; position: relative; }
-.wd-board { display: grid; grid-template-rows: repeat(6, var(--cell)); gap: 10px; perspective: 900px; }
+.wd-board-wrap { display:flex; justify-content:center; position:relative; }
+.wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
 
 .wd-cell {
-  width: var(--cell); height: var(--cell);
-  display: grid; place-items: center;
-  border: 2px solid #343644; border-radius: 8px;
-  font-weight: 800; font-size: 20px; text-transform: uppercase;
-  background: #16171d; color: #e6e6eb;
+  width:var(--cell); height:var(--cell);
+  display:grid; place-items:center;
+  border:2px solid #343644; border-radius:8px;
+  font-weight:800; font-size:20px; text-transform:uppercase;
+  background:#16171d; color:#e6e6eb;
   transition: transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;
 }
-.wd-cell.active { border-color: #6b7280; }
+.wd-cell.active { border-color:#6b7280; }
 
 /* 静态状态色（动画结束后仍保持） */
-.wd-cell.correct { background: #16a34a; border-color: #16a34a; color: #0b0c0f; }
-.wd-cell.present { background: #eab308; border-color: #eab308; color: #0b0c0f; }
-.wd-cell.absent  { background: #272935; border-color: #3a3d4b; color: #9aa0ad; }
-.wd-cell.pending { background: #16171d; border-color: #343644; color: #e6e6eb; }
+.wd-cell.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
+.wd-cell.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
+.wd-cell.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
+.wd-cell.pending { background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* 翻牌动画（只负责角度，颜色在 JS 中 50% 时切换状态类） */
+/* 翻牌（角度动画；颜色由 JS 在 50% 时切换状态类） */
 .wd-cell.flipping{
   animation: wd-flip 250ms ease forwards;
   animation-delay: var(--reveal-delay, 0ms);
@@ -404,13 +466,20 @@ function stopConfetti() {
 
 /* 屏幕键盘 */
 .wd-kbd { max-width: 640px; margin: 18px auto 0; user-select: none; }
-.wd-row { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
-.wd-key { background: #1f2230; color: #e7e9f0; border: 1px solid #343a55; padding: 10px 12px; border-radius: 8px; min-width: 34px; font-weight: 700; cursor: pointer; }
-.wd-key.wd-wide { min-width: 72px; }
-.wd-key:active { transform: translateY(1px); }
+.wd-row { display:flex; justify-content:center; gap:8px; margin-top:8px; }
+.wd-key { background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
+.wd-key.wd-wide { min-width:72px; }
+.wd-key:active { transform:translateY(1px); }
+
+/* 屏幕键盘状态色 & 禁用 */
+.wd-key.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
+.wd-key.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
+.wd-key.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
+.wd-key:disabled{ cursor:not-allowed; opacity:.9; filter:grayscale(.05); }
 
 @media (max-width: 560px) {
   .wordly { --cell: 46px; }
+  .wd-right .wd-hint { max-width: 80vw; }
   .wd-key { padding: 8px 10px; }
 }
 </style>
