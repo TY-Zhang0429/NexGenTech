@@ -137,5 +137,5 @@ npm run build
 ---
 
 ## 📜 License
-- This project is for learning and demonstration purposes. Add an appropriate license (MIT / Apache 2.0) as needed.
+- This project is for learning and demonstration purposes.Will add an appropriate license (MIT / Apache 2.0) as needed.
 
