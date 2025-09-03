@@ -12,7 +12,6 @@
         <button class="wd-btn" @click="startGame">New Game</button>
         <span class="wd-status" v-if="statusMsg">{{ statusMsg }}</span>
       </div>
-
       <div class="wd-right">
         <div class="wd-hint">
           <strong>Hint</strong>
@@ -31,17 +30,14 @@
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
     <!-- 棋盘 -->
-    <main class="wd-board-wrap" v-else @click="focusHiddenInput">
-      <div
-        class="wd-board"
-        :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }"
-      >
+    <main class="wd-board-wrap" v-else @click="maybeFocusMobile">
+      <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
         <template v-for="r in maxAttempts" :key="r">
           <div
             v-for="c in targetLen"
             :key="`${r}-${c}`"
             class="wd-cell"
-            :class="[cellClass(r-1, c-1), flipClass(r-1, c-1)]"
+            :class="cellClass(r-1, c-1)"
             :style="flipStyle(r-1, c-1)"
           >
             {{ letterAt(r-1, c-1) }}
@@ -49,22 +45,19 @@
         </template>
       </div>
 
-      <!-- 捕获键盘输入 -->
+      <!-- 移动端隐藏输入：仅用于调起软键盘 -->
       <input
-        ref="hiddenInput"
+        ref="mobileInput"
         class="wd-hidden-input"
+        inputmode="latin"
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
         @keydown.prevent="onKeydown"
       />
 
-      <!-- 礼花画布（胜利时显示） -->
-      <canvas
-        v-if="confettiRunning"
-        ref="confettiCanvas"
-        class="wd-confetti"
-      ></canvas>
+      <!-- 胜利礼花 -->
+      <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
     </main>
 
     <!-- 屏幕键盘 -->
@@ -85,46 +78,52 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
 const API_BASE = ''; // 同域 CloudFront
 
-// 基本状态
+/* ----- 基础状态 ----- */
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]); // [{word, difficulty, hint}]
+const wordsRaw = ref([]);          // [{word, difficulty, hint}]
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);  // ['apple', ...]
-const status  = reactive([]);  // [['correct','present',...], ...]
+const guesses = reactive([]);      // ['apple', ...]
+const status  = reactive([]);      // [['correct','present',...], ...]
 const cur = ref('');
 const statusMsg = ref('');
-const hiddenInput = ref(null);
 
-// 动画：翻转控制
-const revealingRowIndex = ref(-1); // 正在翻的行：-1 表示没有
-const REVEAL_GAP = 140;            // 每格延时 ms
+/* ----- 动画控制 ----- */
+const revealingRowIndex = ref(-1);
+const REVEAL_GAP = 140;
 
-// 礼花
+/* ----- 礼花 ----- */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-// 屏幕键盘
+/* ----- 移动端输入 ----- */
+const mobileInput = ref(null);
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+/* ----- 屏幕键盘 ----- */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
+/* ----- 生命周期 ----- */
 onMounted(async () => {
   try {
     await fetchWords();
     startGame();
+    // 桌面端使用全局键盘监听；移动端事件交给隐藏 input（它也会触发 onKeydown）
+    if (!isMobile) window.addEventListener('keydown', onKeydown, { passive: false });
     window.addEventListener('resize', resizeCanvas);
   } catch (e) {
     error.value = 'Failed to load words. Please retry later.';
@@ -133,11 +132,12 @@ onMounted(async () => {
   }
 });
 onBeforeUnmount(() => {
-  stopConfetti();
+  if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
+  stopConfetti();
 });
 
-// 拉词
+/* ----- API ----- */
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -145,11 +145,11 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-// 选谜底（含 hint）
+/* ----- 出题（带 hint） ----- */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
-    w => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
+    (w) => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
   );
   if (pool.length === 0) {
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
@@ -160,7 +160,6 @@ function pickAnswerObj() {
   return { word: (choice.word || '').toLowerCase(), hint: choice.hint || '' };
 }
 
-// 开新局
 function resetBoard() {
   guesses.splice(0);
   status.splice(0);
@@ -176,19 +175,19 @@ function startGame() {
   const picked = pickAnswerObj();
   answer.value = picked.word;
   currentHint.value = picked.hint;
-  nextTick(() => hiddenInput.value?.focus());
 }
 
-// 输入（翻牌或已结束时禁用）
+/* ----- 输入（桌面监听 window；移动监听 input） ----- */
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
   if (/^[a-zA-Z]$/.test(key)) {
     if (cur.value.length < targetLen.value) cur.value += key.toLowerCase();
+    e.preventDefault?.();
     return;
   }
-  if (key === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
-  if (key === 'Enter') submitGuess();
+  if (key === 'Backspace') { cur.value = cur.value.slice(0, -1); e.preventDefault?.(); return; }
+  if (key === 'Enter') { submitGuess(); e.preventDefault?.(); }
 }
 function press(k) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
@@ -198,8 +197,12 @@ function press(k) {
     if (cur.value.length < targetLen.value) cur.value += k.toLowerCase();
   }
 }
+/** 点击棋盘：在移动端唤起软键盘 */
+function maybeFocusMobile() {
+  if (isMobile) mobileInput.value?.focus();
+}
 
-// 提交一行并逐格翻转
+/* ----- 提交 + 翻牌 ----- */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) return;
 
@@ -208,21 +211,19 @@ function submitGuess() {
 
   const rowIndex = guesses.length;
   guesses.push(guess);
-  status.push(Array(targetLen.value).fill('pending')); // 先占位
+  status.push(Array(targetLen.value).fill('pending'));
   cur.value = '';
 
-  revealingRowIndex.value = rowIndex;          // 开始翻这一行
+  revealingRowIndex.value = rowIndex;
 
-  // 逐格写入最终状态（与 CSS 动画延时对齐）
   res.forEach((st, i) => {
     setTimeout(() => {
       status[rowIndex][i] = st;
       if (i === res.length - 1) {
-        // 最后一格翻完
         revealingRowIndex.value = -1;
         afterReveal(guess);
       }
-    }, i * REVEAL_GAP + 250); // 250ms 单格翻面时长
+    }, i * REVEAL_GAP + 250);
   });
 }
 
@@ -233,12 +234,11 @@ function afterReveal(guess) {
   } else if (guesses.length >= maxAttempts) {
     statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
   } else {
-    // 比如猜两次自动展示 hint
     if (guesses.length === 2 && currentHint.value) hintVisible.value = true;
   }
 }
 
-// 判分
+/* ----- 判分 ----- */
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
@@ -252,7 +252,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-// 渲染
+/* ----- 渲染辅助 ----- */
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -260,37 +260,33 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  // 已揭示完的行，使用最终状态
   if (r < status.length && r !== revealingRowIndex.value) base.push(status[r][c]);
-  // 正在翻转的行，标记 flipping
   if (r === revealingRowIndex.value) base.push('flipping');
-  // 当前输入行
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1) {
     if (cur.value[c]) base.push('active');
   }
   return base;
 }
-function flipClass(r, c) {
-  return r === revealingRowIndex.value ? 'flipping' : '';
-}
 function flipStyle(r, c) {
   if (r !== revealingRowIndex.value) return {};
   return { '--reveal-delay': `${c * REVEAL_GAP}ms` };
 }
-function focusHiddenInput() { hiddenInput.value?.focus(); }
 
-// ===== 轻量礼花（无需第三方库） =====
+/* ----- 礼花（v-if + nextTick） ----- */
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
   const rect = cvs.parentElement.getBoundingClientRect();
   cvs.width = rect.width;
-  cvs.height = 360; // 顶部区域即可
+  cvs.height = 360;
   cvs.style.background = 'transparent';
 }
-function launchConfetti() {
+async function launchConfetti() {
+  confettiRunning.value = true;
+  await nextTick(); // 等 canvas 挂载
   const cvs = confettiCanvas.value;
   if (!cvs) return;
+
   resizeCanvas();
   const ctx = cvs.getContext('2d');
   const particles = Array.from({ length: 140 }).map(() => ({
@@ -302,23 +298,20 @@ function launchConfetti() {
     a: Math.random() * Math.PI * 2,
     va: -0.2 + Math.random() * 0.4
   }));
-  confettiRunning.value = true;
-  const start = performance.now();
 
+  const start = performance.now();
   function frame(t) {
     ctx.clearRect(0, 0, cvs.width, cvs.height);
     for (const p of particles) {
       p.x += p.vx; p.y += p.vy; p.a += p.va;
       const hue = (p.x / cvs.width) * 360;
       ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.a);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
       ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
       ctx.restore();
     }
-    if (t - start < 1800) { confettiTimer = requestAnimationFrame(frame); }
-    else { stopConfetti(); }
+    if (t - start < 1800) confettiTimer = requestAnimationFrame(frame);
+    else stopConfetti();
   }
   confettiTimer = requestAnimationFrame(frame);
 }
@@ -366,7 +359,7 @@ function stopConfetti() {
 .wd-cell.present { background: #eab308; border-color: #eab308; color: #0b0c0f; }
 .wd-cell.absent  { background: #272935; border-color: #3a3d4b; color: #9aa0ad; }
 
-/* 翻牌动画（逐格延迟通过 --reveal-delay 控制） */
+/* 翻牌动画 */
 .wd-cell.flipping {
   animation: wd-flip 250ms ease forwards;
   animation-delay: var(--reveal-delay, 0ms);
@@ -379,18 +372,28 @@ function stopConfetti() {
   100% { transform: rotateX(0deg); }
 }
 
-/* 礼花画布 */
-.wd-confetti {
-  position: absolute;
-  inset: 0;                /* 覆盖父容器 */
-  height: 360px;           /* 你原来用的高度，保留即可 */
-  pointer-events: none;
-  background: transparent !important; /* 强制透明，覆盖全局白底 */
-  outline: none;
-  border: 0;
-  display: block;
+/* 移动端隐藏输入（彻底隐藏） */
+.wd-hidden-input{
+  position:absolute !important;
+  left:-9999px !important;
+  top:0 !important;
+  width:0 !important;
+  height:0 !important;
+  opacity:0 !important;
+  border:0 !important;
+  padding:0 !important;
+  pointer-events:none !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
+/* 礼花画布 */
+.wd-confetti{
+  position:absolute; inset:0; height:360px;
+  pointer-events:none; background:transparent !important;
+  border:0; outline:0; display:block;
+}
 
 /* 屏幕键盘 */
 .wd-kbd { max-width: 640px; margin: 18px auto 0; user-select: none; }
