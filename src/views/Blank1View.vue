@@ -1,6 +1,6 @@
 <template>
   <section class="wordly">
-    <!-- 顶部工具栏 -->
+    <!-- 顶部 -->
     <header class="wd-toolbar">
       <div class="wd-left">
         <label class="wd-label">Difficulty</label>
@@ -12,6 +12,7 @@
         <button class="wd-btn" @click="startGame">New Game</button>
         <span class="wd-status" v-if="statusMsg">{{ statusMsg }}</span>
       </div>
+
       <div class="wd-right">
         <div class="wd-hint">
           <strong>Hint</strong>
@@ -45,7 +46,7 @@
         </template>
       </div>
 
-      <!-- 移动端隐藏输入：仅用于调起软键盘 -->
+      <!-- 移动端隐藏输入：只用于唤起软键盘 -->
       <input
         ref="mobileInput"
         class="wd-hidden-input"
@@ -55,10 +56,10 @@
         spellcheck="false"
         @keydown.prevent="onKeydown"
       />
-
-      <!-- 胜利礼花 -->
-      <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
     </main>
+
+    <!-- 全屏礼花（胜利时显示） -->
+    <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
     <!-- 屏幕键盘 -->
     <footer class="wd-kbd" v-if="!loading">
@@ -82,47 +83,47 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'v
 
 const API_BASE = ''; // 同域 CloudFront
 
-/* ----- 基础状态 ----- */
+/* ---------- 状态 ---------- */
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);          // [{word, difficulty, hint}]
+const wordsRaw = ref([]);            // [{word, difficulty, hint}]
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);      // ['apple', ...]
-const status  = reactive([]);      // [['correct','present',...], ...]
+const guesses = reactive([]);        // ['apple', ...]
+const status  = reactive([]);        // [['correct','present',...], ...]
 const cur = ref('');
 const statusMsg = ref('');
 
-/* ----- 动画控制 ----- */
+/* ---------- 动画 ---------- */
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP = 140;
+const REVEAL_GAP = 140;              // 每格延时，ms
+const SINGLE_FLIP = 250;             // 单格翻面时长，ms
 
-/* ----- 礼花 ----- */
+/* ---------- 礼花（全屏） ---------- */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* ----- 移动端输入 ----- */
+/* ---------- 移动端输入 ---------- */
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* ----- 屏幕键盘 ----- */
+/* ---------- 屏幕键盘 ---------- */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* ----- 生命周期 ----- */
+/* ---------- 生命周期 ---------- */
 onMounted(async () => {
   try {
     await fetchWords();
     startGame();
-    // 桌面端使用全局键盘监听；移动端事件交给隐藏 input（它也会触发 onKeydown）
     if (!isMobile) window.addEventListener('keydown', onKeydown, { passive: false });
     window.addEventListener('resize', resizeCanvas);
   } catch (e) {
@@ -137,7 +138,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-/* ----- API ----- */
+/* ---------- API ---------- */
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -145,7 +146,7 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* ----- 出题（带 hint） ----- */
+/* ---------- 出题 ---------- */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
@@ -177,7 +178,7 @@ function startGame() {
   currentHint.value = picked.hint;
 }
 
-/* ----- 输入（桌面监听 window；移动监听 input） ----- */
+/* ---------- 输入 ---------- */
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
@@ -197,12 +198,9 @@ function press(k) {
     if (cur.value.length < targetLen.value) cur.value += k.toLowerCase();
   }
 }
-/** 点击棋盘：在移动端唤起软键盘 */
-function maybeFocusMobile() {
-  if (isMobile) mobileInput.value?.focus();
-}
+function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* ----- 提交 + 翻牌 ----- */
+/* ---------- 提交 + 逐格翻并即时上色 ---------- */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) return;
 
@@ -211,20 +209,20 @@ function submitGuess() {
 
   const rowIndex = guesses.length;
   guesses.push(guess);
-  status.push(Array(targetLen.value).fill('pending'));
+
+  // 关键点：结果颜色**立即**写入，这样每个格子动画到 50% 就能显示对应颜色
+  status.push(res);
   cur.value = '';
 
+  // 开始翻该行（每格有不同 animation-delay）
   revealingRowIndex.value = rowIndex;
 
-  res.forEach((st, i) => {
-    setTimeout(() => {
-      status[rowIndex][i] = st;
-      if (i === res.length - 1) {
-        revealingRowIndex.value = -1;
-        afterReveal(guess);
-      }
-    }, i * REVEAL_GAP + 250);
-  });
+  // 计算整行翻转完的时间点，然后再判断胜负
+  const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
+  setTimeout(() => {
+    revealingRowIndex.value = -1;
+    afterReveal(guess);
+  }, total + 20);
 }
 
 function afterReveal(guess) {
@@ -238,7 +236,7 @@ function afterReveal(guess) {
   }
 }
 
-/* ----- 判分 ----- */
+/* ---------- 判分 ---------- */
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
@@ -252,7 +250,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-/* ----- 渲染辅助 ----- */
+/* ---------- 渲染辅助 ---------- */
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -260,10 +258,13 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  if (r < status.length && r !== revealingRowIndex.value) base.push(status[r][c]);
+  // 已有状态色（我们已提前写入）
+  if (r < status.length) base.push(status[r][c]);
+  // 正在翻转的行：逐格延时
   if (r === revealingRowIndex.value) base.push('flipping');
-  if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1) {
-    if (cur.value[c]) base.push('active');
+  // 当前输入行高亮
+  if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
+    base.push('active');
   }
   return base;
 }
@@ -272,31 +273,30 @@ function flipStyle(r, c) {
   return { '--reveal-delay': `${c * REVEAL_GAP}ms` };
 }
 
-/* ----- 礼花（v-if + nextTick） ----- */
+/* ---------- 全屏礼花（v-if + nextTick） ---------- */
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
-  const rect = cvs.parentElement.getBoundingClientRect();
-  cvs.width = rect.width;
-  cvs.height = 360;
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight;
   cvs.style.background = 'transparent';
 }
 async function launchConfetti() {
   confettiRunning.value = true;
-  await nextTick(); // 等 canvas 挂载
+  await nextTick();
   const cvs = confettiCanvas.value;
   if (!cvs) return;
 
   resizeCanvas();
   const ctx = cvs.getContext('2d');
-  const particles = Array.from({ length: 140 }).map(() => ({
+  const particles = Array.from({ length: 180 }).map(() => ({
     x: Math.random() * cvs.width,
-    y: -20 - Math.random() * 80,
+    y: -20 - Math.random() * 120,
     r: 2 + Math.random() * 4,
     vx: -1 + Math.random() * 2,
-    vy: 2 + Math.random() * 3,
+    vy: 2 + Math.random() * 3.5,
     a: Math.random() * Math.PI * 2,
-    va: -0.2 + Math.random() * 0.4
+    va: -0.25 + Math.random() * 0.5
   }));
 
   const start = performance.now();
@@ -310,7 +310,7 @@ async function launchConfetti() {
       ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
       ctx.restore();
     }
-    if (t - start < 1800) confettiTimer = requestAnimationFrame(frame);
+    if (t - start < 2000) confettiTimer = requestAnimationFrame(frame);
     else stopConfetti();
   }
   confettiTimer = requestAnimationFrame(frame);
@@ -345,54 +345,65 @@ function stopConfetti() {
 
 /* 棋盘 */
 .wd-board-wrap { display: flex; justify-content: center; position: relative; }
-.wd-board { display: grid; grid-template-rows: repeat(6, var(--cell)); gap: 10px; perspective: 800px; }
+.wd-board { display: grid; grid-template-rows: repeat(6, var(--cell)); gap: 10px; perspective: 900px; }
 .wd-cell {
   width: var(--cell); height: var(--cell);
   display: grid; place-items: center;
   border: 2px solid #343644; border-radius: 8px;
   font-weight: 800; font-size: 20px; text-transform: uppercase;
   background: #16171d; color: #e6e6eb;
-  transition: transform .08s ease, background .2s ease, border-color .2s ease;
+  transition: transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;
 }
 .wd-cell.active { border-color: #6b7280; }
-.wd-cell.correct { background: #16a34a; border-color: #16a34a; color: #0b0c0f; }
-.wd-cell.present { background: #eab308; border-color: #eab308; color: #0b0c0f; }
-.wd-cell.absent  { background: #272935; border-color: #3a3d4b; color: #9aa0ad; }
 
-/* 翻牌动画 */
-.wd-cell.flipping {
-  animation: wd-flip 250ms ease forwards;
-  animation-delay: var(--reveal-delay, 0ms);
-  transform-style: preserve-3d;
+/* 翻牌动画：根据状态使用不同 keyframes，在 50% 切色 */
+.wd-cell.flipping { animation-duration: 250ms; animation-fill-mode: forwards; animation-timing-function: ease; animation-delay: var(--reveal-delay, 0ms); transform-style: preserve-3d; }
+
+/* correct */
+.wd-cell.correct.flipping { animation-name: wd-flip-correct; }
+@keyframes wd-flip-correct {
+  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
+  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
+  50%  { transform: rotateX(-90deg); background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
+  100% { transform: rotateX(0deg);   background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 }
-@keyframes wd-flip {
-  0%   { transform: rotateX(0deg); }
-  49%  { transform: rotateX(90deg); }
-  50%  { transform: rotateX(-90deg); }
-  100% { transform: rotateX(0deg); }
+
+/* present */
+.wd-cell.present.flipping { animation-name: wd-flip-present; }
+@keyframes wd-flip-present {
+  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
+  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
+  50%  { transform: rotateX(-90deg); background:#eab308; border-color:#eab308; color:#0b0c0f; }
+  100% { transform: rotateX(0deg);   background:#eab308; border-color:#eab308; color:#0b0c0f; }
+}
+
+/* absent */
+.wd-cell.absent.flipping { animation-name: wd-flip-absent; }
+@keyframes wd-flip-absent {
+  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
+  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
+  50%  { transform: rotateX(-90deg); background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
+  100% { transform: rotateX(0deg);   background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 }
 
 /* 移动端隐藏输入（彻底隐藏） */
 .wd-hidden-input{
   position:absolute !important;
-  left:-9999px !important;
-  top:0 !important;
-  width:0 !important;
-  height:0 !important;
-  opacity:0 !important;
-  border:0 !important;
-  padding:0 !important;
+  left:-9999px !important; top:0 !important;
+  width:0 !important; height:0 !important;
+  opacity:0 !important; border:0 !important; padding:0 !important;
   pointer-events:none !important;
-  clip: rect(0 0 0 0) !important;
-  clip-path: inset(50%) !important;
+  clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important;
   white-space: nowrap !important;
 }
 
-/* 礼花画布 */
+/* 全屏礼花画布 */
 .wd-confetti{
-  position:absolute; inset:0; height:360px;
-  pointer-events:none; background:transparent !important;
-  border:0; outline:0; display:block;
+  position: fixed; inset: 0;           /* 覆盖整个页面 */
+  pointer-events: none;
+  background: transparent !important;
+  border: 0; outline: 0; display: block;
+  z-index: 9999;                       /* 确保在顶层 */
 }
 
 /* 屏幕键盘 */
