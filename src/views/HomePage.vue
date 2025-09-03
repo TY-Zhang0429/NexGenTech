@@ -197,7 +197,7 @@ const navigateToGames = () => {
 
 .hero-subtitle {
   font-size: 1.2rem;
-  color: var(--muted);
+  color: black;
   margin-bottom: 2rem;
   line-height: 1.6;
   font-family: 'Joti One', cursive;
@@ -677,7 +677,7 @@ const navigateToGames = () => {
 
 .tagline {
   margin-top: 40px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(0, 0, 0);
   font-size: 1.1rem;
 }
 
