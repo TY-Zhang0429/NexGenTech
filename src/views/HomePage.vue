@@ -677,13 +677,13 @@ const navigateToGames = () => {
 
 .tagline {
   margin-top: 40px;
-  color: rgb(0, 0, 0);
+  color: rgba(0, 0, 0, 0.8);
   font-size: 1.1rem;
 }
 
 .tagline {
   text-align: center;
-  color: var(--muted);
+  color: black;
   margin-top: 40px;
 }
 

@@ -46,7 +46,7 @@
 }
 
 .brand-name {
-  color: #6dff7a;
+  color: #2A4D3E;
   font-family: 'Merriweather', serif;
   font-size: 1.8rem;
   font-weight: 700;
