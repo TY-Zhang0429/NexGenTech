@@ -19,9 +19,7 @@
           <button class="wd-btn ghost" @click="hintVisible = !hintVisible">
             {{ hintVisible ? 'Hide' : 'Show' }}
           </button>
-          <div class="wd-hint-content">
-            {{ hintVisible ? (currentHint || '—') : '—' }}
-          </div>
+          <div class="wd-hint-content">{{ hintVisible ? (currentHint || '—') : '—' }}</div>
         </div>
       </div>
     </header>
@@ -46,7 +44,7 @@
         </template>
       </div>
 
-      <!-- 移动端隐藏输入：只用于唤起软键盘 -->
+      <!-- 移动端隐藏输入（只用来唤起软键盘） -->
       <input
         ref="mobileInput"
         class="wd-hidden-input"
@@ -58,7 +56,7 @@
       />
     </main>
 
-    <!-- 全屏礼花（胜利时显示） -->
+    <!-- 全屏礼花 -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
     <!-- 屏幕键盘 -->
@@ -96,14 +94,14 @@ const currentHint = ref('');
 const hintVisible = ref(false);
 
 const guesses = reactive([]);        // ['apple', ...]
-const status  = reactive([]);        // [['correct','present',...], ...]
+const status  = reactive([]);        // [['correct','present','absent',...], ...]
 const cur = ref('');
 const statusMsg = ref('');
 
 /* ---------- 动画 ---------- */
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP = 140;              // 每格延时，ms
-const SINGLE_FLIP = 250;             // 单格翻面时长，ms
+const REVEAL_GAP = 140;              // 每格延时（ms）
+const SINGLE_FLIP = 250;             // 单格翻面时长（ms）
 
 /* ---------- 礼花（全屏） ---------- */
 const confettiCanvas = ref(null);
@@ -146,7 +144,7 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* ---------- 出题 ---------- */
+/* ---------- 出题（带 hint） ---------- */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
@@ -200,7 +198,7 @@ function press(k) {
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* ---------- 提交 + 逐格翻并即时上色 ---------- */
+/* ---------- 提交 + 逐格翻并在 50% 显色 ---------- */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) return;
 
@@ -210,14 +208,13 @@ function submitGuess() {
   const rowIndex = guesses.length;
   guesses.push(guess);
 
-  // 关键点：结果颜色**立即**写入，这样每个格子动画到 50% 就能显示对应颜色
+  // 关键：状态颜色立即写入，但动画 0–49% 强制深色，50% 开始才显示状态色
   status.push(res);
   cur.value = '';
 
-  // 开始翻该行（每格有不同 animation-delay）
   revealingRowIndex.value = rowIndex;
 
-  // 计算整行翻转完的时间点，然后再判断胜负
+  // 整行翻转完后再判定胜负
   const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
   setTimeout(() => {
     revealingRowIndex.value = -1;
@@ -258,11 +255,8 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  // 已有状态色（我们已提前写入）
-  if (r < status.length) base.push(status[r][c]);
-  // 正在翻转的行：逐格延时
-  if (r === revealingRowIndex.value) base.push('flipping');
-  // 当前输入行高亮
+  if (r < status.length) base.push(status[r][c]);       // 静态状态类
+  if (r === revealingRowIndex.value) base.push('flipping'); // 正在翻转
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
     base.push('active');
   }
@@ -273,7 +267,7 @@ function flipStyle(r, c) {
   return { '--reveal-delay': `${c * REVEAL_GAP}ms` };
 }
 
-/* ---------- 全屏礼花（v-if + nextTick） ---------- */
+/* ---------- 全屏礼花 ---------- */
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
@@ -283,13 +277,13 @@ function resizeCanvas() {
 }
 async function launchConfetti() {
   confettiRunning.value = true;
-  await nextTick();
+  await nextTick();                 // 等 canvas 挂载
   const cvs = confettiCanvas.value;
   if (!cvs) return;
 
   resizeCanvas();
   const ctx = cvs.getContext('2d');
-  const particles = Array.from({ length: 180 }).map(() => ({
+  const particles = Array.from({ length: 200 }).map(() => ({
     x: Math.random() * cvs.width,
     y: -20 - Math.random() * 120,
     r: 2 + Math.random() * 4,
@@ -310,7 +304,7 @@ async function launchConfetti() {
       ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
       ctx.restore();
     }
-    if (t - start < 2000) confettiTimer = requestAnimationFrame(frame);
+    if (t - start < 2200) confettiTimer = requestAnimationFrame(frame);
     else stopConfetti();
   }
   confettiTimer = requestAnimationFrame(frame);
@@ -356,37 +350,53 @@ function stopConfetti() {
 }
 .wd-cell.active { border-color: #6b7280; }
 
-/* 翻牌动画：根据状态使用不同 keyframes，在 50% 切色 */
-.wd-cell.flipping { animation-duration: 250ms; animation-fill-mode: forwards; animation-timing-function: ease; animation-delay: var(--reveal-delay, 0ms); transform-style: preserve-3d; }
+/* —— 静态状态色（动画结束后仍生效） —— */
+.wd-cell.correct { background: #16a34a; border-color: #16a34a; color: #0b0c0f; }
+.wd-cell.present { background: #eab308; border-color: #eab308; color: #0b0c0f; }
+.wd-cell.absent  { background: #272935; border-color: #3a3d4b; color: #9aa0ad; }
 
-/* correct */
-.wd-cell.correct.flipping { animation-name: wd-flip-correct; }
-@keyframes wd-flip-correct {
-  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
-  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
-  50%  { transform: rotateX(-90deg); background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
-  100% { transform: rotateX(0deg);   background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
+/* —— 翻牌动画：0–49% 强制深色，50% 开始由静态状态色接管 —— */
+.wd-cell.flipping {
+  animation-duration: 250ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease;
+  animation-delay: var(--reveal-delay, 0ms);
+  transform-style: preserve-3d;
 }
 
-/* present */
-.wd-cell.present.flipping { animation-name: wd-flip-present; }
-@keyframes wd-flip-present {
-  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
-  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
-  50%  { transform: rotateX(-90deg); background:#eab308; border-color:#eab308; color:#0b0c0f; }
-  100% { transform: rotateX(0deg);   background:#eab308; border-color:#eab308; color:#0b0c0f; }
+/* 三种状态共用同一套角度关键帧；颜色通过下面的“深色覆盖”实现延迟显色 */
+.wd-cell.correct.flipping { animation-name: wd-flip; }
+.wd-cell.present.flipping { animation-name: wd-flip; }
+.wd-cell.absent.flipping  { animation-name: wd-flip; }
+
+@keyframes wd-flip {
+  0%   { transform: rotateX(0deg); }
+  49%  { transform: rotateX(90deg); }
+  50%  { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
 }
 
-/* absent */
-.wd-cell.absent.flipping { animation-name: wd-flip-absent; }
-@keyframes wd-flip-absent {
-  0%   { transform: rotateX(0deg);   background:#16171d; border-color:#343644; color:#e6e6eb; }
-  49%  { transform: rotateX(90deg);  background:#16171d; border-color:#343644; color:#e6e6eb; }
-  50%  { transform: rotateX(-90deg); background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
-  100% { transform: rotateX(0deg);   background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
+/* 动画前半程用一个“深色覆盖”，到 50% 结束，让位给静态状态色 */
+.wd-cell.flipping {
+  /* 前半程覆盖：深底/灰边/浅字 */
+  --pre-bg:   #16171d;
+  --pre-bd:   #343644;
+  --pre-fg:   #e6e6eb;
+  background: var(--pre-bg);
+  border-color: var(--pre-bd);
+  color: var(--pre-fg);
+}
+.wd-cell.correct.flipping,
+.wd-cell.present.flipping,
+.wd-cell.absent.flipping {
+  animation-name: wd-flip, wd-reveal-color;
+}
+@keyframes wd-reveal-color {
+  0%,49% { background: var(--pre-bg); border-color: var(--pre-bd); color: var(--pre-fg); }
+  50%,100% { /* 不再指定颜色，交给静态 .correct/.present/.absent 接管 */ }
 }
 
-/* 移动端隐藏输入（彻底隐藏） */
+/* —— 隐藏输入（彻底隐藏） —— */
 .wd-hidden-input{
   position:absolute !important;
   left:-9999px !important; top:0 !important;
@@ -397,13 +407,13 @@ function stopConfetti() {
   white-space: nowrap !important;
 }
 
-/* 全屏礼花画布 */
+/* —— 全屏礼花 —— */
 .wd-confetti{
-  position: fixed; inset: 0;           /* 覆盖整个页面 */
+  position: fixed; inset: 0;
   pointer-events: none;
   background: transparent !important;
   border: 0; outline: 0; display: block;
-  z-index: 9999;                       /* 确保在顶层 */
+  z-index: 9999;
 }
 
 /* 屏幕键盘 */
