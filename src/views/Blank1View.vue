@@ -60,7 +60,11 @@
       />
 
       <!-- 礼花画布（胜利时显示） -->
-      <canvas ref="confettiCanvas" class="wd-confetti" v-show="confettiRunning"></canvas>
+      <canvas
+        v-if="confettiRunning"
+        ref="confettiCanvas"
+        class="wd-confetti"
+      ></canvas>
     </main>
 
     <!-- 屏幕键盘 -->
@@ -282,6 +286,7 @@ function resizeCanvas() {
   const rect = cvs.parentElement.getBoundingClientRect();
   cvs.width = rect.width;
   cvs.height = 360; // 顶部区域即可
+  cvs.style.background = 'transparent';
 }
 function launchConfetti() {
   const cvs = confettiCanvas.value;
@@ -376,9 +381,16 @@ function stopConfetti() {
 
 /* 礼花画布 */
 .wd-confetti {
-  position: absolute; top: 0; left: 0; right: 0;
-  width: 100%; height: 360px; pointer-events: none;
+  position: absolute;
+  inset: 0;                /* 覆盖父容器 */
+  height: 360px;           /* 你原来用的高度，保留即可 */
+  pointer-events: none;
+  background: transparent !important; /* 强制透明，覆盖全局白底 */
+  outline: none;
+  border: 0;
+  display: block;
 }
+
 
 /* 屏幕键盘 */
 .wd-kbd { max-width: 640px; margin: 18px auto 0; user-select: none; }
