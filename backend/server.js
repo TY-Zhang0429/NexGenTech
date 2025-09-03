@@ -64,65 +64,20 @@ app.get("/api/words", async (_req, res) => {
   }
 });
 
+// Simple test endpoint first
+app.get("/api/swaps/test", async (req, res) => {
+  res.json({ message: "Swaps endpoint is working!", timestamp: new Date().toISOString() });
+});
+
 app.get("/api/swaps/grouped-sql", async (req, res) => {
-  const { from_code, from } = req.query;
-
-  let sql = `
-    SELECT
-      from_code,
-      to_code,
-      from_name_short AS from_food,
-      to_name_short AS to_food,
-      from_img,
-      to_img,
-      reason_tag,
-      rationale_short
-    FROM food_swaps_curated
-  `;
-  
-  const params = [];
-  const conditions = [];
-  
-  if (from_code) { 
-    conditions.push("from_code = ?"); 
-    params.push(String(from_code)); 
-  }
-  if (from) { 
-    conditions.push("from_name_short LIKE ?"); 
-    params.push(`%${String(from)}%`); 
-  }
-  
-  if (conditions.length > 0) {
-    sql += " WHERE " + conditions.join(" AND ");
-  }
-  
-  sql += " ORDER BY from_name_short, to_name_short";
-
   try {
-    const [rows] = await pool.query(sql, params);
-    
-    // Group the results by from_food
-    const grouped = {};
-    rows.forEach(row => {
-      if (!grouped[row.from_code]) {
-        grouped[row.from_code] = {
-          from_code: row.from_code,
-          from_food: row.from_food,
-          from_img: row.from_img,
-          swaps: []
-        };
-      }
-      
-      grouped[row.from_code].swaps.push({
-        to_code: row.to_code,
-        to_food: row.to_food,
-        to_img: row.to_img,
-        reason_tag: row.reason_tag,
-        rationale_short: row.rationale_short
-      });
+    // First, let's just test if we can connect to the database
+    const [rows] = await pool.query("SELECT COUNT(*) as count FROM food_swaps_curated");
+    res.json({ 
+      message: "Database connection successful", 
+      count: rows[0].count,
+      timestamp: new Date().toISOString()
     });
-    
-    res.json(Object.values(grouped));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
