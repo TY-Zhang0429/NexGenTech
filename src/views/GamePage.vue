@@ -55,7 +55,7 @@ import AvatarDoor from '@/components/AvatarDoor.vue'
 const router = useRouter()
 
 // 扇区标题与路由（一一对应，按顺时针顺序）
-const sectorTitles = ['Game1', 'Game2', 'Game3']
+const sectorTitles = ['Wordle', 'Game2', 'Game3']
 const sectorRoutes = ['/blank1', '/blank2', '/blank3']
 
 // 兼容你原来的逻辑
