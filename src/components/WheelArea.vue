@@ -238,7 +238,7 @@ defineExpose({ reset, onSpin })
   border: 0;
   cursor: pointer;
   z-index: 4;
-  font-family: 'Slackey', cursive;
+  font-family: 'Joti One', cursive;
   font-size: clamp(18px, 3.2vw, 28px);
   letter-spacing: 2px;
   color: #0b2a2e;

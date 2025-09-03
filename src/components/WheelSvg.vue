@@ -275,7 +275,7 @@ defineExpose({ reset, onSpin })
 
 .spin-btn {
   width: 100%; height: 100%; background: transparent; border: none; cursor: pointer;
-  font-family: 'Slackey', cursive; font-size: 7px; line-height: 1.05; letter-spacing: .6px;
+  font-family: 'Joti One', cursive; font-size: 7px; line-height: 1.05; letter-spacing: .6px;
   color: #0b2a2e; text-align: center; transition: transform .12s ease, opacity .12s ease;
 }
 .spin-btn:hover:not(:disabled){ transform: scale(1.06); }

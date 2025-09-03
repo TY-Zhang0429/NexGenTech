@@ -161,11 +161,11 @@ const navigateToGames = () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
 }
 
 .home h1, .home h2, .home h3, .home p, .home button {
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
 }
 
 /* Hero Section */
@@ -240,7 +240,7 @@ const navigateToGames = () => {
   text-align: center;
   margin: 80px calc(-50vw + 50%);
   padding: 80px calc(50vw - 50%);
-  background: rgb(163, 179, 148);
+  background: #FDEBD0;
   backdrop-filter: blur(8px);
   border-top: 8px solid rgb(139, 119, 101);
   border-bottom: 8px solid rgb(139, 119, 101);
@@ -266,13 +266,13 @@ const navigateToGames = () => {
 
 .how-it-works h2,
 .how-it-works h3 {
-  font-family: 'Joti One', cursive;
-  color: rgba(255,255,255,0.85);
+  font-family: 'Merriweather', serif;
 }
 
 .how-it-works h2 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
+  color: #2A4D3E;
 }
 
 .steps-container {
@@ -288,6 +288,8 @@ const navigateToGames = () => {
   padding: 20px;
   background: var(--panel);
   border-radius: var(--radius);
+  border: 1.5px solid #5D4037;
+  border: 2px solid #5D4037;
   transition: all 0.4s var(--ease);
   cursor: pointer;
   overflow: hidden;
@@ -337,6 +339,7 @@ const navigateToGames = () => {
   transform: translateY(20px);
   transition: all 0.4s var(--ease);
   padding: 20px;
+  border: 1.5px solid #5D4037;
   text-align: center;
 }
 
@@ -357,7 +360,7 @@ const navigateToGames = () => {
   align-items: center;
   justify-content: center;
   color: white;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
   font-size: 1.2rem;
   z-index: 2;
 }
@@ -377,7 +380,7 @@ const navigateToGames = () => {
   font-size: 0.9rem;
   line-height: 1.5;
   margin-top: 1rem;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
 }
 
 .card-glow {
@@ -477,7 +480,7 @@ const navigateToGames = () => {
   border-radius: var(--radius);
   overflow: hidden;
   cursor: pointer;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
   height: 450px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.4s var(--ease);
@@ -531,14 +534,14 @@ const navigateToGames = () => {
 }
 
 .highlight-overlay h3 {
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
   font-size: 1.5rem;
   color: white;
   margin-bottom: 1rem;
 }
 
 .highlight-overlay p {
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
   font-size: 1rem;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.8);
@@ -575,7 +578,7 @@ const navigateToGames = () => {
   text-align: center;
   margin: 80px calc(-50vw + 50%);
   padding: 80px calc(50vw - 50%);
-  background: rgb(41, 75, 10);
+  background: #FDEBD0;
   backdrop-filter: blur(8px);
   border-top: 8px solid rgb(139, 119, 101);
   border-bottom: 8px solid rgb(139, 119, 101);
@@ -600,10 +603,10 @@ const navigateToGames = () => {
 }
 
 .qa-section h2 {
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
   font-size: 2.5rem;
   margin-bottom: 2rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #2A4D3E;
 }
 
 .faq-container {
@@ -618,8 +621,8 @@ const navigateToGames = () => {
 }
 
 .faq-item {
-  font-family: 'Joti One', cursive;
-  background: rgba(255, 255, 255, 0.1);
+  font-family: 'Merriweather', serif;
+  background: #2A4D3E;
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s var(--ease);
@@ -636,13 +639,13 @@ const navigateToGames = () => {
 
 .faq-question h3 {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
   margin: 0;
 }
 
 .arrow {
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #ffffff;
   transition: transform 0.3s var(--ease);
 }
 
@@ -652,14 +655,14 @@ const navigateToGames = () => {
 
 .faq-answer {
   padding: 0 20px 20px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #ffffff;
   line-height: 1.6;
 }
 
 .btn-primary {
   margin-top: 30px;
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #2A4D3E;
   border: none;
   border-radius: 8px;
   color: white;
@@ -668,7 +671,7 @@ const navigateToGames = () => {
 }
 
 .btn-primary:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #365d4b;
   transform: translateY(-2px);
 }
 

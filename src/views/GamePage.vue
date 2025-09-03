@@ -116,7 +116,7 @@ function doReset() {
   padding: 16px 16px;
   text-align: center;
   color: #00515c;
-  font-family: 'Slackey', cursive;
+  font-family: 'Joti One', cursive;
   font-size: 2rem;
   transition: opacity .2s ease;
   opacity: 1;

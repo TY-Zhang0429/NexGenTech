@@ -2,12 +2,13 @@
   <header class="nav">
     <div class="nav__left">
       <img class="logo" src="@/assets/logo.png" alt="Logo" />
+      <span class="brand-name">NexGen</span>
     </div>
 
     <nav class="nav__right">
       <RouterLink to="/" class="link">Home</RouterLink>
-      <RouterLink to="/game" class="link">Game List</RouterLink>
-      <RouterLink to="/blank2" class="link">Avatar</RouterLink>
+      <RouterLink to="/game" class="link">Discover Games</RouterLink>
+      <RouterLink to="/blank2" class="link">Features</RouterLink>
       <RouterLink to="/blank3" class="link">FAQ</RouterLink>
     </nav>
   </header>
@@ -25,18 +26,31 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 20px;
-  opacity:0.97;
-  background: linear-gradient(180deg, rgb(59, 65, 62), rgba(164, 181, 173, 1));
+  opacity: 0.97;
+  background: #D0E3D4;
   backdrop-filter: saturate(1.1) blur(8px);
   box-shadow: 0 6px 24px 0 rgba(40, 40, 40, 0.18), 0 1.5px 0 rgba(0,0,0,0.08);
 }
 
+.nav__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .logo {
-  width: 100px;
+  width: 50px;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 14px rgba(0,0,0,.25));
+}
+
+.brand-name {
+  color: #ffffff;
+  font-family: 'Merriweather', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .nav__right {
@@ -63,10 +77,11 @@
 }
 
 .link {
-  color: rgba(255,255,255,0.85);
+  color: #ffffff;
   text-decoration: none;
   font-weight: 600;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
+  font-size: 1.2rem;
   transition: all 0.3s ease;
   position: relative;
 }
