@@ -109,6 +109,54 @@ app.get("/api/food/db-test", async (_req, res) => {
   }
 });
 
+// Deep DB diag: shows current DB, lists tables, tests counts
+app.get("/api/food/diag", async (_req, res) => {
+  try {
+    const [[meta]] = await pool.query(`
+      SELECT DATABASE() AS db_name, CURRENT_USER() AS sql_user, @@hostname AS mysql_host, @@version AS mysql_version
+    `);
+
+    // list tables in the *current* schema
+    const [tables] = await pool.query(`
+      SELECT TABLE_NAME
+      FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+      ORDER BY TABLE_NAME
+    `);
+
+    // Try unqualified count
+    let unqualified = { ok: false, error: null, count: null };
+    try {
+      const [[c1]] = await pool.query(`SELECT COUNT(*) AS cnt FROM food_swaps_teen_fun`);
+      unqualified = { ok: true, count: Number(c1.cnt) };
+    } catch (e) {
+      unqualified = { ok: false, error: e.message };
+    }
+
+    // Try fully-qualified count using env DB_NAME (handles wrong default schema)
+    let qualified = { ok: false, error: null, count: null };
+    try {
+      const dbName = process.env.DB_NAME;
+      const sql = `SELECT COUNT(*) AS cnt FROM \`${dbName}\`.food_swaps_teen_fun`;
+      const [[c2]] = await pool.query(sql);
+      qualified = { ok: true, count: Number(c2.cnt) };
+    } catch (e) {
+      qualified = { ok: false, error: e.message };
+    }
+
+    res.json({
+      ok: true,
+      meta,
+      env_db_name: process.env.DB_NAME || null,
+      tables_in_current_db: tables.map(t => t.TABLE_NAME),
+      tests: { unqualified, qualified }
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`API listening on :${port}`));
