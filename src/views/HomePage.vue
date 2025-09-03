@@ -696,7 +696,7 @@ const navigateToGames = () => {
   object-fit: cover;
   z-index: -1;
   filter: blur(3px) brightness(0.55);
-  transform: scale(1.1); /* 防止模糊效果在边缘产生空白 */
+  transform: scale(1.1); /* prevent blank space at edges */
 }
 
 @keyframes pulse {
@@ -705,7 +705,7 @@ const navigateToGames = () => {
   100% { opacity: 0.2; }
 }
 
-/* 增强标题可见度 */
+/* enhance text visibility */
 .hero-title, .hero-subtitle, .hero-tagline {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   font-family: 'Joti One', cursive;

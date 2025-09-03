@@ -1,6 +1,6 @@
 <template>
   <section class="wordly">
-    <!-- 顶部 -->
+    <!-- Top -->
     <header class="wd-toolbar">
       <div class="wd-left">
         <label class="wd-label">Difficulty</label>
@@ -24,11 +24,11 @@
       </div>
     </header>
 
-    <!-- 加载 / 报错 -->
+    <!-- Loading / Error -->
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- 棋盘 -->
+    <!-- Board -->
     <main class="wd-board-wrap" v-else @click="maybeFocusMobile">
       <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
         <template v-for="r in maxAttempts" :key="r">
@@ -44,7 +44,7 @@
         </template>
       </div>
 
-      <!-- 移动端隐藏输入（仅唤起软键盘） -->
+      <!-- mobile input(invoke soft keyboard) -->
       <input
         ref="mobileInput"
         class="wd-hidden-input"
@@ -56,10 +56,10 @@
       />
     </main>
 
-    <!-- 全屏礼花 -->
+    <!-- Full-screen confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
-    <!-- 屏幕键盘 -->
+    <!-- On-screen keyboard -->
     <footer class="wd-kbd" v-if="!loading">
       <div class="wd-row">
         <button
@@ -100,9 +100,9 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
-const API_BASE = ''; // 同域（经 CloudFront 代理）
+const API_BASE = ''; // Same origin (via CloudFront proxy)
 
-/* ---------- 基础状态 ---------- */
+/* ---------- basic state ---------- */
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
@@ -119,38 +119,38 @@ const status  = reactive([]);       // [['pending'|'correct'|'present'|'absent',
 const cur = ref('');
 const statusMsg = ref('');
 
-/* ---------- 动画控制 ---------- */
+/* ---------- animation ---------- */
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP   = 140;                          // 每格开始翻的间隔(ms)
-const SINGLE_FLIP  = 250;                          // 单格翻转总时长(ms)
-const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2);  // 50% 时刻
+const REVEAL_GAP   = 140;                          // every (ms)
+const SINGLE_FLIP  = 250;                          // single cell flip duration (ms)
+const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2);  // 50% moment
 
-/* ---------- 键盘状态（绿>黄>灰） ---------- */
+/* ---------- keyboard state (green > yellow > gray) ---------- */
 const keyState = reactive(Object.fromEntries(
   'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])
 ));
 function updateKeyState(letter, newState) {
   const cur = keyState[letter];
-  if (cur === 'correct') return;                         // 最高优先级
-  if (cur === 'present' && newState === 'absent') return; // 黄不能被灰覆盖
+  if (cur === 'correct') return;                         // highest priority
+  if (cur === 'present' && newState === 'absent') return; // yellow cannot be covered by gray
   keyState[letter] = newState;
 }
 
-/* ---------- 礼花 ---------- */
+/* ---------- confetti ---------- */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* ---------- 输入设备 ---------- */
+/* ---------- input device ---------- */
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* ---------- 屏幕键盘布局 ---------- */
+/* ---------- keyboard layout ---------- */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* ---------- 生命周期 ---------- */
+/* ---------- lifecycle ---------- */
 onMounted(async () => {
   try {
     await fetchWords();
@@ -177,7 +177,7 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* ---------- 出题 ---------- */
+/* ---------- question ---------- */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
@@ -199,7 +199,7 @@ function resetBoard() {
   statusMsg.value = '';
   hintVisible.value = false;
   revealingRowIndex.value = -1;
-  // 清空键盘状态
+  // clear keyboard state
   Object.keys(keyState).forEach(k => keyState[k] = '');
   stopConfetti();
 }
@@ -211,12 +211,12 @@ function startGame() {
   currentHint.value = picked.hint;
 }
 
-/* ---------- 输入 ---------- */
+/* ---------- input ---------- */
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
 
-  // 屏蔽“已灰”的字母（实体键盘）
+  // block "absent" letters (physical keyboard)
   if (/^[a-zA-Z]$/.test(key) && keyState[key.toLowerCase()] === 'absent') {
     e.preventDefault?.();
     return;
@@ -236,13 +236,13 @@ function press(k) {
   if (k === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
   if (/^[A-Z]$/.test(k)) {
     const ch = k.toLowerCase();
-    if (keyState[ch] === 'absent') return; // 屏幕键盘灰键禁用（保险）
+    if (keyState[ch] === 'absent') return; // block on-screen keyboard gray keys (safety)
     if (cur.value.length < targetLen.value) cur.value += ch;
   }
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* ---------- 提交：逐格翻，50% 才变色 & 同步键盘 ---------- */
+/* ---------- submit one by one and flip ---------- */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) {
     triggerRowShake(guesses.length);
@@ -255,23 +255,23 @@ function submitGuess() {
 
   guesses.push(guess);
 
-  // 1) 全行 pending，防止先上色
+  // 1) all line pending, prevent early coloring
   status.push(Array(targetLen.value).fill('pending'));
   cur.value = '';
 
-  // 2) 开始逐格翻
+  // 2) start flipping one by one
   revealingRowIndex.value = rowIndex;
 
-  // 3) 每格到 50% 的时刻再上色 + 更新键盘状态
+  // 3) each cell changes color at 50% + update keyboard state
   for (let i = 0; i < targetLen.value; i++) {
     setTimeout(() => {
       const st = res[i];
-      status[rowIndex][i] = st;          // 该格切色
-      updateKeyState(guess[i], st);      // 同步键盘
+      status[rowIndex][i] = st;          // change color of this cell
+      updateKeyState(guess[i], st);      // sync keyboard
     }, i * REVEAL_GAP + HALF_FLIP);
   }
 
-  // 4) 行动画结束后判定胜负
+  // 4) after row animation ends, determine win/lose
   const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
   setTimeout(() => {
     revealingRowIndex.value = -1;
@@ -293,7 +293,7 @@ function afterReveal(guess) {
   }
 }
 
-/* ---------- 判分 ---------- */
+/* ---------- scoring ---------- */
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
@@ -307,7 +307,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-/* ---------- 渲染辅助 ---------- */
+/* ---------- rendering helpers ---------- */
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -316,8 +316,8 @@ function letterAt(r, c) {
 function cellClass(r, c) {
   const base = [];
   if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
-  if (r === revealingRowIndex.value) base.push('flipping'); // 正在翻
-  if (shakingRows.has(r)) base.push('shaking');             // 摇动效果
+  if (r === revealingRowIndex.value) base.push('flipping'); // flipping
+  if (shakingRows.has(r)) base.push('shaking');             // shaking effect
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
     base.push('active');
   }
@@ -328,7 +328,7 @@ function flipStyle(r, c) {
   return { '--reveal-delay': `${c * REVEAL_GAP}ms` };
 }
 
-/* ---------- 全屏礼花 ---------- */
+/* ---------- confetti ---------- */
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
@@ -380,7 +380,7 @@ const shakingRows = reactive(new Set());
 
 function triggerRowShake(r) {
   shakingRows.add(r);
-  setTimeout(() => shakingRows.delete(r), 600); // 动画时长
+  setTimeout(() => shakingRows.delete(r), 600); // animation duration
 }
 </script>
 
@@ -394,7 +394,7 @@ function triggerRowShake(r) {
   position: relative;
 }
 
-/* 工具栏：始终一行，右侧 Hint 自动靠右并省略号 */
+/* toolbar */
 .wd-toolbar{
   display:flex;
   align-items:center;
@@ -421,11 +421,11 @@ function triggerRowShake(r) {
 .wd-btn.ghost { background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; padding:4px 8px; }
 .wd-btn:hover { filter:brightness(1.07); }
 
-/* 提示卡片/错误 */
+/* hint card */
 .wd-notice { background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error { border-color:#b91c1c; color:#fecaca; }
 
-/* 棋盘 */
+/* board */
 .wd-board-wrap { display:flex; justify-content:center; position:relative; }
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
 
@@ -439,13 +439,13 @@ function triggerRowShake(r) {
 }
 .wd-cell.active { border-color:#6b7280; }
 
-/* 静态状态色（动画结束后仍保持） */
+/* statistic */
 .wd-cell.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-cell.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-cell.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 .wd-cell.pending { background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* 翻牌（角度动画；颜色由 JS 在 50% 时切换状态类） */
+/* flipping (rotation animation; color changes at 50% via JS) */
 .wd-cell.flipping{
   animation: wd-flip 250ms ease forwards;
   animation-delay: var(--reveal-delay, 0ms);
@@ -458,7 +458,7 @@ function triggerRowShake(r) {
   100% { transform: rotateX(0deg); }
 }
 
-/* 隐藏输入（彻底隐藏） */
+/* hidden input */
 .wd-hidden-input{
   position:absolute !important;
   left:-9999px !important; top:0 !important;
@@ -469,7 +469,7 @@ function triggerRowShake(r) {
   white-space: nowrap !important;
 }
 
-/* 全屏礼花 */
+/* confetti */
 .wd-confetti{
   position: fixed; inset: 0;
   pointer-events: none;
@@ -478,14 +478,14 @@ function triggerRowShake(r) {
   z-index: 9999;
 }
 
-/* 屏幕键盘 */
+/* keyboard */
 .wd-kbd { max-width: 640px; margin: 18px auto 0; user-select: none; }
 .wd-row { display:flex; justify-content:center; gap:8px; margin-top:8px; }
 .wd-key { background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
 .wd-key.wd-wide { min-width:72px; }
 .wd-key:active { transform:translateY(1px); }
 
-/* 屏幕键盘状态色 & 禁用 */
+/* keyboard state colors & disabled */
 .wd-key.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-key.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
@@ -496,7 +496,7 @@ function triggerRowShake(r) {
   .wd-right .wd-hint { max-width: 80vw; }
   .wd-key { padding: 8px 10px; }
 }
-/* 抖动动画 */
+/* shaking animation */
 .wd-cell.shaking {
   animation: wd-shake 0.6s ease;
 }

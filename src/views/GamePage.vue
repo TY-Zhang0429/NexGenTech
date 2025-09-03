@@ -1,12 +1,12 @@
 <template>
   <main class="home">
-    <!-- 顶部随机标题 -->
+    <!-- top random title -->
     <div class="title-banner" :class="{ visible: selectedTitle }">
       <span>{{ selectedTitle || 'What adventure will you get?' }}</span>
     </div>
 
     <section class="content">
-      <!-- 左侧：指引图片和Avatar & Door -->
+      <!-- left: Avatar & Door -->
       <div class="left-section">
         <img class="guide-img" src="@/assets/guide.png" alt="guide" />
         <div class="scene-container">
@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <!-- 中央转盘区域（改：使用 SVG 版轮盘） -->
+      <!-- center wheel svg method -->
       <div class="center-section">
         <WheelSvg
           ref="wheelRef"
@@ -35,7 +35,7 @@
         </div>
       </div>
 
-      <!-- 右侧头像预览 -->
+      <!-- right avatar preview -->
       <aside class="side-box">
         <div class="boss-container">
           <img class="bossguide-preview" src="@/assets/bossguide.png" alt="boss guide" />
@@ -49,16 +49,16 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import WheelSvg from '@/components/WheelSvg.vue'     // ← 新增：引入 SVG 版轮盘
+import WheelSvg from '@/components/WheelSvg.vue'     // ← add：import SVG version wheel
 import AvatarDoor from '@/components/AvatarDoor.vue'
 
 const router = useRouter()
 
-// 扇区标题与路由（一一对应，按顺时针顺序）
+// fan area selection
 const sectorTitles = ['Wordle', 'Game2', 'Game3']
 const sectorRoutes = ['/blank1', '/blank2', '/blank3']
 
-// 兼容你原来的逻辑
+
 const titles = sectorTitles
 const selectedTitle = ref('')
 const wheelRef = ref(null)
@@ -73,12 +73,12 @@ onBeforeUnmount(() => {
 })
 
 function handleSpun(pickedTitle) {
-  // SVG 轮盘在点击或旋转结束时会 emit('spun', title)
+  // SVG wheel end will emit('spun', title)
   selectedTitle.value = pickedTitle
   avatarDoorRef.value?.runToDoor?.()
 }
 
-// 可选：如果想看到哪个扇区被点到
+// optional: if you want to see which sector was clicked
 function onSectorClick(p) {
   // console.log('sector-click:', p)  // { index, title, route, from }
 }
@@ -100,7 +100,7 @@ function doReset() {
 </script>
 
 <style scoped>
-/* —— 你原有样式保持不变 —— */
+/* —— original style —— */
 .home {
   max-width: 1200px;
   margin: 0 auto;
@@ -116,7 +116,7 @@ function doReset() {
   padding: 16px 16px;
   text-align: center;
   color: #00515c;
-  font-family: 'Joti One', cursive;
+  font-family: 'Slackey', cursive;
   font-size: 2rem;
   transition: opacity .2s ease;
   opacity: 1;
@@ -175,7 +175,7 @@ function doReset() {
 :deep(.avatar) { left: -5% !important; bottom: 30px !important; transform-origin: bottom center; }
 :deep(.door) { right: 5% !important; bottom: 20px !important; transform-origin: bottom center; }
 
-/* 响应式 */
+/* responsive */
 @media (max-width: 980px) {
   .content { grid-template-columns: 1fr; gap: 24px; padding: 0 clamp(16px, 4vw, 32px); }
   .left-section { order: 2; align-items: center; }

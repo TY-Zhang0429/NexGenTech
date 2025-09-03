@@ -44,7 +44,7 @@ body{
   object-fit: cover;
 }
 
-/* 可选：添加遮罩层让视频更柔和 */
+/* make video background darker */
 .video-background::after {
   content: '';
   position: absolute;

@@ -9,10 +9,10 @@
     }"
     @mouseleave="hoverIndex = -1"
   >
-    <!-- 背景图层（整张 wheel.png） -->
+    <!-- background layer (whole wheel.png) -->
     <div class="wheel-bg" aria-hidden="true"></div>
 
-    <!-- 扇区热点层 -->
+    <!-- sector hot area -->
     <button
       v-for="(t, i) in sectorCount"
       :key="i"
@@ -25,15 +25,15 @@
       @blur="hoverIndex = -1"
       @click="goto(i)"
     >
-      <!-- 高亮层（只在 hover/focus 时显示） -->
+      <!-- highlight layer (only shows on hover/focus) -->
       <span class="highlight" :class="{ show: hoverIndex === i }"></span>
-      <!-- 可选：在扇区外弧显示标题 -->
+      <!-- optional: show title on outer arc -->
       <span class="label" v-if="showLabels" :style="labelStyle(i)">
         {{ titles[i] || `#${i+1}` }}
       </span>
     </button>
 
-    <!-- 指针（你的 needle.png），不挡事件 -->
+    <!-- pointer (does not participate in rotation) -->
     <img class="needle" src="@/assets/needle.png" alt="" />
   </div>
 </template>
@@ -44,14 +44,14 @@ import { useRouter } from 'vue-router'
 
 /**
  * props:
- * - bgSrc: 你的整张转盘图片（默认 '@/assets/wheel.png'）
- * - routes: 每个扇区的跳转路由
- * - titles: 每个扇区标题（用于 aria 和外弧文案）
- * - startAtTop: 0 号扇区是否从正上方开始
- * - innerRatio: 内圈死区半径比例（0~1）
- * - outerRatio: 外圈半径比例（0~1），<1 可避免点到边框
- * - showLabels: 是否显示外弧文字
- * - rotateDeg/rotating: 若你还要做旋转动画，可传入以保持热点跟随
+ * - bgSrc: picture (default '@/assets/wheel.png')
+ * - routes: each sector's navigation route
+ * - titles: each sector's title (for aria and outer arc text)
+ * - startAtTop: whether the 0th sector starts from the top
+ * - innerRatio: inner radius dead zone ratio (0~1)
+ * - outerRatio: outer radius ratio (0~1), <1 can avoid hitting the border
+ * - showLabels: whether to show outer arc text
+ * - rotateDeg/rotating: if you want to do rotation animation, you can pass in to keep the hotspots following
  */
 const props = defineProps({
   bgSrc: { type: String, default: () => new URL('@/assets/wheel.png', import.meta.url).href },
@@ -71,7 +71,7 @@ const hoverIndex = ref(-1)
 const sectorCount = computed(() => Math.max(props.routes.length, props.titles.length, 8))
 
 function toPolarPoint(angleDeg, radiusRatio) {
-  // angle: 0°=正右；如果希望从正上方开始，把角度整体+90°
+  // angle: 0°=right; if you want to start from the top, add 90° to the angle
   let a = angleDeg
   if (props.startAtTop) a = (a - 90 + 360) % 360
   const rad = (a * Math.PI) / 180
@@ -81,9 +81,9 @@ function toPolarPoint(angleDeg, radiusRatio) {
 }
 
 /**
- * 生成第 i 个扇区的 clip-path 多边形
- * 采用：内弧两点 + 外弧两点（四边形近似扇形）
- * 你也可以把 steps 调大，插入更多点提高圆弧拟合度
+ * generate i sector clip-path polygon
+ * adopt: inner arc two points + outer arc two points (quadrilateral approximates sector)
+ * you can also increase the steps to insert more points to improve the arc fitting
  */
 function sectorStyle(i) {
   const size = 360 / sectorCount.value
@@ -93,7 +93,7 @@ function sectorStyle(i) {
   const ir = props.innerRatio
   const or = props.outerRatio
 
-  // 四点法：内起 -> 内止 -> 外止 -> 外起（顺时针）
+  // four-point method: inner start -> inner end -> outer end -> outer start (clockwise)
   const p1 = toPolarPoint(start, ir)
   const p2 = toPolarPoint(end, ir)
   const p3 = toPolarPoint(end, or)
@@ -105,7 +105,7 @@ function sectorStyle(i) {
   }
 }
 
-/** 外弧标签的放置（取本扇区中心角，半径用 outerRatio） */
+/** label placement (take the sector's central angle, use outerRatio for radius) */
 function labelStyle(i) {
   const size = 360 / sectorCount.value
   const mid = i * size + size / 2
@@ -147,7 +147,7 @@ function goto(i) {
   overflow: hidden;
 }
 
-/* 每个扇区作为按钮（可聚焦、可键盘） */
+/* every sector as a button (focusable and keyboard accessible) */
 .sector {
   position: absolute;
   inset: 0;
@@ -156,11 +156,11 @@ function goto(i) {
   background: transparent;
   cursor: pointer;
   border-radius: 50%;
-  /* 让按钮本身不遮住背景 */
+  /* let the button itself not cover the background */
   outline: none;
 }
 
-/* 高亮层（用 conic-gradient + 透明叠加描边光晕） */
+/* highlight layer (only shows on hover/focus) */
 .highlight {
   position: absolute;
   inset: 0;
@@ -168,7 +168,7 @@ function goto(i) {
   pointer-events: none;
   opacity: 0;
   transition: opacity .18s ease;
-  /* 用半透明色叠加 */
+  /* overlay with semi-transparent color */
   background: radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,.08), rgba(255,255,255,0) 60%);
   box-shadow:
     0 0 0 2px rgba(255,255,255,.25) inset,
@@ -184,7 +184,7 @@ function goto(i) {
   opacity: 1;
 }
 
-/* 外弧标签（可选） */
+/* outer arc label (optional) */
 .label {
   position: absolute;
   padding: .2em .5em;
@@ -200,7 +200,7 @@ function goto(i) {
   pointer-events: none;
 }
 
-/* 指针 */
+/* pointer */
 .needle {
   position: absolute;
   inset: 0;

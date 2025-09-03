@@ -2,11 +2,11 @@ name: Deploy to AWS S3 (+ CloudFront)
 
 on:
   push:
-    branches: [ main ]         # 如果你用别的分支，改这里
+    branches: [ main ]         # change this to different branch
   workflow_dispatch: {}
 
 permissions:
-  id-token: write              # 必须：让 Actions 用 OIDC
+  id-token: write              # must: allow Actions to use OIDC
   contents: read
 
 concurrency:
@@ -41,7 +41,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::277541735425:role/GitHubOIDCDeployRole
 
-      # 可选：打印当前身份，方便排错
+      # print current identity for troubleshooting
       - name: Who am I
         run: aws sts get-caller-identity
 

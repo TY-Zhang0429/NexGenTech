@@ -1,17 +1,17 @@
 <template>
   <div class="wheel-svg-wrap">
     <svg class="wheel" viewBox="-55 -55 110 110" role="application" aria-label="Food Kingdom wheel">
-      <!-- 盘面整体跟随旋转 -->
+      <!-- wheel rotate -->
       <g
         class="disc"
         :transform="`rotate(${initialOffset + rotateDeg})`"
         :style="{ transition: spinning ? `transform ${spinMs}ms cubic-bezier(.2,.75,.25,1)` : 'none' }"
       >
-        <!-- 外圈与内圈 -->
+        <!-- outer and inner rims -->
         <circle r="52" class="rim-outer" />
         <circle r="48" class="rim-inner" />
 
-        <!-- 文字弧线路径（不可见；放在旋转组里，跟盘一起转） -->
+        <!-- text arc paths (invisible; placed in the rotating group to follow the wheel) -->
         <g class="label-arcs" aria-hidden="true">
           <path
             v-for="(_, i) in sectorCount"
@@ -22,7 +22,7 @@
           />
         </g>
 
-        <!-- 扇区（甜甜圈楔形） -->
+        <!-- sectors (donut wedges) -->
         <g class="sectors">
           <path
             v-for="(_, i) in sectorCount"
@@ -42,7 +42,7 @@
           />
         </g>
 
-        <!-- 扇区标签（沿弧排版） -->
+        <!-- sector labels (along the arc) -->
         <g class="labels">
           <text
             v-for="(_, i) in sectorCount"
@@ -56,9 +56,9 @@
           </text>
         </g>
 
-        <!-- 中心按钮（随机旋转） -->
+        <!-- center button (random spin) -->
         <g class="center">
-          <!-- 脉冲光环 -->
+          <!-- pulse ring -->
           <circle r="16" class="pulse-ring" />
           <circle r="16" class="center-bg" />
           <foreignObject x="-16" y="-16" width="32" height="32">
@@ -69,7 +69,7 @@
         </g>
       </g>
 
-      <!-- 指针固定在上方（尖头朝下，轻微摆动） -->
+      <!-- pointer (fixed at the top, slightly swaying) -->
       <g class="pointer" aria-hidden="true">
         <polygon points="0,-41 -3,-49 3,-49" />
         <circle r="3.2" cy="-49" />
@@ -84,14 +84,14 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   titles: { type: Array, default: () => [] },
-  routes: { type: Array, default: () => [] },      // 点击扇区时会用它跳转
+  routes: { type: Array, default: () => [] },      // when clicking a sector, it will jump
   colors: { type: Array, default: () => [] },
   startAtTop: { type: Boolean, default: true },
   enableSpin: { type: Boolean, default: true },
-  innerRatio: { type: Number, default: 0.40 },     // 甜甜圈内半径（0~1）
-  outerRatio: { type: Number, default: 0.92 },     // 甜甜圈外半径（0~1）
+  innerRatio: { type: Number, default: 0.40 },     // donut inner radius (0~1)
+  outerRatio: { type: Number, default: 0.92 },     // donut outer radius (0~1)
   spinMs: { type: Number, default: 2000 },
-  labelSize: { type: Number, default: 6 }          // 文本大小（px）
+  labelSize: { type: Number, default: 6 }          // text size (px)
 })
 const emit = defineEmits(['spun', 'sector-click'])
 
@@ -116,8 +116,8 @@ function onSpin() {
   rotateDeg.value = (rotateDeg.value + baseTurns + randomTail) % 360
   spinTimer = setTimeout(() => {
     spinning.value = false
-    const idx = angleToIndex(0)           // 指针在上方
-    gotoByIndex(idx, { from: 'spin' })    // 只 emit，不跳转
+    const idx = angleToIndex(0)           // pointer is at the top
+    gotoByIndex(idx, { from: 'spin' })    // only emit, do not jump
   }, props.spinMs)
 }
 
@@ -127,7 +127,7 @@ function angleToIndex(angleDeg) {
   return Math.floor(effective / size)
 }
 
-/** 点击/键盘：立刻跳转；Spin：不跳转，只通知父组件 */
+/** click/kbd: jump immediately; Spin: do not jump, just notify parent component */
 function gotoByIndex(index, meta = {}) {
   const title = props.titles?.[index]
   const route = props.routes?.[index]
@@ -139,7 +139,7 @@ function gotoByIndex(index, meta = {}) {
   }
 }
 
-/* ===== 扇形 path ===== */
+/* ===== sector path ===== */
 function sectorPath(i) {
   const count = sectorCount.value
   const size = 360 / count
@@ -167,7 +167,7 @@ function donutSlicePath(startDeg, endDeg, rIn, rOut) {
   ].join(' ')
 }
 
-/* ===== 文字弧：固定小弧，依据上下半圈切换方向（sweep） ===== */
+/* ===== label arc path ===== */
 function labelArcPath(i) {
   const n = sectorCount.value
   const size = 360 / n
@@ -175,8 +175,8 @@ function labelArcPath(i) {
   const end = (i + 1) * size
   const mid = start + size / 2
 
-  const ANG_PAD = Math.min(10, size / 2 - 1) // 左右留白（度）
-  const RAD_MARGIN = 6                       // 距外圈内缩（SVG 坐标）
+  const ANG_PAD = Math.min(10, size / 2 - 1) // left and right padding (degrees)
+  const RAD_MARGIN = 6                       // inward offset from outer circle (SVG coordinates)
 
   const aStartBase = start + ANG_PAD
   const aEndBase   = end   - ANG_PAD
@@ -186,8 +186,8 @@ function labelArcPath(i) {
   const isBottom = screenMid > 90 && screenMid < 270
 
   let a1, a2, sweep
-  if (!isBottom) { a1 = aStartBase; a2 = aEndBase; sweep = 1 }  // 上半圈：顺时针
-  else           { a1 = aEndBase;   a2 = aStartBase; sweep = 0 } // 下半圈：逆时针
+  if (!isBottom) { a1 = aStartBase; a2 = aEndBase; sweep = 1 }  // upper half: clockwise
+  else           { a1 = aEndBase;   a2 = aStartBase; sweep = 0 } // lower half: counterclockwise
 
   const toPt = (r, a) => {
     const rad = (a * Math.PI) / 180
@@ -199,7 +199,7 @@ function labelArcPath(i) {
   return `M ${p1.x} ${p1.y} A ${rText} ${rText} 0 0 ${sweep} ${p2.x} ${p2.y}`
 }
 
-/* ===== 样式计算 ===== */
+/* ===== style calculation ===== */
 function sectorFillStyle(i) {
   const base = palette.value[i % palette.value.length]
   return {
@@ -222,15 +222,15 @@ defineExpose({ reset, onSpin })
 <style scoped>
 .wheel-svg-wrap { width: clamp(260px, min(30vw, 85vw), 420px); aspect-ratio: 1/1; margin: 30px auto; }
 
-/* 整盘轻微缩放（纯视觉） */
+/* wheel zoom */
 .wheel { width: 100%; height: 100%; transition: transform .25s ease; will-change: transform; }
 .wheel-svg-wrap:hover .wheel { transform: scale(1.03); }
 
-/* 装饰圈 */
+/* decorative rim */
 .rim-outer { fill: #e7c399; stroke: #6b3a22; stroke-width: 2; }
 .rim-inner { fill: #f8e6cd; stroke: #6b3a22; stroke-width: 1.2; }
 
-/* 扇区：hover 放大 + 高亮 */
+/* sector: hover scale + highlight */
 .sector {
   transition: transform .18s ease, filter .18s ease;
   transform-box: fill-box;
@@ -244,7 +244,7 @@ defineExpose({ reset, onSpin })
 }
 .sector:focus { filter: drop-shadow(0 0 3px rgba(124,240,255,.6)); }
 
-/* 文字沿弧（不拦截点击） */
+/* label arc (non-interactive) */
 .labels { pointer-events: none; }
 .sector-label {
   font-family: 'Joti One', cursive, system-ui;
@@ -256,7 +256,7 @@ defineExpose({ reset, onSpin })
   letter-spacing: .4px;
 }
 
-/* 中心按钮与脉冲光环（修正：以自身中心缩放，描边不变粗） */
+/* center button and pulse ring (fix: scale from center, stroke width remains unchanged) */
 .center-bg { fill: rgba(255,255,255,.88); stroke: rgba(0,0,0,.12); stroke-width: .6; filter: drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
 .pulse-ring {
   fill: none;
@@ -282,7 +282,7 @@ defineExpose({ reset, onSpin })
 .spin-btn:active:not(:disabled){ transform: scale(0.96); }
 .spin-btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-/* 指针（尖头朝下，轴心在小圆心处） */
+/* pointer (arrow down, pivot at small circle center) */
 .pointer {
   animation: bob 2.2s ease-in-out infinite;
   transform-origin: 0 -49px;

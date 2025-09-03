@@ -1,13 +1,13 @@
 :root{
-  --bg: #0f1220;                 /* 页面背景（深色柔和） */
-  --panel: #141a2b;              /* 面板底色 */
-  --text: #eaf0ff;               /* 主文字 */
-  --muted: #aeb7d4;              /* 次要文字 */
-  --brand: #003405;              /* 品牌主色 */
-  --brand-2: #1f9684;            /* 渐变辅助色 */
-  --accent: #ffd36b;             /* 强调色（用于门发光） */
+  --bg: #0f1220;                 /* page background */
+  --panel: #141a2b;              /* panel background */
+  --text: #eaf0ff;               /* main text */
+  --muted: #aeb7d4;              /* secondary text */
+  --brand: #003405;              /* brand color */
+  --brand-2: #1f9684;            /* gradient support color */
+  --accent: #ffd36b;             /* accent color (for glowing elements) */
 
-  --radius: 14px;                /* 统一圆角 */
+  --radius: 14px;                /* border radius */
   --shadow-1: 0 12px 30px rgba(0,0,0,.35);
   --shadow-2: 0 8px 20px rgba(0,0,0,.24);
 
@@ -27,7 +27,7 @@ body{
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-/* 实用类 */
+/* Utility classes */
 .card{
   background: color-mix(in oklab, var(--panel), #fff 4%);
   border: 1px solid color-mix(in oklab, var(--panel), #fff 6%);
@@ -43,7 +43,7 @@ body{
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
 .btn:active{ transform: translateY(1px) scale(.99); }
 
-/* 主按钮（渐变） */
+/* main button (gradient) */
 .btn-primary{
   color:#0b1020;
   background-image: linear-gradient(135deg, var(--brand), var(--brand-2));
@@ -51,7 +51,7 @@ body{
 }
 .btn-primary:hover{ box-shadow: 0 14px 34px rgba(108,180,255,.35); }
 
-/* 次级按钮（玻璃态） */
+/* secondary button (glass effect) */
 .btn-ghost{
   color: var(--text);
   background: color-mix(in oklab, var(--panel), #fff 6%);
@@ -60,10 +60,8 @@ body{
 }
 .btn-ghost:hover{ background: color-mix(in oklab, var(--panel), #fff 12%); }
 
-/* 细分割线 */
+/* Divider */
 .hr{ height:1px; background: color-mix(in oklab, var(--panel), #fff 10%); border:0; }
-
-/* 只在首页使用的背景：不加任何底色，不变暗 */
 
 /* Home page specific styles */
 body.home-bg { 

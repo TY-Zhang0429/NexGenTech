@@ -1,11 +1,11 @@
 <template>
   <div ref="wrapRef" class="wheel-wrap">
-    <!-- 旋转容器：图片 + 扇区热点层 一起旋转 -->
+    <!-- spin the picture -->
     <div class="wheel" :class="{ spun: hasSpun }" :style="wheelStyle">
-      <!-- 背景转盘图 -->
+      <!-- background image -->
       <img class="wheel-img" src="@/assets/wheel.png" alt="wheel" />
 
-      <!-- 扇区热点层：hover 高亮 + 点击跳转（跟随旋转） -->
+      <!-- sector hot area: hover highlight + click jump (follow rotation) -->
       <button
         v-for="(_, i) in sectorCount"
         :key="i"
@@ -26,7 +26,7 @@
         </span>
       </button>
 
-      <!-- 中心“SPIN NOW”按钮（只负责随机旋转，不拦截扇区） -->
+      <!-- center "SPIN NOW" button (only responsible for random rotation, does not intercept sectors) -->
       <button
         class="spin-center"
         type="button"
@@ -37,7 +37,7 @@
       </button>
     </div>
 
-    <!-- 指针（不参与旋转） -->
+    <!-- pointer (does not participate in rotation) -->
     <img class="needle" src="@/assets/needle.png" alt="needle" />
   </div>
 </template>
@@ -51,8 +51,8 @@ const props = defineProps({
   routes: { type: Array, default: () => [] },
   startAtTop: { type: Boolean, default: true },
   enableSpin: { type: Boolean, default: true },
-  innerRatio: { type: Number, default: 0.20 },   // 扇区内半径
-  outerRatio: { type: Number, default: 0.985 },  // 扇区外半径
+  innerRatio: { type: Number, default: 0.20 },   // inner radius of sector
+  outerRatio: { type: Number, default: 0.985 },  // outer radius of sector
   showLabels: { type: Boolean, default: true }
 })
 const emit = defineEmits(['spun', 'sector-click'])
@@ -73,7 +73,7 @@ const wheelStyle = computed(() => ({
   transition: spinning.value ? 'transform 2s cubic-bezier(.2,.75,.25,1)' : 'none'
 }))
 
-/** 随机旋转，结束后按停留角度计算扇区并跳转 */
+/** random spin */
 function onSpin() {
   if (!props.enableSpin || spinning.value) return
   spinning.value = true
@@ -85,19 +85,19 @@ function onSpin() {
 
   spinTimer = setTimeout(() => {
     spinning.value = false
-    const idx = angleToIndex(0) // 指针在上方
+    const idx = angleToIndex(0) // pointer is above
     gotoByIndex(idx, { from: 'spin' })
   }, 2000)
 }
 
-/** 角度 -> 扇区索引（注意扣掉当前旋转） */
+/** angle -> sector index (note: deduct current rotation) */
 function angleToIndex(angleDeg) {
   const effective = (angleDeg - (rotateDeg.value % 360) + 360) % 360
   const size = 360 / sectorCount.value
   return Math.floor(effective / size)
 }
 
-/** 跳转 */
+/** jump to sector */
 function gotoByIndex(index, meta = {}) {
   const title = props.titles?.[index]
   const route = props.routes?.[index]
@@ -106,10 +106,10 @@ function gotoByIndex(index, meta = {}) {
   if (route) router.push(route)
 }
 
-/* ===== 扇区形状与标签定位 ===== */
+/* ===== sector shape and label positioning ===== */
 
 function toPolarPoint(angleDeg, radiusRatio) {
-  // 0°在右侧；若从正上方开始，整体旋转 -90°
+  // 0°is at 3 o'clock, so adjust if startAtTop
   let a = angleDeg
   if (props.startAtTop) a = (a - 90 + 360) % 360
   const rad = (a * Math.PI) / 180
@@ -162,7 +162,7 @@ defineExpose({ reset, onSpin })
   isolation: isolate;
 }
 
-/* 旋转容器（图片 + 热点层一起转） */
+/* spin the container (image + hot area) */
 .wheel {
   position: absolute;
   inset: 0;
@@ -170,7 +170,7 @@ defineExpose({ reset, onSpin })
   overflow: hidden;
   transform: scale(1);
   transition: transform 0.3s ease;
-  z-index: 2; /* 确保在 ::after 上面 */
+  z-index: 2; /* ensure above ::after */
 }
 
 .wheel-img {
@@ -182,7 +182,7 @@ defineExpose({ reset, onSpin })
   border-radius: 50%;
 }
 
-/* —— 扇区热点 —— */
+/* —— sector hot area —— */
 .sector {
   position: absolute;
   inset: 0;
@@ -191,7 +191,7 @@ defineExpose({ reset, onSpin })
   padding: 0;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 3;          /* 高于图片，低于指针 */
+  z-index: 3;          /* higher than image, lower than pointer */
   outline: none;
 }
 
@@ -227,7 +227,7 @@ defineExpose({ reset, onSpin })
   z-index: 4;
 }
 
-/* 中心 SPIN 按钮 */
+/* center "SPIN NOW" button */
 .spin-center {
   position: absolute;
   left: 50%; top: 50%;
@@ -261,7 +261,7 @@ defineExpose({ reset, onSpin })
 }
 .spin-center:disabled { opacity: .6; cursor: not-allowed; }
 
-/* 指针（不吃事件） */
+/* pointer (does not participate in rotation) */
 .needle {
   position: absolute;
   inset: 0;
@@ -273,14 +273,14 @@ defineExpose({ reset, onSpin })
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.4));
 }
 
-/* 外圈柔光：禁止吃事件 */
+/* outer glow: does not intercept events */
 .wheel-wrap::after {
   content:"";
   position:absolute;
   inset:-6%;
   background: radial-gradient(60% 60% at 50% 40%, rgba(124,240,255,.15), transparent 60%);
   opacity:0; transition: opacity .25s ease; z-index:1;
-  pointer-events: none; /* 关键：不拦截点击 */
+  pointer-events: none; /* key: does not intercept clicks */
 }
 .wheel-wrap:hover::after { opacity:1; }
 </style>

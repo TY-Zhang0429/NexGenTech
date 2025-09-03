@@ -27,25 +27,25 @@ const spriteUrl = '/assets/walk-sprites.png'
 const frameW = ref(96)
 const frameH = ref(96)
 
-// DOM引用
+// DOM references
 const sceneRef = ref(null)
 const avatarRef = ref(null)
 const doorRef = ref(null)
 
-// 状态管理
+// State management
 const state = reactive({
   tx: 0,
   ty: 0,
   running: false,
   doorGlow: false,
-  isDoorClosed: true  // 默认关闭状态
+  isDoorClosed: true  // default closed state
 })
 
-// 门的图片资源
-const doorOpenImage = '/assets/door.png'      // 修改对应关系
-const doorClosedImage = '/assets/doorclose.png'
+// door images
+const doorOpenImage = '/assets/door.png'      // door open image
+const doorClosedImage = '/assets/doorclose.png' // door closed image
 
-// 计算属性
+// computed properties
 const avatarStyle = computed(() => ({
   transform: `translateX(${state.tx}px)`,
   transition: state.running ? 'transform 2s ease-out' : 'none'
@@ -57,18 +57,18 @@ const currentDoorImage = computed(() => {
   return state.isDoorClosed ? doorClosedImage : doorOpenImage
 })
 
-// 方法
+// Methods
 function reset() {
   state.doorGlow = false
   state.running = false
-  state.isDoorClosed = true  // reset时关闭门
-  
-  // 直接重置位置，无过渡动画
+  state.isDoorClosed = true  // close the door on reset
+
+  // directly reset position without transition
   avatarRef.value.style.transition = 'none'
   state.tx = 0
   state.ty = 0
-  
-  // 强制重绘
+
+  // force reflow
   avatarRef.value.offsetHeight
   avatarRef.value.style.transition = ''
 }
@@ -89,18 +89,18 @@ function calcDelta() {
 }
 
 function runToDoor() {
-  // 先重置到起点，无动画
+  // reset avatar position
   avatarRef.value.style.transition = 'none'
   state.tx = 0
   state.ty = 0
   state.doorGlow = false
   state.running = false
-  state.isDoorClosed = false  // spin时立即打开门
-  
-  // 强制重绘
+  state.isDoorClosed = false  // when spinning open the door
+
+  // force reflow
   avatarRef.value.offsetHeight
 
-  // 然后开始新的动画
+  // then start new animation
   requestAnimationFrame(() => {
     avatarRef.value.style.transition = ''
     const { tx, ty } = calcDelta()
@@ -121,7 +121,7 @@ function handleResize() {
   reset()
 }
 
-// 生命周期
+// Lifecycle hooks
 onMounted(() => {
   const img = new Image()
   img.src = spriteUrl
@@ -151,7 +151,7 @@ defineExpose({ runToDoor, reset })
   background: transparent;
   overflow: visible !important;
   isolation: isolate;
-  /* 添加内边距来为光晕效果留出空间 */
+  /* add padding to create space for the glow effect */
   padding: 40px;
   margin: -40px;
 }
@@ -170,25 +170,25 @@ defineExpose({ runToDoor, reset })
 .door::before {
   content: '';
   position: absolute;
-  inset: -80%;  /* 增加光晕范围 */
+  inset: -80%;  /* add padding to create space for the glow effect */
   background: radial-gradient(
     circle at center, 
     rgba(255,210,90,0) 20%, 
-    rgba(255,210,90,0.25) 50%,  /* 增加中间区域的亮度 */
+    rgba(255,210,90,0.25) 50%,  /* increase brightness of middle area */
     rgba(255,210,90,0) 70%
   );
   opacity: 0;
   transition: opacity .3s var(--ease);
   z-index: -1;
-  transform: scale(2);  /* 增加整体缩放 */
+  transform: scale(2);  /* increase overall scale */
   pointer-events: none;
 }
 
 .door.glow {
   filter: 
-    drop-shadow(0 0 25px rgba(255,210,90,0.9))  /* 增加内层光晕强度和范围 */
-    drop-shadow(0 0 50px rgba(255,210,90,0.5))  /* 增加中层光晕强度和范围 */
-    drop-shadow(0 0 75px rgba(255,210,90,0.3)); /* 增加外层光晕强度和范围 */
+    drop-shadow(0 0 25px rgba(255,210,90,0.9))  /* increase inner glow intensity and range */
+    drop-shadow(0 0 50px rgba(255,210,90,0.5))  /* increase middle glow intensity and range */
+    drop-shadow(0 0 75px rgba(255,210,90,0.3)); /* increase outer glow intensity and range */
   transform: translateY(-1px) scale(1.02);
 }
 
