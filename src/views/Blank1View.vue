@@ -12,10 +12,16 @@
         <button class="wd-btn" @click="startGame">New Game</button>
         <span class="wd-status" v-if="statusMsg">{{ statusMsg }}</span>
       </div>
+
       <div class="wd-right">
         <div class="wd-hint">
           <strong>Hint</strong>
-          <div class="wd-hint-content">—</div>
+          <button class="wd-btn ghost" @click="hintVisible = !hintVisible">
+            {{ hintVisible ? 'Hide' : 'Show' }}
+          </button>
+          <div class="wd-hint-content">
+            {{ hintVisible ? (currentHint || '—') : '—' }}
+          </div>
         </div>
       </div>
     </header>
@@ -24,12 +30,9 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- 游戏棋盘 -->
+    <!-- 棋盘 -->
     <main class="wd-board-wrap" v-else @click="focusHiddenInput">
-      <div
-        class="wd-board"
-        :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }"
-      >
+      <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
         <template v-for="r in maxAttempts" :key="r">
           <div
             v-for="c in targetLen"
@@ -71,31 +74,31 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 
-/** API 配置 */
-const API_BASE = ''; // 走 CloudFront 同域代理：保持空字符串
+const API_BASE = ''; // 同域 CloudFront 代理
 
-/** 状态 */
+// 状态
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);
+const wordsRaw = ref([]); // [{word, difficulty, hint}]
 const answer = ref('');
+const currentHint = ref('');
+const hintVisible = ref(false);
+
 const guesses = reactive([]);
 const cur = ref('');
 const status = reactive([]);
 const statusMsg = ref('');
-
 const hiddenInput = ref(null);
 
-/** 屏幕键盘布局 */
+// 屏幕键盘
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/** 生命周期 */
 onMounted(async () => {
   try {
     await fetchWords();
@@ -107,44 +110,52 @@ onMounted(async () => {
   }
 });
 
-/** 拉取词库 */
+// 拉取词库
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
   const data = await res.json();
+  // 保留有 hint 的项；没有 hint 也允许，但会显示 “—”
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/** 随机选谜底 */
-function pickAnswer() {
+// 随机选带 hint 的谜底
+function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
-    (w) => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
+    (w) =>
+      w?.difficulty === difficulty.value &&
+      typeof w?.word === 'string' &&
+      w.word.length === needLen
   );
   if (pool.length === 0) {
+    // 兜底
     const fb = wordsRaw.value.filter((w) => w?.difficulty === difficulty.value);
-    const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple' };
-    return (ch.word || 'apple').toLowerCase().slice(0, needLen).padEnd(needLen, 'a');
+    const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple', hint: '' };
+    return { word: (ch.word || 'apple').toLowerCase().slice(0, needLen).padEnd(needLen, 'a'), hint: ch.hint || '' };
   }
   const choice = pool[Math.floor(Math.random() * pool.length)];
-  return (choice.word || '').toLowerCase();
+  return { word: (choice.word || '').toLowerCase(), hint: choice.hint || '' };
 }
 
-/** 新一局 */
 function resetBoard() {
   guesses.splice(0);
   status.splice(0);
   cur.value = '';
   statusMsg.value = '';
+  hintVisible.value = false; // 新局默认隐藏
 }
+
 function startGame() {
   if (!wordsRaw.value.length) return;
   resetBoard();
-  answer.value = pickAnswer();
+  const picked = pickAnswerObj();
+  answer.value = picked.word;
+  currentHint.value = picked.hint;
   nextTick(() => hiddenInput.value?.focus());
 }
 
-/** 键盘输入 */
+// 输入
 function onKeydown(e) {
   if (statusMsg.value) return;
   const key = e.key;
@@ -164,7 +175,7 @@ function press(k) {
   }
 }
 
-/** 提交猜测 */
+// 提交
 function submitGuess() {
   if (cur.value.length !== targetLen.value) return;
   const guess = cur.value;
@@ -172,11 +183,18 @@ function submitGuess() {
   guesses.push(guess);
   status.push(res);
   cur.value = '';
-  if (guess === answer.value) statusMsg.value = '🎉 You Win!';
-  else if (guesses.length >= maxAttempts) statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
+
+  if (guess === answer.value) {
+    statusMsg.value = '🎉 You Win!';
+  } else if (guesses.length >= maxAttempts) {
+    statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
+  } else {
+    // 例如：猜了 2 次自动显示 hint（可改条件）
+    if (guesses.length === 2 && currentHint.value) hintVisible.value = true;
+  }
 }
 
-/** Wordle 判分 */
+// 判分
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
@@ -190,7 +208,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-/** 渲染格子 */
+// 渲染
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -213,12 +231,13 @@ function focusHiddenInput() { hiddenInput.value?.focus(); }
 .wd-label { opacity: .85; margin-right: 4px; }
 .wd-select { background: #1e1f26; color: #e6e6eb; border: 1px solid #343644; padding: 6px 10px; border-radius: 8px; outline: none; }
 .wd-btn { background: #4f46e5; color: white; border: 0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.wd-btn.ghost { background: transparent; border: 1px dashed #4f46e5; color: #cfd3ff; padding: 4px 8px; }
 .wd-btn:hover { filter: brightness(1.07); }
 .wd-status { margin-left: 6px; opacity: .9; }
 
 /* Hint */
 .wd-right .wd-hint { display: flex; align-items: center; gap: 10px; background: #1b1c22; border: 1px dashed #343644; padding: 8px 12px; border-radius: 10px; }
-.wd-hint-content { opacity: .8; }
+.wd-hint-content { opacity: .9; }
 
 /* 提示 */
 .wd-notice { background: #1b1c22; border: 1px solid #343644; padding: 10px 12px; border-radius: 10px; margin: 8px 0 16px; }
