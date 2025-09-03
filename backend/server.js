@@ -89,14 +89,28 @@ app.get("/api/swaps/grouped-sql", async (req, res) => {
         ) AS JSON
       ) AS swaps
     FROM food_swaps_curated
-    GROUP BY from_code, from_name_short, from_img
-    ORDER BY from_name_short;
-
   `;
+  
   const params = [];
-  if (from_code) { sql += " AND from_code = ?"; params.push(String(from_code)); }
-  if (from)      { sql += " AND from_name_short LIKE ?"; params.push(`%${String(from)}%`); }
-  sql += " GROUP BY from_code, from_food, from_img ORDER BY from_food";
+  const conditions = [];
+  
+  if (from_code) { 
+    conditions.push("from_code = ?"); 
+    params.push(String(from_code)); 
+  }
+  if (from) { 
+    conditions.push("from_name_short LIKE ?"); 
+    params.push(`%${String(from)}%`); 
+  }
+  
+  if (conditions.length > 0) {
+    sql += " WHERE " + conditions.join(" AND ");
+  }
+  
+  sql += `
+    GROUP BY from_code, from_name_short, from_img
+    ORDER BY from_name_short
+  `;
 
   try {
     const [rows] = await pool.query(sql, params);
