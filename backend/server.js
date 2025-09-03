@@ -64,26 +64,48 @@ app.get("/api/words", async (_req, res) => {
   }
 });
 
-// Test endpoint with different path name
-app.get("/api/food/test", async (_req, res) => {
+app.get("/api/swaps-teen/grouped", async (_req, res) => {
   try {
-    res.json({ message: "Food endpoint is working!", timestamp: new Date().toISOString() });
+    const [rows] = await pool.query(`
+      SELECT
+        category,
+        from_name_short AS from_food,
+        CAST(
+          CONCAT(
+            '[',
+            GROUP_CONCAT(
+              JSON_OBJECT(
+                'to_food', to_name_short,
+                'reason_tag', reason_tag,
+                'rationale_short', rationale_short
+              )
+              ORDER BY to_name_short SEPARATOR ','
+            ),
+            ']'
+          ) AS JSON
+        ) AS swaps
+      FROM food_swaps_teen_fun
+      GROUP BY category, from_name_short
+      ORDER BY category, from_name_short
+    `);
+    res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Test database connection with different path
 app.get("/api/food/db-test", async (_req, res) => {
   try {
-    const [rows] = await pool.query("SELECT COUNT(*) as count FROM food_swaps_curated");
-    res.json({ 
-      message: "Database connection successful", 
-      count: rows[0].count,
+    const [[row]] = await pool.query("SELECT COUNT(*) AS count FROM food_swaps_teen_fun");
+    res.json({
+      message: "Database connection successful",
+      count: Number(row.count),
       timestamp: new Date().toISOString()
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("DB TEST ERROR:", e);
+    const [[meta]] = await pool.query("SELECT DATABASE() AS db");
+    res.status(500).json({ error: e.message, db: meta.db || null });
   }
 });
 
