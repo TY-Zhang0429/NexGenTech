@@ -244,7 +244,10 @@ function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
 /* ---------- 提交：逐格翻，50% 才变色 & 同步键盘 ---------- */
 function submitGuess() {
-  if (cur.value.length !== targetLen.value) return;
+  if (cur.value.length !== targetLen.value) {
+    triggerRowShake(guesses.length);
+    return;
+  }
 
   const guess = cur.value;
   const res = scoreGuess(guess, answer.value);
@@ -283,6 +286,9 @@ function afterReveal(guess) {
   } else if (guesses.length >= maxAttempts) {
     statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
   } else {
+    if (status[rowIndex].every(st => st === 'absent')){
+      triggerRowShake(rowIndex);
+    }
     if (guesses.length === 2 && currentHint.value) hintVisible.value = true;
   }
 }
@@ -311,6 +317,7 @@ function cellClass(r, c) {
   const base = [];
   if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
   if (r === revealingRowIndex.value) base.push('flipping'); // 正在翻
+  if (shakingRows.has(r)) base.push('shaking');             // 摇动效果
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
     base.push('active');
   }
@@ -367,6 +374,13 @@ function stopConfetti() {
   if (confettiTimer) cancelAnimationFrame(confettiTimer);
   confettiTimer = null;
   confettiRunning.value = false;
+}
+
+const shakingRows = reactive(new Set());
+
+function triggerRowShake(r) {
+  shakingRows.add(r);
+  setTimeout(() => shakingRows.delete(r), 600); // 动画时长
 }
 </script>
 
@@ -482,4 +496,14 @@ function stopConfetti() {
   .wd-right .wd-hint { max-width: 80vw; }
   .wd-key { padding: 8px 10px; }
 }
+/* 抖动动画 */
+.wd-cell.shaking {
+  animation: wd-shake 0.6s ease;
+}
+@keyframes wd-shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-6px); }
+  30%, 60%, 90% { transform: translateX(6px); }
+}
+
 </style>
