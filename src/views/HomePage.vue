@@ -101,7 +101,7 @@
 
     <!-- Q&A Section -->
     <section class="qa-section">
-      <h2>Food Lab</h2>
+      <h2>Frequently Asked Questions</h2>
       <div class="faq-container">
         <div class="faq-list">
           <div class="faq-item" v-for="(faq, index) in faqs" :key="index" :class="{ active: activeFaq === index }">
