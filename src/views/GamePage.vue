@@ -3,7 +3,7 @@
     <BreadcrumbNav />
     <!-- top random title -->
     <div class="title-banner" :class="{ visible: selectedTitle }">
-      <span>{{ selectedTitle || 'What adventure will you get?' }}</span>
+      <span style="font-family: 'Merriweather', serif;">{{ selectedTitle || 'What adventure will you get?' }}</span>
     </div>
 
     <section class="content">
