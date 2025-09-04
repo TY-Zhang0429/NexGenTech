@@ -92,8 +92,8 @@ const modalRef = ref(null)
 const API_BASE = '';
 
 const currentAlt = computed(() => {
-  if (!activeFood.value || !activeFood.value.to_food) return { to_food: '', rationale_short: '' }
-  return activeFood.value.to_food[currentAltIndex.value]
+  if (!activeFood.value || !activeFood.value.swaps) return { to_food: '', rationale_short: '' }
+  return activeFood.value.swaps[currentAltIndex.value]
 })
 
 async function fetchSwaps() {
@@ -143,14 +143,14 @@ function closeModal(){
 }
 
 function prevAlt(){
-  if (!activeFood.value || !activeFood.value.to_food) return
-  const total = activeFood.value.to_food.length
+  if (!activeFood.value || !activeFood.value.swaps) return
+  const total = activeFood.value.swaps.length
   currentAltIndex.value = (currentAltIndex.value - 1 + total) % total
 }
 
 function nextAlt(){
-  if (!activeFood.value || !activeFood.value.to_food) return
-  const total = activeFood.value.to_food.length
+  if (!activeFood.value || !activeFood.value.swaps) return
+  const total = activeFood.value.swaps.length
   currentAltIndex.value = (currentAltIndex.value + 1) % total
 }
 
