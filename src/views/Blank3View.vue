@@ -89,6 +89,7 @@ const activeFood = ref(null)
 const currentAltIndex = ref(0)
 const touchStartX = ref(0)
 const modalRef = ref(null)
+const API_BASE = '';
 
 const currentAlt = computed(() => {
   if (!activeFood.value || !activeFood.value.swaps) return { to_food: '', rationale_short: '' }
@@ -100,7 +101,7 @@ async function fetchSwaps() {
   error.value = null
   
   try {
-    const response = await fetch('https://nexgentech-api.onrender.com/api/swaps-teen/grouped')
+    const response = await fetch(`${API_BASE}/api/swaps-teen/grouped`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
