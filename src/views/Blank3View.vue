@@ -21,7 +21,7 @@
     <div v-else class="card-grid">
       <div
         v-for="(food, idx) in foods"
-        :key="food.from_code"
+        :key="food.from_code || idx"
         class="swap-card"
         @click="openModal(food)"
         @keyup.enter="openModal(food)"
@@ -92,8 +92,8 @@ const modalRef = ref(null)
 const API_BASE = '';
 
 const currentAlt = computed(() => {
-  if (!activeFood.value || !activeFood.value.swaps) return { to_food: '', rationale_short: '' }
-  return activeFood.value.swaps[currentAltIndex.value]
+  if (!activeFood.value || !activeFood.value.to_food) return { to_food: '', rationale_short: '' }
+  return activeFood.value.to_food[currentAltIndex.value]
 })
 
 async function fetchSwaps() {
@@ -101,7 +101,7 @@ async function fetchSwaps() {
   error.value = null
   
   try {
-    const response = await fetch(`${API_BASE}/api/swaps-teen/grouped`)
+    const response = await fetch('https://nexgentech-api.onrender.com/api/swaps-teen/grouped')
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
@@ -143,14 +143,14 @@ function closeModal(){
 }
 
 function prevAlt(){
-  if (!activeFood.value || !activeFood.value.swaps) return
-  const total = activeFood.value.swaps.length
+  if (!activeFood.value || !activeFood.value.to_food) return
+  const total = activeFood.value.to_food.length
   currentAltIndex.value = (currentAltIndex.value - 1 + total) % total
 }
 
 function nextAlt(){
-  if (!activeFood.value || !activeFood.value.swaps) return
-  const total = activeFood.value.swaps.length
+  if (!activeFood.value || !activeFood.value.to_food) return
+  const total = activeFood.value.to_food.length
   currentAltIndex.value = (currentAltIndex.value + 1) % total
 }
 
