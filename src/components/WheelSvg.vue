@@ -49,6 +49,7 @@
             :key="`label-${i}`"
             class="sector-label"
             text-anchor="middle"
+            style="font-family: 'Merriweather', serif;"
           >
             <textPath :href="`#label-arc-${i}`" startOffset="50%">
               {{ titles[i] || `Game ${i+1}` }}
@@ -62,7 +63,7 @@
           <circle r="16" class="pulse-ring" />
           <circle r="16" class="center-bg" />
           <foreignObject x="-16" y="-16" width="32" height="32">
-            <button class="spin-btn" :disabled="spinning || !enableSpin" @click="onSpin">
+            <button class="spin-btn" :disabled="spinning || !enableSpin" @click="onSpin" style="font-family: 'Merriweather', serif;">
               SPIN<br/>NOW
             </button>
           </foreignObject>

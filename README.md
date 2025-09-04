@@ -25,6 +25,9 @@ This project combines nutrition education with interactive entertainment, design
 ## 📂 Project Structure
 ```
 src/
+├── assets/
+│   └── XXX.PNGS
+│   ...                    # Website picture resources
 ├── App.vue                # Root component with global layout and video background
 ├── main.js                # Vue app entry point
 ├── router/
@@ -33,14 +36,16 @@ src/
 │   └── theme.css          # Global theme variables and utilities
 ├── components/
 │   ├── TopNav.vue         # Top navigation bar
+│   ├── BreadcrumbNav.vue  # Breadcrumb Navigation bar 
 │   ├── WheelSvg.vue       # Wheel of fortune (SVG)
 │   └── AvatarDoor.vue     # Avatar and door interaction
 └── views/
     ├── HomePage.vue       # Homepage (Hero + How It Works + Highlights + FAQ)
     ├── GamePage.vue       # Game hub with wheel and avatar door
-    ├── Blank1View.vue     # Wordle-style guessing game
-    ├── Blank2View.vue     # Placeholder (Features)
-    └── Blank3View.vue     # Placeholder (FAQ)
+    ├── WordleView.vue     # Wordle-style guessing game
+    ├── FoodSwapView.vue   # Food swap page
+    ├── Game2.vue          # Placeholder
+    └── Game3.vue          # Placeholder
 ```
 
 ---
