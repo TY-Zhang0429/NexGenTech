@@ -116,6 +116,7 @@ async function fetchSwaps() {
 }
 
 function handleImageError(event) {
+  console.error('Image failed to load:', event.target.src)
   // Replace broken image with a placeholder
   event.target.style.display = 'none'
   const placeholder = document.createElement('div')
@@ -123,7 +124,7 @@ function handleImageError(event) {
   placeholder.innerHTML = `
     <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
       <rect x="10" y="10" width="100" height="100" rx="16" fill="#E8D8C3"/>
-      <text x="60" y="70" text-anchor="middle" fill="#294B0A" style="font-size:12px">Image</text>
+      <text x="60" y="70" text-anchor="middle" fill="#294B0A" style="font-size:12px">Image Error</text>
     </svg>
   `
   event.target.parentNode.appendChild(placeholder)
