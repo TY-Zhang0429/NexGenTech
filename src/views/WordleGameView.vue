@@ -68,7 +68,6 @@
           :key="k"
           class="wd-key"
           :class="keyState[k.toLowerCase()]"
-          :disabled="keyState[k.toLowerCase()] === 'absent'"
           @click="press(k)"
         >{{ k }}</button>
       </div>
@@ -78,7 +77,6 @@
           :key="k"
           class="wd-key"
           :class="keyState[k.toLowerCase()]"
-          :disabled="keyState[k.toLowerCase()] === 'absent'"
           @click="press(k)"
         >{{ k }}</button>
       </div>
@@ -89,7 +87,6 @@
           :key="k"
           class="wd-key"
           :class="keyState[k.toLowerCase()]"
-          :disabled="keyState[k.toLowerCase()] === 'absent'"
           @click="press(k)"
         >{{ k }}</button>
         <button class="wd-key wd-wide" @click="press('Backspace')">Back</button>
@@ -218,11 +215,7 @@ function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
 
-  // block "absent" letters (physical keyboard)
-  if (/^[a-zA-Z]$/.test(key) && keyState[key.toLowerCase()] === 'absent') {
-    e.preventDefault?.();
-    return;
-  }
+  // Note: Removed blocking of "absent" letters - they should still be usable
 
   if (/^[a-zA-Z]$/.test(key)) {
     if (cur.value.length < targetLen.value) cur.value += key.toLowerCase();
@@ -238,7 +231,7 @@ function press(k) {
   if (k === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
   if (/^[A-Z]$/.test(k)) {
     const ch = k.toLowerCase();
-    if (keyState[ch] === 'absent') return; // block on-screen keyboard gray keys (safety)
+    // Note: Removed blocking of "absent" letters - they should still be usable
     if (cur.value.length < targetLen.value) cur.value += ch;
   }
 }
@@ -495,7 +488,6 @@ function triggerRowShake(r) {
 .wd-key.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-key.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
-.wd-key:disabled{ cursor:not-allowed; opacity:.9; filter:grayscale(.05); }
 
 @media (max-width: 560px) {
   .wordly { --cell: 46px; }
