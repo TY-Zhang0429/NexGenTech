@@ -129,12 +129,32 @@ function handleImageError(event) {
   event.target.parentNode.appendChild(placeholder)
 }
 
-function openModal(food){
-  activeFood.value = food
-  currentAltIndex.value = 0
-  isModalOpen.value = true
-  // focus for accessibility
-  requestAnimationFrame(() => modalRef.value?.focus?.())
+async function openModal(food){
+  try {
+    // Make API call to get swaps for this specific category
+    const response = await fetch(`https://nexgentech-api.onrender.com/api/swaps-pics-teen?category=${food.category}`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+    
+    // Update the food object with the specific swaps
+    activeFood.value = {
+      ...food,
+      swaps: data[0]?.swaps || []
+    }
+    currentAltIndex.value = 0
+    isModalOpen.value = true
+    // focus for accessibility
+    requestAnimationFrame(() => modalRef.value?.focus?.())
+  } catch (err) {
+    console.error('Failed to fetch swaps for category:', err)
+    // Fallback to using the swaps from the initial data
+    activeFood.value = food
+    currentAltIndex.value = 0
+    isModalOpen.value = true
+    requestAnimationFrame(() => modalRef.value?.focus?.())
+  }
 }
 
 function closeModal(){
