@@ -1,7 +1,10 @@
 <template>
   <section class="swaps-page" @keyup.esc="closeModal" tabindex="0">
+    <BreadcrumbNav />
     <header class="page-header">
-      <h1>Healthy Swaps</h1>
+      <h1 class="main-heading">Want to try something new?</h1>
+      <p class="intro-description">Welcome to the Food Lab – the place to explore engaging, interactive methods of nutrition and food learning. Find fun and easy ways to make healthy decisions here</p>
+      <h2 class="section-heading">Healthier Swaps</h2>
       <p class="subtitle">Tap a food and discover smarter swaps</p>
     </header>
 
@@ -66,7 +69,7 @@
           </transition>
         </div>
 
-        <p class="fun-fact">{{ currentAlt.rationale_short }}</p>
+        <p class="fun-fact">{{ currentAlt.to_food }} ({{ currentAlt.rationale_short }})</p>
 
         <div class="controls">
           <button class="nav-btn" @click="prevAlt" aria-label="Previous">‹ Scroll Left</button>
@@ -80,6 +83,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import BreadcrumbNav from '@/components/BreadcrumbNav.vue'
 
 const foods = ref([])
 const loading = ref(true)
@@ -204,7 +208,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
   max-width: 1000px;
   margin: 0 auto;
   padding: 16px;
-  font-family: 'Joti One', cursive;
+  font-family: 'Merriweather', serif;
+}
+
+.swaps-page h1, .swaps-page h2, .swaps-page h3, .swaps-page p, .swaps-page button {
+  font-family: 'Merriweather', serif;
+}
+
+.swaps-page .breadcrumb {
+  margin-bottom: 24px;
 }
 
 .page-header{
@@ -212,17 +224,57 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
   margin: 16px 0 8px;
 }
 
-.page-header h1{
-  color:#294B0A;
-  font-size: 1.8rem;
+.main-heading{
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  font-family: 'Joti One', cursive;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.7);
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px 30px;
+  border-radius: 15px;
+  display: inline-block;
+  backdrop-filter: blur(10px);
 }
 
-.subtitle{ color: rgba(41,75,10,0.7); }
+.intro-description{
+  font-size: 1.2rem;
+  color: #ffffff;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  font-family: 'Merriweather', serif;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-weight: 500;
+}
+
+.section-heading{
+  color: #ffffff;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-family: 'Joti One', cursive;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.subtitle{ 
+  color: #ffffff; 
+  font-family: 'Merriweather', serif;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  font-weight: 500;
+}
 
 .loading, .error{
   text-align: center;
   padding: 40px 20px;
   color: #294B0A;
+  font-family: 'Merriweather', serif;
+  font-weight: 500;
 }
 
 .loading-spinner{
@@ -249,6 +301,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
   cursor: pointer;
   margin-top: 10px;
   transition: background .2s ease;
+  font-family: 'Merriweather', serif;
+  font-weight: 600;
 }
 
 .retry-btn:hover{
@@ -292,31 +346,74 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 .swap-card:hover .overlay{ background: rgba(255,255,255,0.35); }
 
 .swap-btn{
-  display: inline-flex; align-items: center; gap: 8px;
-  background: #FFFFFF; color: #294B0A; border: 2px solid #A3B394; border-radius: 999px;
-  padding: 10px 14px; font-size: .95rem; font-weight: 600;
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px;
+  background: #FFFFFF; 
+  color: #294B0A; 
+  border: 2px solid #A3B394; 
+  border-radius: 999px;
+  padding: 10px 14px; 
+  font-size: .95rem; 
+  font-weight: 600;
+  font-family: 'Merriweather', serif;
   box-shadow: 0 4px 10px rgba(163,179,148,0.35);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 .swap-btn:hover{ transform: translateY(-1px) scale(1.02); box-shadow: 0 8px 18px rgba(163,179,148,0.45); }
 .swap-btn .icon{ font-size: 18px; }
 
-.card-title{ text-align: center; margin: 10px 0 2px; color:#294B0A; font-size: 1rem; }
+.card-title{ 
+  text-align: center; 
+  margin: 10px 0 2px; 
+  color:#294B0A; 
+  font-size: 1rem; 
+  font-family: 'Merriweather', serif;
+  font-weight: 600;
+}
 
 /* Modal */
 .modal{ position: fixed; inset:0; background: rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; padding:14px; z-index:1000; }
 .modal-content{ background:#FFFFFF; width:min(640px, 100%); border-radius:16px; border:2px solid #E8D8C3; padding:14px 14px 18px; position:relative; box-shadow:0 12px 30px rgba(0,0,0,0.25); outline:none; }
 .close{ position:absolute; top:8px; right:8px; border:none; background:#F8F8F6; border-radius:10px; padding:6px 10px; cursor:pointer; }
-.modal-title{ text-align:center; color:#294B0A; margin:8px 0 12px; }
+.modal-title{ 
+  text-align:center; 
+  color:#294B0A; 
+  margin:8px 0 12px; 
+  font-family: 'Merriweather', serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
 
 .alt-viewport{ background:#F8F8F6; border:1px solid #E8D8C3; border-radius:14px; padding:8px; display:flex; align-items:center; justify-content:center; min-height:200px; }
 .alt-card{ width:100%; display:flex; align-items:center; justify-content:center; }
 .alt-image{ width:100%; max-width:420px; height:220px; object-fit: contain; }
 
-.fun-fact{ margin:10px auto; text-align:center; color:#294B0A; background:#E8D8C3; padding:8px 10px; border-radius:10px; max-width:90%; }
+.fun-fact{ 
+  margin:10px auto; 
+  text-align:center; 
+  color:#294B0A; 
+  background:#E8D8C3; 
+  padding:8px 10px; 
+  border-radius:10px; 
+  max-width:90%; 
+  font-family: 'Merriweather', serif;
+  font-weight: 500;
+}
 
 .controls{ display:flex; justify-content:space-between; gap:8px; margin-top:8px; }
-.nav-btn{ flex:1; background:#A3B394; color:white; border:none; padding:12px; border-radius:12px; cursor:pointer; transition:filter .2s ease, transform .2s ease; }
+.nav-btn{ 
+  flex:1; 
+  background:#A3B394; 
+  color:white; 
+  border:none; 
+  padding:12px; 
+  border-radius:12px; 
+  cursor:pointer; 
+  transition:filter .2s ease, transform .2s ease; 
+  font-family: 'Merriweather', serif;
+  font-weight: 600;
+}
 .nav-btn:hover{ filter:brightness(1.05); transform: translateY(-1px); }
 
 /* Transitions */

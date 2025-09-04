@@ -8,8 +8,7 @@
     <nav class="nav__right">
       <RouterLink to="/" class="link">Home</RouterLink>
       <RouterLink to="/game" class="link">Discover Games</RouterLink>
-      <RouterLink to="/blank2" class="link">Features</RouterLink>
-      <RouterLink to="/blank3" class="link">FAQ</RouterLink>
+      <RouterLink to="/food-swap" class="link">Food Lab</RouterLink>
     </nav>
   </header>
 </template>

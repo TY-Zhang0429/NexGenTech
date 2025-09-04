@@ -1,5 +1,6 @@
 <template>
   <main class="home">
+    <BreadcrumbNav />
     <!-- top random title -->
     <div class="title-banner" :class="{ visible: selectedTitle }">
       <span>{{ selectedTitle || 'What adventure will you get?' }}</span>
@@ -51,12 +52,13 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import WheelSvg from '@/components/WheelSvg.vue'     // ← add：import SVG version wheel
 import AvatarDoor from '@/components/AvatarDoor.vue'
+import BreadcrumbNav from '@/components/BreadcrumbNav.vue'
 
 const router = useRouter()
 
 // fan area selection
-const sectorTitles = ['Wordle', 'Game2', 'Game3']
-const sectorRoutes = ['/blank1', '/blank2', '/blank3']
+const sectorTitles = ['Wordle', 'Food Swap']
+const sectorRoutes = ['/wordle-game', '/food-swap']
 
 
 const titles = sectorTitles
@@ -85,11 +87,10 @@ function onSectorClick(p) {
 
 function goBegin() {
   const map = {
-    'Game1': '/blank1',
-    'Game2': '/blank2',
-    'Game3': '/blank3',
+    'Wordle': '/wordle-game',
+    'Food Swap': '/food-swap',
   }
-  router.push(map[selectedTitle.value] || '/blank1')
+  router.push(map[selectedTitle.value] || '/wordle-game')
 }
 
 function doReset() {
@@ -108,6 +109,10 @@ function doReset() {
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+.home .breadcrumb {
+  margin-bottom: 20px;
 }
 
 .title-banner {

@@ -1,5 +1,6 @@
 <template>
   <section class="wordly">
+    <BreadcrumbNav />
     <!-- Top -->
     <header class="wd-toolbar">
       <div class="wd-left">
@@ -99,6 +100,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 
 const API_BASE = ''; // Same origin (via CloudFront proxy)
 
@@ -392,6 +394,10 @@ function triggerRowShake(r) {
   padding: 0 16px 48px;
   color: #e6e6eb;
   position: relative;
+}
+
+.wordly .breadcrumb {
+  margin-bottom: 20px;
 }
 
 /* toolbar */

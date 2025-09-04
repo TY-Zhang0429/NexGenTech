@@ -78,7 +78,7 @@
             </div>
           </div>
         </div>
-        <div class="highlight-card">
+        <div class="highlight-card" @click="navigateToFoodSwap">
           <div class="highlight-image-container">
             <img src="../assets/highlight2.png" alt="Healthier Swaps" class="highlight-image" />
             <div class="highlight-overlay">
@@ -101,7 +101,7 @@
 
     <!-- Q&A Section -->
     <section class="qa-section">
-      <h2>Frequently Asked Questions</h2>
+      <h2>Food Lab</h2>
       <div class="faq-container">
         <div class="faq-list">
           <div class="faq-item" v-for="(faq, index) in faqs" :key="index" :class="{ active: activeFaq === index }">
@@ -114,7 +114,7 @@
             </div>
           </div>
         </div>
-        <button class="btn btn-primary" @click="showMoreFaqs">See More Questions →</button>
+        <button class="btn btn-primary">See More Questions →</button>
       </div>
       <p class="tagline">Built for the next generation 💡 Healthy minds, healthy bodies.</p>
     </section>
@@ -147,12 +147,13 @@ const toggleFaq = (index) => {
   activeFaq.value = activeFaq.value === index ? null : index
 }
 
-const showMoreFaqs = () => {
-  router.push('/blank3')
-}
 
 const navigateToGames = () => {
   router.push('/game')
+}
+
+const navigateToFoodSwap = () => {
+  router.push('/food-swap')
 }
 </script>
 
