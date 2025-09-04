@@ -2,12 +2,21 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());             // TODO: lock to your frontend origin later
 app.use(express.json());
+
+// resolve __dirname for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// serve your images: http://host:port/food_icons/<Name>.png
+app.use("/food_icons", express.static(path.join(__dirname, "food_icons")));
 
 // ---------- DB POOL ----------
 const pool = mysql.createPool({
@@ -20,6 +29,8 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   // ssl: { /* add RDS CA here if you enable TLS */ }
 });
+
+const DB = process.env.DB_NAME; // reuse everywhere
 
 // Log the DB we actually connected to (sanity check)
 (async () => {
@@ -77,40 +88,23 @@ app.get("/api/words", async (_req, res) => {
   }
 });
 
-// ---------- TEEN SWAPS (uses epic2_swaps.food_swaps_teen_fun) ----------
-const DB = process.env.DB_NAME; // e.g. "epic2_swaps" (must match exactly)
-
-// flat rows (optional)
-app.get("/api/swaps-teen", async (_req, res) => {
+// ---------- TEEN SWAPS (uses <DB>.food_swaps_teen_fun) ----------
+// PICTURED teen swaps: grouped JSON; from_img/to_img == names
+app.get("/api/swaps-pics-teen", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT id,
-             category,
-             from_name_short AS from_food,
-             to_name_short   AS to_food,
-             reason_tag,
-             rationale_short
-      FROM \`${DB}\`.food_swaps_teen_fun
-      ORDER BY category, from_food, to_food
-    `);
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message, hint: "check DB_NAME + table name" });
-  }
-});
+    const { category, from } = req.query;
 
-// grouped JSON (portable: uses GROUP_CONCAT -> JSON)
-app.get("/api/swaps-teen/grouped", async (_req, res) => {
-  try {
-    const [rows] = await pool.query(`
+    let sql = `
       SELECT
         category,
         from_name_short AS from_food,
+        from_name_short AS from_img,
         CAST(
           CONCAT(
             '[',
             GROUP_CONCAT(
               JSON_OBJECT(
+                'to_img', to_name_short,
                 'to_food', to_name_short,
                 'reason_tag', reason_tag,
                 'rationale_short', rationale_short
@@ -121,74 +115,28 @@ app.get("/api/swaps-teen/grouped", async (_req, res) => {
           ) AS JSON
         ) AS swaps
       FROM \`${DB}\`.food_swaps_teen_fun
-      GROUP BY category, from_name_short
-      ORDER BY category, from_name_short
-    `);
+      WHERE 1=1
+    `;
+    const params = [];
+    if (category) { sql += " AND category = ?"; params.push(String(category)); }
+    if (from)     { sql += " AND from_name_short LIKE ?"; params.push(`%${String(from)}%`); }
+    sql += " GROUP BY category, from_name_short ORDER BY category, from_name_short";
+
+    const [rows] = await pool.query(sql, params);
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message, hint: "ensure table exists in DB_NAME" });
+    res.status(500).json({ error: e.message });
   }
 });
 
-// ---------- DIAGNOSTICS ----------
+// quick DB sanity (counts your teen table)
 app.get("/api/food/db-test", async (_req, res) => {
   try {
-    const [[row]] = await pool.query(
-      `SELECT COUNT(*) AS count FROM \`${DB}\`.food_swaps_teen_fun`
-    );
+    const [[row]] = await pool.query(`SELECT COUNT(*) AS count FROM \`${DB}\`.food_swaps_teen_fun`);
     res.json({ message: "OK", db: DB, count: Number(row.count) });
   } catch (e) {
     const [[meta]] = await pool.query("SELECT DATABASE() AS db");
     res.status(500).json({ error: e.message, connected_db: meta.db || null, env_db: DB });
-  }
-});
-
-// deeper diag: lists tables + checks specific tables
-app.get("/api/food/diag2", async (_req, res) => {
-  try {
-    const [[meta]] = await pool.query(`
-      SELECT DATABASE() AS db_name, CURRENT_USER() AS sql_user, @@version AS mysql_version,
-             @@hostname AS mysql_host, @@lower_case_table_names AS lower_case_table_names
-    `);
-    const [tables] = await pool.query(`
-      SELECT TABLE_NAME
-      FROM information_schema.tables
-      WHERE table_schema = DATABASE()
-      ORDER BY TABLE_NAME
-    `);
-
-    const check = async (tbl) => {
-      const out = { table: tbl, exists: false, count: null, error: null };
-      try {
-        const [erows] = await pool.query(
-          `SELECT COUNT(*) AS n
-             FROM information_schema.tables
-            WHERE table_schema = DATABASE() AND table_name = ?`,
-          [tbl]
-        );
-        out.exists = Number(erows[0].n) > 0;
-        if (out.exists) {
-          const [[c]] = await pool.query(`SELECT COUNT(*) AS n FROM \`${tbl}\``);
-          out.count = Number(c.n);
-        }
-      } catch (e) {
-        out.error = e.message;
-      }
-      return out;
-    };
-
-    const wordle = await check("wordle_seed");
-    const teen   = await check("food_swaps_teen_fun");
-
-    res.json({
-      ok: true,
-      meta,
-      env_db_name: DB || null,
-      tables_in_current_db: tables.map(t => t.TABLE_NAME),
-      checks: { wordle, teen }
-    });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
