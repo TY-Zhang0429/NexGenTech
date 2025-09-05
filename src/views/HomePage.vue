@@ -452,11 +452,12 @@ const navigateToFoodSwap = () => {
 
 .highlights-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 30px;
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 20px;
+  justify-items: center;
 }
 
 .highlights-title {
@@ -475,6 +476,8 @@ const navigateToFoodSwap = () => {
   cursor: pointer;
   font-family: 'Merriweather', serif;
   height: 450px;
+  width: 100%;
+  max-width: 400px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.4s var(--ease);
 }
@@ -546,6 +549,7 @@ const navigateToFoodSwap = () => {
   .highlights-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
+    max-width: 800px;
   }
   .highlight-card {
     height: 400px;
