@@ -87,15 +87,7 @@
             </div>
           </div>
         </div>
-        <div class="highlight-card">
-          <div class="highlight-image-container">
-            <img src="../assets/highlight.png" alt="Your Avatar" class="highlight-image" />
-            <div class="highlight-overlay">
-              <h3>Your Avatar</h3>
-              <p>Meet your avatar! It represents you during every activity, and it changes as you progress. Watch it evolve as you complete challenges and build healthier habits.</p>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </section>
 
