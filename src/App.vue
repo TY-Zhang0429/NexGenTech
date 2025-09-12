@@ -1,6 +1,5 @@
 <template>
   <div class="app">
-    <!-- 🔐 未验证：显示登录层 -->
     <div v-if="!authenticated" class="auth-overlay">
       <div class="auth-card">
         <h2 class="auth-title">Enter Password</h2>
@@ -20,7 +19,6 @@
       </div>
     </div>
 
-    <!-- ✅ 已验证：渲染你原来的内容 -->
     <template v-else>
       <div class="video-background" v-if="$route.path === '/game'">
         <video autoplay muted loop playsinline>
@@ -37,8 +35,8 @@
 import { ref, onMounted } from 'vue'
 import TopNav from '@/components/TopNav.vue'
 
-// ⚠️ 仅演示用：前端明文不安全
-const HARDCODED_PASSWORD = 'nexgen123' // ←改成你的密码
+// only for demo purpose
+const HARDCODED_PASSWORD = 'nexgen123' // password
 
 const inputPassword = ref('')
 const authenticated = ref(false)
@@ -65,20 +63,23 @@ onMounted(() => {
 </script>
 
 <style>
-:root{
-  --border:#1e1e1e33;
+:root {
+  --border: #1e1e1e33;
 }
-*{ box-sizing:border-box }
-html,body,#app,.app{ 
-  height:100%;
+
+* { box-sizing: border-box; }
+
+html, body, #app, .app { 
+  height: 100%;
   position: relative;
 }
-body{ 
-  margin:0; 
+
+body { 
+  margin: 0; 
   font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
 }
 
-/* ====== 你原本的视频背景样式保持不变 ====== */
+/* ====== video background ====== */
 .video-background {
   position: fixed;
   top: 0;
@@ -101,7 +102,7 @@ body{
   backdrop-filter: blur(1px);
 }
 
-/* ====== 新增：登录覆盖层样式 ====== */
+/* ====== login overlay ====== */
 .auth-overlay {
   position: fixed; inset: 0;
   display: grid; place-items: center;
@@ -115,10 +116,12 @@ body{
   padding: 20px 24px;
   box-shadow: 0 12px 30px rgba(0,0,0,0.2);
   text-align: center;
+  color: #111; /* default as black text */
 }
 .auth-title {
   margin: 6px 0 8px;
   font-size: 18px;
+  color: #111;
 }
 .auth-input {
   width: 100%;
@@ -127,6 +130,10 @@ body{
   border-radius: 10px;
   outline: none;
   margin: 10px 0 8px;
+  color: #111;
+}
+.auth-input::placeholder {
+  color: #666;
 }
 .remember {
   display: inline-flex;
@@ -148,4 +155,27 @@ body{
 }
 .auth-btn:hover { opacity: 0.95; }
 .auth-error { color: #d32f2f; font-size: 13px; margin-top: 8px; }
+
+/* ====== dark mode support ====== */
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background: #1e1e1e;
+    color: #eee;
+  }
+  .auth-title {
+    color: #fff;
+  }
+  .auth-input {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #eee;
+  }
+  .auth-input::placeholder {
+    color: #aaa;
+  }
+  .remember {
+    color: #aaa;
+  }
+}
+
 </style>
