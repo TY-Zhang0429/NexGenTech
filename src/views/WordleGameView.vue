@@ -97,6 +97,44 @@
           <li><strong>Win</strong>: Celebrate with confetti 🎉</li>
         </ul>
       </aside>
+
+      <!-- ===== Mobile-only accordion panels (≤980px 显示) ===== -->
+      <div class="wd-mobile-panels">
+        <details class="wd-coll">
+          <summary>How to Play</summary>
+          <ol class="wd-steps">
+            <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+            <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+            <li>The tile colors show how close your guess was:</li>
+          </ol>
+          <div class="wd-legend">
+            <div class="legend-row">
+              <span class="wd-cell tiny correct">A</span>
+              <span>Right letter, right spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny present">A</span>
+              <span>Right letter, wrong spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny absent">A</span>
+              <span>Letter not in the word</span>
+            </div>
+          </div>
+          <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
+        </details>
+
+        <details class="wd-coll" style="margin-top:10px">
+          <summary>Rules & Tips</summary>
+          <ul class="wd-bullets">
+            <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+            <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+            <li><strong>Duplicates</strong>: Letters can repeat.</li>
+            <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+          </ul>
+        </details>
+      </div>
+      <!-- ===== end mobile panels ===== -->
     </main>
 
     <!-- Full-screen confetti -->
@@ -325,7 +363,7 @@ function afterReveal(guess) {
     if (status[rowIndex]?.every(st => st === 'absent')) {
       triggerRowShake(rowIndex);
     }
-    // ❌ 不做任何自动展示提示
+    // 不做任何自动展示提示（完全手动）
   }
 }
 
@@ -505,7 +543,7 @@ function triggerRowShake(r) {
 }
 
 /* board */
-.wd-board-wrap { display:flex; justify-content:center; position:relative; } /* 保留老类，避免外部依赖报错 */
+.wd-board-wrap { display:flex; justify-content:center; position:relative; } /* 兼容老类名 */
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
 
 .wd-cell {
@@ -584,12 +622,43 @@ function triggerRowShake(r) {
   30%, 60%, 90% { transform: translateX(6px); }
 }
 
-/* responsive: 窄屏下隐藏侧边说明，专注棋盘 */
+/* ====== Mobile panels visibility ====== */
+.wd-mobile-panels { display: none; }
+
+/* ≤980px：隐藏侧栏，显示折叠面板 */
 @media (max-width: 980px) {
   .wd-playzone { grid-template-columns: 1fr; }
-  .wd-aside { display:none; }
+  .wd-aside { display: none; }               /* 隐藏左右侧栏 */
+  .wd-mobile-panels { 
+    display: block; 
+    margin-top: 12px; 
+  }
   .wordly { --cell: 46px; }
   .wd-right .wd-hint { max-width: 80vw; }
   .wd-key { padding: 8px 10px; }
 }
+
+/* 折叠面板样式（与侧栏风格一致） */
+.wd-coll {
+  background:#10121a;
+  border:1px solid #343644;
+  padding: 8px 12px;
+  border-radius:12px;
+  color:#cfd2dd;
+}
+.wd-coll > summary {
+  cursor: pointer;
+  font-weight: 800;
+  color:#e8e9f3;
+  list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.wd-coll > summary::-webkit-details-marker { display: none; }
+.wd-coll > summary::before{
+  content: '▸';
+  display:inline-block; transform: translateY(1px);
+  opacity: .9;
+}
+.wd-coll[open] > summary::before{ content: '▾'; }
+.wd-coll > *:not(summary){ margin-top:8px; }
 </style>
