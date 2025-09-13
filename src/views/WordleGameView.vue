@@ -30,7 +30,7 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- Play zone: 左侧玩法说明 | 中间棋盘 | 右侧规则/小贴士 -->
+    <!-- Play zone: left instruction | center board | right rules/tips -->
     <main class="wd-playzone" v-else @click="maybeFocusMobile">
       <!-- Left: How to Play -->
       <aside class="wd-aside left">
@@ -93,12 +93,10 @@
           <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
           <li><strong>Duplicates</strong>: Letters can repeat.</li>
           <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
-          <li><strong>Feedback</strong>: Rows may shake when the guess is way off.</li>
-          <li><strong>Win</strong>: Celebrate with confetti 🎉</li>
         </ul>
       </aside>
 
-      <!-- ===== Mobile-only accordion panels (≤980px 显示) ===== -->
+      <!-- ===== Mobile-only accordion panels (≤980px screen) ===== -->
       <div class="wd-mobile-panels">
         <details class="wd-coll">
           <summary>How to Play</summary>
@@ -352,7 +350,7 @@ function submitGuess() {
 }
 
 function afterReveal(guess) {
-  const rowIndex = guesses.length - 1; // 当前行索引
+  const rowIndex = guesses.length - 1; // current row
 
   if (guess === answer.value) {
     statusMsg.value = '🎉 You Win!';
@@ -363,7 +361,6 @@ function afterReveal(guess) {
     if (status[rowIndex]?.every(st => st === 'absent')) {
       triggerRowShake(rowIndex);
     }
-    // 不做任何自动展示提示（完全手动）
   }
 }
 
@@ -460,7 +457,7 @@ function triggerRowShake(r) {
 <style scoped>
 .wordly {
   --cell: 52px;
-  max-width: 1100px; /* 放大容器以容纳左右两侧说明 */
+  max-width: 1100px; /* enlarge container to fit side instructions */
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -499,7 +496,7 @@ function triggerRowShake(r) {
 /* ================= Playzone layout ================= */
 .wd-playzone{
   display:grid;
-  grid-template-columns: 1fr auto 1fr; /* 左 | 棋盘 | 右 */
+  grid-template-columns: 1fr auto 1fr; /* left | board | right */
   gap: 20px;
   align-items: start;
 }
@@ -515,7 +512,7 @@ function triggerRowShake(r) {
   color:#cfd2dd;
   max-width: 300px;
   position: sticky;
-  top: 84px;             /* 大致与工具条底对齐，按需微调 */
+  top: 84px;             /* roughly align with the bottom of the toolbar, adjust as needed */
   height: fit-content;
 }
 .wd-aside-title{
@@ -543,7 +540,7 @@ function triggerRowShake(r) {
 }
 
 /* board */
-.wd-board-wrap { display:flex; justify-content:center; position:relative; } /* 兼容老类名 */
+.wd-board-wrap { display:flex; justify-content:center; position:relative; }
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
 
 .wd-cell {
@@ -625,10 +622,10 @@ function triggerRowShake(r) {
 /* ====== Mobile panels visibility ====== */
 .wd-mobile-panels { display: none; }
 
-/* ≤980px：隐藏侧栏，显示折叠面板 */
+/* ≤980px：hide side panels */
 @media (max-width: 980px) {
   .wd-playzone { grid-template-columns: 1fr; }
-  .wd-aside { display: none; }               /* 隐藏左右侧栏 */
+  .wd-aside { display: none; }               /* hide left and right side panels */
   .wd-mobile-panels { 
     display: block; 
     margin-top: 12px; 
@@ -638,7 +635,7 @@ function triggerRowShake(r) {
   .wd-key { padding: 8px 10px; }
 }
 
-/* 折叠面板样式（与侧栏风格一致） */
+/* foldable panels */
 .wd-coll {
   background:#10121a;
   border:1px solid #343644;
