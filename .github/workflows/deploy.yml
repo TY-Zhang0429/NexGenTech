@@ -39,12 +39,28 @@ jobs:
           npm run build
           cp dist/index.html dist/404.html || true
 
+      # ===== Debug OIDC: print GitHub sent AWS OIDC claims (for troubleshooting) =====
+      # After running, check sub/ref/repository/aud in the logs, and match them verbatim with the IAM role trust policy
+      - name: Dump GitHub OIDC token claims
+        shell: bash
+        run: |
+          set -e
+          TOKEN_JSON=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+          TOKEN=$(echo "$TOKEN_JSON" | jq -r '.value')
+          echo "Raw id_token obtained."
+          echo "---- OIDC Claims ----"
+          PAYLOAD=$(echo "$TOKEN" | awk -F. '{print $2}' | base64 -d 2>/dev/null || true)
+          echo "$PAYLOAD" | jq .
+          echo "---------------------"
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::277541735425:role/GitHubOIDCDeployRole
 
+      # ===== Upload latest to root =====
       - name: Upload static assets (cache long) - root
         run: |
           aws s3 sync dist "s3://${S3_BUCKET}" \
@@ -69,7 +85,7 @@ jobs:
             --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
             --paths "/*"
 
-      # ===== archive only run when release =====
+      # ===== Archive build & upload (only on release) =====
       - name: Build archive with base
         if: github.event_name == 'release'
         env:
