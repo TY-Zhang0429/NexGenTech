@@ -11,12 +11,13 @@ const routes = [
   { path: '/food-swap', name: 'food-swap', component: FoodSwapView },
 ]
 
-// checker if it's archive mode
+// Use hash history for archived versions to avoid 404 on refresh
 const isArchive = import.meta.env.VITE_ARCHIVE === '1'
+const base = import.meta.env.BASE_URL || '/'
 
 const history = isArchive
-  ? createWebHashHistory()                // archive uses hash mode to avoid 404
-  : createWebHistory(import.meta.env.BASE_URL) // main site uses history mode
+  ? createWebHashHistory(base)          // use hash history for archived versions to avoid 404 on refresh
+  : createWebHistory(base)
 
 export default createRouter({
   history,
