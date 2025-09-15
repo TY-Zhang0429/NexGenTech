@@ -17,54 +17,6 @@
       <div class="hero-bg-animation"></div>
     </section>
 
-    <!-- How It Works Section -->
-    <section class="how-it-works">
-      <h2>How It Works</h2>
-      <div class="steps-container">
-        <div class="step-card" data-step="1">
-          <div class="step-number">1</div>
-          <div class="step-image-container">
-            <img src="../assets/howwork1.png" alt="Create Avatar" class="step-image" />
-            <div class="step-content">
-              <h3>Create or choose your avatar</h3>
-              <p class="step-description">Start your journey by creating your unique avatar companion</p>
-            </div>
-          </div>
-          <div class="card-glow"></div>
-        </div>
-        <div class="step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-head"></div>
-        </div>
-        <div class="step-card" data-step="2">
-          <div class="step-number">2</div>
-          <div class="step-image-container">
-            <img src="../assets/howwork2.png" alt="Play Challenges" class="step-image" />
-            <div class="step-content">
-              <h3>Play challenges & make swaps</h3>
-              <p class="step-description">Complete fun challenges and learn about healthy food choices</p>
-            </div>
-          </div>
-          <div class="card-glow"></div>
-        </div>
-        <div class="step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-head"></div>
-        </div>
-        <div class="step-card" data-step="3">
-          <div class="step-number">3</div>
-          <div class="step-image-container">
-            <img src="../assets/howwork3.png" alt="Avatar Evolution" class="step-image" />
-            <div class="step-content">
-              <h3>Watch your avatar evolve</h3>
-              <p class="step-description">See your avatar grow stronger as you make healthier choices</p>
-            </div>
-          </div>
-          <div class="card-glow"></div>
-        </div>
-      </div>
-    </section>
-
     <!-- Highlights Section -->
     <section class="highlights">
       <h2 class="highlights-title">Highlights</h2>
@@ -91,54 +43,14 @@
       </div>
     </section>
 
-    <!-- Q&A Section -->
-    <section class="qa-section">
-      <h2>Frequently Asked Questions</h2>
-      <div class="faq-container">
-        <div class="faq-list">
-          <div class="faq-item" v-for="(faq, index) in faqs" :key="index" :class="{ active: activeFaq === index }">
-            <div class="faq-question" @click="toggleFaq(index)">
-              <h3>{{ faq.question }}</h3>
-              <span class="arrow">›</span>
-            </div>
-            <div class="faq-answer" v-show="activeFaq === index">
-              <p>{{ faq.answer }}</p>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-primary">See More Questions →</button>
-      </div>
-      <p class="tagline">Built for the next generation 💡 Healthy minds, healthy bodies.</p>
-    </section>
+    <p class="tagline">Built for the next generation 💡 Healthy minds, healthy bodies.</p>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const activeFaq = ref(null)
-
-const faqs = ref([
-  {
-    question: 'How do the games work?',
-    answer: 'Our games are designed to be fun and educational. From spinning the wheel to playing food-themed word games, each activity helps you learn about nutrition in an engaging way.'
-  },
-  {
-    question: 'What are food swaps?',
-    answer: 'Food swaps are healthier alternatives to common snacks and meals. We suggest tasty options that maintain the enjoyment while improving nutritional value.'
-  },
-  {
-    question: 'How does my avatar evolve?',
-    answer: 'Your avatar grows and changes as you complete challenges and learn new things about nutrition. The more you engage, the more your avatar transforms!'
-  }
-])
-
-const toggleFaq = (index) => {
-  activeFaq.value = activeFaq.value === index ? null : index
-}
-
 
 const navigateToGames = () => {
   router.push('/game')
