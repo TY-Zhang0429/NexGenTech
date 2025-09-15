@@ -2,11 +2,12 @@ name: Deploy to AWS S3 (+ CloudFront)
 
 on:
   push:
-    branches: [ main ]         # change this to different branch
-  workflow_dispatch: {}
+    branches: [ main ]               # Normal release: update main site
+  release:
+    types: [ published ]             # Automatically generate archive on release
 
 permissions:
-  id-token: write              # must: allow Actions to use OIDC
+  id-token: write
   contents: read
 
 concurrency:
@@ -17,23 +18,41 @@ env:
   AWS_REGION: us-east-1
   S3_BUCKET: nexgen-test
   CLOUDFRONT_DISTRIBUTION_ID: E2F8N1U924RXMT
+  NODE_VERSION: 20
+  DOMAIN: https://www.nexgentech.me
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Install & Build (Vite)
+      # ===== Main site build =====
+      - name: Install & Build (latest)
         run: |
           npm ci
           npm run build
+          cp dist/index.html dist/404.html || true
+
+      # ===== Debug OIDC: print GitHub sent AWS OIDC claims (for troubleshooting) =====
+      # After running, check sub/ref/repository/aud in the logs, and match them verbatim with the IAM role trust policy
+      - name: Dump GitHub OIDC token claims
+        shell: bash
+        run: |
+          set -e
+          TOKEN_JSON=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+          TOKEN=$(echo "$TOKEN_JSON" | jq -r '.value')
+          echo "Raw id_token obtained."
+          echo "---- OIDC Claims ----"
+          PAYLOAD=$(echo "$TOKEN" | awk -F. '{print $2}' | base64 -d 2>/dev/null || true)
+          echo "$PAYLOAD" | jq .
+          echo "---------------------"
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -41,18 +60,15 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::277541735425:role/GitHubOIDCDeployRole
 
-      # print current identity for troubleshooting
-      - name: Who am I
-        run: aws sts get-caller-identity
-
-      - name: Upload static assets (cache long)
+      # ===== Upload latest to root =====
+      - name: Upload static assets (cache long) - root
         run: |
           aws s3 sync dist "s3://${S3_BUCKET}" \
             --exclude "*.html" \
             --cache-control "public,max-age=31536000,immutable" \
             --delete
 
-      - name: Upload HTML (no-cache)
+      - name: Upload HTML (no-cache) - root
         shell: bash
         run: |
           shopt -s globstar
@@ -63,8 +79,43 @@ jobs:
               --content-type "text/html"
           done
 
-      - name: Invalidate CloudFront
+      - name: Invalidate CloudFront (root)
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
             --paths "/*"
+
+      # ===== Archive build & upload (only on release) =====
+      - name: Build archive with base
+        if: github.event_name == 'release'
+        env:
+          ARCHIVE_PREFIX: archives/${{ github.event.release.tag_name }}
+        run: |
+          rm -rf dist
+          VITE_ARCHIVE=1 VITE_BASE="/${ARCHIVE_PREFIX}/" npm run build -- --base="/${ARCHIVE_PREFIX}/"
+          cp dist/index.html dist/404.html || true
+
+      - name: Upload static assets (cache long) - archive
+        if: github.event_name == 'release'
+        env:
+          ARCHIVE_PREFIX: archives/${{ github.event.release.tag_name }}
+        run: |
+          aws s3 sync dist "s3://${S3_BUCKET}/${ARCHIVE_PREFIX}/" \
+            --exclude "*.html" \
+            --cache-control "public,max-age=31536000,immutable"
+
+      - name: Upload HTML (no-cache) - archive
+        if: github.event_name == 'release'
+        env:
+          ARCHIVE_PREFIX: archives/${{ github.event.release.tag_name }}
+          DOMAIN: ${{ env.DOMAIN }}
+        shell: bash
+        run: |
+          shopt -s globstar
+          for f in dist/**/*.html; do
+            key="${f#dist/}"
+            aws s3 cp "$f" "s3://${S3_BUCKET}/${ARCHIVE_PREFIX}/${key}" \
+              --cache-control "no-cache,no-store,must-revalidate" \
+              --content-type "text/html"
+          done
+          echo "Archived at: ${DOMAIN}/${ARCHIVE_PREFIX}/"

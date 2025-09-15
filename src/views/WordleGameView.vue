@@ -1,6 +1,7 @@
 <template>
   <section class="wordly">
     <BreadcrumbNav />
+
     <!-- Top -->
     <header class="wd-toolbar">
       <div class="wd-left">
@@ -29,32 +30,109 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- Board -->
-    <main class="wd-board-wrap" v-else @click="maybeFocusMobile">
-      <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
-        <template v-for="r in maxAttempts" :key="r">
-          <div
-            v-for="c in targetLen"
-            :key="`${r}-${c}`"
-            class="wd-cell"
-            :class="cellClass(r-1, c-1)"
-            :style="flipStyle(r-1, c-1)"
-          >
-            {{ letterAt(r-1, c-1) }}
+    <!-- Play zone: left instruction | center board | right rules/tips -->
+    <main class="wd-playzone" v-else @click="maybeFocusMobile">
+      <!-- Left: How to Play -->
+      <aside class="wd-aside left">
+        <h3 class="wd-aside-title">How to Play</h3>
+        <ol class="wd-steps">
+          <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+          <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+          <li>The tile colors show how close your guess was:</li>
+        </ol>
+        <div class="wd-legend">
+          <div class="legend-row">
+            <span class="wd-cell tiny correct">A</span>
+            <span>Right letter, right spot</span>
           </div>
-        </template>
+          <div class="legend-row">
+            <span class="wd-cell tiny present">A</span>
+            <span>Right letter, wrong spot</span>
+          </div>
+          <div class="legend-row">
+            <span class="wd-cell tiny absent">A</span>
+            <span>Letter not in the word</span>
+          </div>
+        </div>
+        <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
+      </aside>
+
+      <!-- Center: Board -->
+      <div class="wd-board-col">
+        <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
+          <template v-for="r in maxAttempts" :key="r">
+            <div
+              v-for="c in targetLen"
+              :key="`${r}-${c}`"
+              class="wd-cell"
+              :class="cellClass(r-1, c-1)"
+              :style="flipStyle(r-1, c-1)"
+            >
+              {{ letterAt(r-1, c-1) }}
+            </div>
+          </template>
+        </div>
+
+        <!-- mobile input(invoke soft keyboard) -->
+        <input
+          ref="mobileInput"
+          class="wd-hidden-input"
+          inputmode="latin"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          @keydown.prevent="onKeydown"
+        />
       </div>
 
-      <!-- mobile input(invoke soft keyboard) -->
-      <input
-        ref="mobileInput"
-        class="wd-hidden-input"
-        inputmode="latin"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        @keydown.prevent="onKeydown"
-      />
+      <!-- Right: Rules / Tips -->
+      <aside class="wd-aside right">
+        <h3 class="wd-aside-title">Rules & Tips</h3>
+        <ul class="wd-bullets">
+          <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+          <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+          <li><strong>Duplicates</strong>: Letters can repeat.</li>
+          <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+        </ul>
+      </aside>
+
+      <!-- ===== Mobile-only accordion panels (≤980px screen) ===== -->
+      <div class="wd-mobile-panels">
+        <details class="wd-coll">
+          <summary>How to Play</summary>
+          <ol class="wd-steps">
+            <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+            <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+            <li>The tile colors show how close your guess was:</li>
+          </ol>
+          <div class="wd-legend">
+            <div class="legend-row">
+              <span class="wd-cell tiny correct">A</span>
+              <span>Right letter, right spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny present">A</span>
+              <span>Right letter, wrong spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny absent">A</span>
+              <span>Letter not in the word</span>
+            </div>
+          </div>
+          <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
+        </details>
+
+        <details class="wd-coll" style="margin-top:10px">
+          <summary>Rules & Tips</summary>
+          <ul class="wd-bullets">
+            <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+            <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+            <li><strong>Duplicates</strong>: Letters can repeat.</li>
+            <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+          </ul>
+        </details>
+      </div>
+      <!-- ===== end mobile panels ===== -->
     </main>
 
     <!-- Full-screen confetti -->
@@ -129,9 +207,9 @@ const keyState = reactive(Object.fromEntries(
   'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])
 ));
 function updateKeyState(letter, newState) {
-  const cur = keyState[letter];
-  if (cur === 'correct') return;                         // highest priority
-  if (cur === 'present' && newState === 'absent') return; // yellow cannot be covered by gray
+  const curSt = keyState[letter];
+  if (curSt === 'correct') return;                         // highest priority
+  if (curSt === 'present' && newState === 'absent') return; // yellow cannot be covered by gray
   keyState[letter] = newState;
 }
 
@@ -215,8 +293,6 @@ function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
 
-  // Note: Removed blocking of "absent" letters - they should still be usable
-
   if (/^[a-zA-Z]$/.test(key)) {
     if (cur.value.length < targetLen.value) cur.value += key.toLowerCase();
     e.preventDefault?.();
@@ -231,7 +307,6 @@ function press(k) {
   if (k === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
   if (/^[A-Z]$/.test(k)) {
     const ch = k.toLowerCase();
-    // Note: Removed blocking of "absent" letters - they should still be usable
     if (cur.value.length < targetLen.value) cur.value += ch;
   }
 }
@@ -275,16 +350,17 @@ function submitGuess() {
 }
 
 function afterReveal(guess) {
+  const rowIndex = guesses.length - 1; // current row
+
   if (guess === answer.value) {
     statusMsg.value = '🎉 You Win!';
     launchConfetti();
   } else if (guesses.length >= maxAttempts) {
     statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
   } else {
-    if (status[rowIndex].every(st => st === 'absent')){
+    if (status[rowIndex]?.every(st => st === 'absent')) {
       triggerRowShake(rowIndex);
     }
-    if (guesses.length === 2 && currentHint.value) hintVisible.value = true;
   }
 }
 
@@ -372,7 +448,6 @@ function stopConfetti() {
 }
 
 const shakingRows = reactive(new Set());
-
 function triggerRowShake(r) {
   shakingRows.add(r);
   setTimeout(() => shakingRows.delete(r), 600); // animation duration
@@ -382,25 +457,19 @@ function triggerRowShake(r) {
 <style scoped>
 .wordly {
   --cell: 52px;
-  max-width: 860px;
+  max-width: 1100px; /* enlarge container to fit side instructions */
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
   position: relative;
 }
 
-.wordly .breadcrumb {
-  margin-bottom: 20px;
-}
+.wordly .breadcrumb { margin-bottom: 20px; }
 
 /* toolbar */
 .wd-toolbar{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:12px;
-  margin-bottom:16px;
-  flex-wrap:nowrap;
+  display:flex; align-items:center; justify-content:flex-start;
+  gap:12px; margin-bottom:16px; flex-wrap:nowrap;
 }
 .wd-left{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
 .wd-status{ white-space:nowrap; }
@@ -424,6 +493,52 @@ function triggerRowShake(r) {
 .wd-notice { background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error { border-color:#b91c1c; color:#fecaca; }
 
+/* ================= Playzone layout ================= */
+.wd-playzone{
+  display:grid;
+  grid-template-columns: 1fr auto 1fr; /* left | board | right */
+  gap: 20px;
+  align-items: start;
+}
+.wd-board-col{
+  display:flex;
+  justify-content:center;
+}
+.wd-aside{
+  background:#10121a;
+  border:1px solid #343644;
+  padding:12px 14px;
+  border-radius:12px;
+  color:#cfd2dd;
+  max-width: 300px;
+  position: sticky;
+  top: 84px;             /* roughly align with the bottom of the toolbar, adjust as needed */
+  height: fit-content;
+}
+.wd-aside-title{
+  margin: 2px 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #e8e9f3;
+}
+.wd-steps{
+  margin: 0 0 8px 18px;
+  padding: 0;
+  line-height: 1.5;
+}
+.wd-legend { margin: 8px 0; }
+.legend-row{
+  display:flex; align-items:center;
+  gap:10px; margin:6px 0;
+}
+.wd-note{ opacity:.9; font-size: 13px; margin-top: 4px; }
+
+.wd-bullets{
+  margin: 0; padding-left: 18px;
+  line-height: 1.5;
+}
+
 /* board */
 .wd-board-wrap { display:flex; justify-content:center; position:relative; }
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
@@ -438,13 +553,20 @@ function triggerRowShake(r) {
 }
 .wd-cell.active { border-color:#6b7280; }
 
+/* legend tiny tiles */
+.wd-cell.tiny{
+  width:22px; height:22px;
+  font-size:12px; border-radius:6px;
+  border-width: 2px;
+}
+
 /* statistic */
 .wd-cell.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-cell.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-cell.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 .wd-cell.pending { background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* flipping (rotation animation; color changes at 50% via JS) */
+/* flipping animation */
 .wd-cell.flipping{
   animation: wd-flip 250ms ease forwards;
   animation-delay: var(--reveal-delay, 0ms);
@@ -484,24 +606,56 @@ function triggerRowShake(r) {
 .wd-key.wd-wide { min-width:72px; }
 .wd-key:active { transform:translateY(1px); }
 
-/* keyboard state colors & disabled */
+/* keyboard state colors */
 .wd-key.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-key.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
-@media (max-width: 560px) {
-  .wordly { --cell: 46px; }
-  .wd-right .wd-hint { max-width: 80vw; }
-  .wd-key { padding: 8px 10px; }
-}
 /* shaking animation */
-.wd-cell.shaking {
-  animation: wd-shake 0.6s ease;
-}
+.wd-cell.shaking { animation: wd-shake 0.6s ease; }
 @keyframes wd-shake {
   0%, 100% { transform: translateX(0); }
   15%, 45%, 75% { transform: translateX(-6px); }
   30%, 60%, 90% { transform: translateX(6px); }
 }
 
+/* ====== Mobile panels visibility ====== */
+.wd-mobile-panels { display: none; }
+
+/* ≤980px：hide side panels */
+@media (max-width: 980px) {
+  .wd-playzone { grid-template-columns: 1fr; }
+  .wd-aside { display: none; }               /* hide left and right side panels */
+  .wd-mobile-panels { 
+    display: block; 
+    margin-top: 12px; 
+  }
+  .wordly { --cell: 46px; }
+  .wd-right .wd-hint { max-width: 80vw; }
+  .wd-key { padding: 8px 10px; }
+}
+
+/* foldable panels */
+.wd-coll {
+  background:#10121a;
+  border:1px solid #343644;
+  padding: 8px 12px;
+  border-radius:12px;
+  color:#cfd2dd;
+}
+.wd-coll > summary {
+  cursor: pointer;
+  font-weight: 800;
+  color:#e8e9f3;
+  list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.wd-coll > summary::-webkit-details-marker { display: none; }
+.wd-coll > summary::before{
+  content: '▸';
+  display:inline-block; transform: translateY(1px);
+  opacity: .9;
+}
+.wd-coll[open] > summary::before{ content: '▾'; }
+.wd-coll > *:not(summary){ margin-top:8px; }
 </style>
