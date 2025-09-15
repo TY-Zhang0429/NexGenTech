@@ -7,7 +7,7 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-avatar">
-        <img src="../assets/avatardef.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="../assets/homeavatar.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-content">
@@ -765,8 +765,8 @@ const navigateToCalculator = () => {
   width: 100%;
   text-align: center;
   padding: 1rem;
-  margin-top: 10rem;
-  margin-bottom: -10rem; /* 将标题向下移动，减少与hero section的间距 */
+  margin-top: 6rem;
+  margin-bottom: -6rem; /* 改为正值，确保有间距 */
   color: #ffffff;
   font-size: 3.5rem;
   font-weight: bold;
@@ -774,6 +774,24 @@ const navigateToCalculator = () => {
   font-family: 'Joti One', cursive;
   position: relative;
   z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2.5rem;
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 2rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+  }
 }
 
 @keyframes pulse {
@@ -797,10 +815,47 @@ const navigateToCalculator = () => {
   .hero {
     flex-direction: column;
     text-align: center;
+    padding: 20px 0;
+    min-height: auto;
+  }
+
+  .hero-content {
+    padding: 1rem;
+    order: 2;
+  }
+
+  .hero-avatar {
+    margin: 0;
+    padding: 0 1rem;
+  }
+
+  .hero-avatar:first-child {
+    margin: 0;
+    padding-top: 1rem;
+    order: 1;
+  }
+
+  .hero-avatar:last-child {
+    margin: 0;
+    padding-bottom: 1rem;
+    order: 3;
+  }
+
+  .avatar-image {
+    width: 180px;
   }
 
   .hero-title {
     font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero-tagline {
+    font-size: 1.2rem;
   }
 
   .steps-container {
@@ -809,6 +864,30 @@ const navigateToCalculator = () => {
 
   .highlights-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 20px 0;
+  }
+
+  .hero-content {
+    padding: 0.5rem;
+  }
+
+  .avatar-image {
+    width: 150px;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0.8rem;
+  }
+
+  .hero-tagline {
+    font-size: 1.1rem;
   }
 }
 </style>
