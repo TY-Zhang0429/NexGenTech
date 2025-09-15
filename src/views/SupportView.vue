@@ -15,14 +15,14 @@
               </p>
             </div>
             <div class="feature-image-wrapper right">
-              <img src="/assets/boss1.png" alt="Avatar feature" class="feature-image" />
+              <img src="../assets/howitwork1.png" alt="Avatar feature" class="feature-image" />
             </div>
           </div>
 
           <!-- Explore Features Section -->
           <div class="feature-section">
             <div class="feature-image-wrapper left">
-              <img src="/assets/boss1.png" alt="Explore features" class="feature-image" />
+              <img src="../assets/howitwork2.png" alt="Explore features" class="feature-image" />
             </div>
             <div class="feature-card">
               <h2 class="feature-title">Explore Features</h2>
@@ -41,7 +41,7 @@
               </p>
             </div>
             <div class="feature-image-wrapper right">
-              <img src="/assets/boss1.png" alt="Track progress" class="feature-image" />
+              <img src="../assets/howitwork3.png" alt="Track progress" class="feature-image" />
             </div>
           </div>
         </div>
@@ -75,8 +75,8 @@ import Footer from '@/components/Footer.vue';
   object-fit: cover;
   object-position: center;
   z-index: -2;
-  filter: brightness(0.6);
-  transform: scale(1.1);
+  filter: brightness(0.4) blur(4px); /* 降低亮度到0.4，添加4px的模糊效果 */
+  transform: scale(1); /* 稍微放大以避免模糊边缘 */
 }
 
 .main-title {
@@ -273,10 +273,11 @@ import Footer from '@/components/Footer.vue';
 .feature-section {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 100px; /* 增加间距从40px到100px */
   position: relative;
   margin-bottom: 40px;
   z-index: 1;
+  padding: 0 40px; /* 添加左右内边距 */
 }
 
 .feature-card {
@@ -327,7 +328,8 @@ import Footer from '@/components/Footer.vue';
 
 @media (max-width: 1024px) {
   .feature-section {
-    gap: 30px;
+    gap: 60px; /* 在中等屏幕上保持较大间距 */
+    padding: 0 30px; /* 适当减小左右内边距 */
   }
 
   .feature-card {

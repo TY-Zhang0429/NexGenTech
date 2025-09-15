@@ -113,7 +113,7 @@ const navigateToCalculator = () => {
 /* Hero Section */
 .hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 80vh;
   display: flex;
   align-items: center;
   padding: 0px 0;
@@ -253,7 +253,7 @@ const navigateToCalculator = () => {
   text-align: center;
   margin: 80px calc(-50vw + 50%);
   padding: 80px calc(50vw - 50%);
-  background: #FDEBD0;
+  background: rgb(195, 158, 104);  /* Darker background color */
   backdrop-filter: blur(8px);
   border-top: 8px solid rgb(139, 119, 101);
   border-bottom: 8px solid rgb(139, 119, 101);
@@ -472,7 +472,7 @@ const navigateToCalculator = () => {
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
   margin-bottom: 0;
-  padding: 80px 0;
+  padding: 40px 0;
   background-color: #FFF8DC;
   display: flex;
   flex-direction: column;
@@ -765,8 +765,8 @@ const navigateToCalculator = () => {
   width: 100%;
   text-align: center;
   padding: 1rem;
-  margin-top: 6rem;
-  margin-bottom: -6rem; /* 改为正值，确保有间距 */
+  margin-top: 10rem;
+  margin-bottom: -8rem; /* 改为正值，确保有间距 */
   color: #ffffff;
   font-size: 3.5rem;
   font-weight: bold;
