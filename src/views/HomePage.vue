@@ -3,15 +3,19 @@
     <video autoplay loop muted playsinline class="background-video">
       <source src="../assets/backsample.mp4" type="video/mp4">
     </video>
+    <h1 class="main-title">NexGen Levels You Up with Smarter Food Choices</h1>
     <!-- Hero Section -->
     <section class="hero">
+      <div class="hero-avatar">
+        <img src="../assets/avatardef.png" alt="Sol Avatar" class="avatar-image" />
+        <div class="glow-effect"></div>
+      </div>
       <div class="hero-content">
-        <h1 class="hero-title" style="color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.2);">NexGen Levels You Up with Smarter Food Choices</h1>
         <p class="hero-subtitle">“Every choice matters — swap junk for power-ups, fuel your body with the right foods, and watch your health (and your avatar) level up. With NexGen, healthy eating is no longer boring, it's your new adventure.”</p>
         <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
       </div>
       <div class="hero-avatar">
-        <img src="../assets/avatardef.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="../assets/homefruit.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-bg-animation"></div>
@@ -92,11 +96,12 @@ const navigateToCalculator = () => {
 .home {
   width: 100%;
   font-family: 'Merriweather', serif;
+  overflow-x: hidden;  /* 防止横向滚动 */
 }
 
-/* 新增内容容器 */
-.hero, .highlights {
-  max-width: 1200px;
+/* Hero Section 容器 */
+.hero {
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -108,33 +113,59 @@ const navigateToCalculator = () => {
 /* Hero Section */
 .hero {
   position: relative;
-  min-height: 80vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: 60px 0;
+  padding: 0px 0;
   overflow: hidden;
 }
 
-.hero-content {
+.hero-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.hero-left {
   flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.hero-image {
+  width: 100%;
+  max-width: 450px;
+  height: auto;
   z-index: 1;
-  max-width: 600px;
+}
+
+.hero-content {
+  flex: 1.4; /* 增加中间内容区域的比例 */
+  z-index: 1;
+  max-width: 700px; /* 增加最大宽度 */
+  text-align: center;
+  padding: 0 2rem; /* 添加内边距 */
 }
 
 .hero-title {
   font-size: 3.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #ffffff;
   margin-bottom: 1.5rem;
   font-family: 'Joti One', cursive;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .hero-subtitle {
   font-size: 1.2rem;
-  color: black;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 2rem;
   line-height: 1.6;
   font-family: 'Joti One', cursive;
@@ -142,21 +173,66 @@ const navigateToCalculator = () => {
 
 .hero-tagline {
   font-size: 1.5rem;
-  color: var(--text);
+  color: #ffffff;
   font-weight: 600;
   font-family: 'Joti One', cursive;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 1024px) {
+  .hero-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 30px;
+  }
+
+  .hero-image {
+    max-width: 350px;
+  }
+
+  .hero-title {
+    font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 60px 0;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .hero-image {
+    max-width: 280px;
+  }
 }
 
 .hero-avatar {
   position: relative;
-  flex: 1;
+  flex: 0.8;  /* 减少两侧头像所占空间 */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+.hero-avatar:first-child {
+  justify-content: flex-start; /* 左侧头像靠左 */
+  margin-left: -2rem; /* 向左移动 */
+}
+
+.hero-avatar:last-child {
+  justify-content: flex-end; /* 右侧头像靠右 */
+  margin-right: -2rem; /* 向右移动 */
+}
+
 .avatar-image {
-  width: 400px;
+  width: 300px;
   height: auto;
   z-index: 1;
 }
@@ -391,10 +467,23 @@ const navigateToCalculator = () => {
 
 /* Highlights Section */
 .highlights {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-bottom: 0;
   padding: 80px 0;
+  background-color: #FFF8DC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .highlights-grid {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
@@ -461,8 +550,7 @@ const navigateToCalculator = () => {
   font-size: 2.5rem;
   text-align: center;
   margin-bottom: 2rem;
-  color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #2C4F3E;  /* 墨绿色，与顶部导航栏颜色一致 */
 }
 
 .highlight-card:hover {
@@ -671,6 +759,21 @@ const navigateToCalculator = () => {
   z-index: -1;
   filter: blur(3px) brightness(0.55);
   transform: scale(1.1); /* prevent blank space at edges */
+}
+
+.main-title {
+  width: 100%;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 10rem;
+  margin-bottom: -10rem; /* 将标题向下移动，减少与hero section的间距 */
+  color: #ffffff;
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
+  font-family: 'Joti One', cursive;
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes pulse {
