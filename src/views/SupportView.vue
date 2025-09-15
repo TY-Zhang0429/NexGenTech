@@ -75,8 +75,8 @@ import Footer from '@/components/Footer.vue';
   object-fit: cover;
   object-position: center;
   z-index: -2;
-  filter: brightness(0.4) blur(4px); /* 降低亮度到0.4，添加4px的模糊效果 */
-  transform: scale(1); /* 稍微放大以避免模糊边缘 */
+  filter: brightness(0.6) blur(4px); /* 适当调整亮度以配合黑色遮罩 */
+  transform: scale(1.05); /* 稍微放大以避免模糊边缘 */
 }
 
 .main-title {
@@ -101,7 +101,7 @@ import Footer from '@/components/Footer.vue';
   padding: 20px;
 }
 
-/* 添加一个渐变遮罩层来增强文字可读性 */
+/* 添加一个黑色遮罩层来增强文字可读性和视觉效果 */
 .support-page::before {
   content: '';
   position: fixed;
@@ -109,11 +109,7 @@ import Footer from '@/components/Footer.vue';
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.7),
-    rgba(255, 255, 255, 0.5)
-  );
+  background: rgba(0, 0, 0, 0.3); /* 黑色遮罩，透明度0.5 */
   z-index: -1;
 }
 
@@ -255,10 +251,11 @@ import Footer from '@/components/Footer.vue';
 
 .main-title {
   text-align: center;
-  color: #2A4D3E;
+  color: #ffffff; /* 改为白色，在黑色遮罩上更醒目 */
   font-size: 2.5rem;
   margin-bottom: 40px;
   font-family: 'Merriweather', serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 添加文字阴影增强可读性 */
 }
 
 .features-grid {
@@ -315,7 +312,7 @@ import Footer from '@/components/Footer.vue';
 }
 
 .feature-description {
-  color: #2A4D3E;
+  color: #2A4D3E; /* 保持原来的颜色，因为feature-card有自己的背景色 */
   line-height: 1.8;
   font-size: 1.1rem;
 }

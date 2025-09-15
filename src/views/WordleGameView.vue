@@ -1,5 +1,7 @@
 <template>
   <section class="wordly">
+    <!-- 引入可拖动头像组件 -->
+    <DraggableAvatar />
     <BreadcrumbNav />
 
     <!-- Top -->
@@ -176,6 +178,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
+import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
 const API_BASE = ''; // Same origin (via CloudFront proxy)
 
