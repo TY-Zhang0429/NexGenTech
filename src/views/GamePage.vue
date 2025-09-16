@@ -57,8 +57,8 @@ import BreadcrumbNav from '@/components/BreadcrumbNav.vue'
 const router = useRouter()
 
 // fan area selection
-const sectorTitles = ['Wordle', 'Food Swap']
-const sectorRoutes = ['/wordle-game', '/food-swap']
+const sectorTitles = ['Wordle', 'Food Swap','Match 3']
+const sectorRoutes = ['/wordle-game', '/food-swap','/match3']
 
 
 const titles = sectorTitles
