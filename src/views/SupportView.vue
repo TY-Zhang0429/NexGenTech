@@ -3,59 +3,56 @@
     <img src="/assets/howitworkback.png" alt="background" class="background-image" />
     <div class="content-container">
       <h1 class="main-title">How It Works</h1>
-      
-      <div class="features-grid">
-        <!-- Avatar Section -->
-        <div class="feature-card">
-          <div class="content-wrapper">
-            <div class="text-content">
+      <div class="features-wrapper">
+        <div class="white-overlay"></div>
+        <div class="features-grid">
+          <!-- Avatar Section -->
+          <div class="feature-section">
+            <div class="feature-card">
               <h2 class="feature-title">Avatar</h2>
               <p class="feature-description">
                 Kick off your journey with Sol the Turtle, your default buddy or make it personal by creating your own avatar through a simple questionnaire. Your avatar isn't just a character—it's you in this adventure. It grows alongside your progress. Think of it like your game character powered by your own learning and choices. The better you play and explore, the more your avatar evolves.
               </p>
             </div>
-            <div class="image-wrapper">
-              <img src="/assets/boss1.png" alt="Avatar feature" class="feature-image" />
+            <div class="feature-image-wrapper right">
+              <img src="../assets/howitwork1.png" alt="Avatar feature" class="feature-image" />
             </div>
           </div>
-        </div>
 
-        <!-- Explore Features Section -->
-        <div class="feature-card">
-          <div class="content-wrapper">
-            <div class="text-content">
+          <!-- Explore Features Section -->
+          <div class="feature-section">
+            <div class="feature-image-wrapper left">
+              <img src="../assets/howitwork2.png" alt="Explore features" class="feature-image" />
+            </div>
+            <div class="feature-card">
               <h2 class="feature-title">Explore Features</h2>
               <p class="feature-description">
                 Dive into the Features Hub for fun, interactive challenges. Play food-themed games like Food Wordle, Match 3 game. Try Healthier Swaps to make smarter snack and meal choices. Explore how the Calculator to understand nutritional composition in your food. Discover hidden fun facts along the way. It's all designed like mini-games—so you're learning without it feeling like studying.
               </p>
             </div>
-            <div class="image-wrapper">
-              <img src="/assets/boss1.png" alt="Explore features" class="feature-image" />
-            </div>
           </div>
-        </div>
 
-        <!-- Track Progress Section -->
-        <div class="feature-card">
-          <div class="content-wrapper">
-            <div class="text-content">
+          <!-- Track Progress Section -->
+          <div class="feature-section">
+            <div class="feature-card">
               <h2 class="feature-title">Track Your Session Progress</h2>
               <p class="feature-description">
                 Every time you finish a game or activity, you're not just learning—you're helping your avatar grow stronger and cooler. Complete more challenges, and watch your avatar evolve. It's like leveling up in your favorite game—but this time, you're leveling up your real-life food smarts.
               </p>
             </div>
-            <div class="image-wrapper">
-              <img src="/assets/boss1.png" alt="Track progress" class="feature-image" />
+            <div class="feature-image-wrapper right">
+              <img src="../assets/howitwork3.png" alt="Track progress" class="feature-image" />
             </div>
           </div>
         </div>
       </div>
     </div>
+    <Footer />
   </div>
 </template>
 
 <script setup>
-// Support page logic here if needed
+import Footer from '@/components/Footer.vue';
 </script>
 
 <style scoped>
@@ -64,6 +61,9 @@
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
+  padding-top: 40px;
+  display: flex;
+  flex-direction: column;
 }
 
 .background-image {
@@ -75,10 +75,33 @@
   object-fit: cover;
   object-position: center;
   z-index: -2;
-  opacity: 1;
+  filter: brightness(0.6) blur(4px); /* 适当调整亮度以配合黑色遮罩 */
+  transform: scale(1.05); /* 稍微放大以避免模糊边缘 */
 }
 
-/* 添加一个渐变遮罩层来增强文字可读性 */
+.main-title {
+  text-align: center;
+  color: white;
+  font-size: 3rem;
+  margin-bottom: 3rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.features-wrapper {
+  position: relative;
+  padding: 10px;
+}
+
+.features-grid {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 添加一个黑色遮罩层来增强文字可读性和视觉效果 */
 .support-page::before {
   content: '';
   position: fixed;
@@ -86,11 +109,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.7),
-    rgba(255, 255, 255, 0.5)
-  );
+  background: rgba(0, 0, 0, 0.3); /* 黑色遮罩，透明度0.5 */
   z-index: -1;
 }
 
@@ -140,6 +159,59 @@
   }
 }
 
+.feature-section {
+  display: flex;
+  margin-bottom: 1.5rem;
+  gap: 4rem;
+  align-items: center;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.feature-title {
+  color: #1a73e8;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.feature-description {
+  color: #ffffff;
+  line-height: 1.7;
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.feature-image-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.feature-image-wrapper.left {
+  order: -1;
+}
+
+.feature-image-wrapper.right {
+  order: 2;
+}
+
+.feature-image {
+  max-width: 300px;
+  height: auto;
+  border-radius: 15px;
+  transition: transform 0.3s ease;
+}
+
+.feature-image:hover {
+  transform: scale(1.05);
+}
+
 @media (max-width: 480px) {
   .content-container {
     padding: 15px;
@@ -166,86 +238,125 @@
     font-size: 1.8rem;
     margin-bottom: 20px;
   }
+
+  .feature-section {
+    flex-direction: column;
+  }
+
+  .feature-image-wrapper.left,
+  .feature-image-wrapper.right {
+    order: 0;
+  }
 }
 
 .main-title {
   text-align: center;
-  color: #2A4D3E;
+  color: #ffffff; /* 改为白色，在黑色遮罩上更醒目 */
   font-size: 2.5rem;
   margin-bottom: 40px;
   font-family: 'Merriweather', serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 添加文字阴影增强可读性 */
 }
 
 .features-grid {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.feature-section {
+  display: flex;
+  align-items: center;
+  gap: 100px; /* 增加间距从40px到100px */
+  position: relative;
+  margin-bottom: 40px;
+  z-index: 1;
+  padding: 0 40px; /* 添加左右内边距 */
 }
 
 .feature-card {
-  background: rgba(253, 235, 208, 0.85);
+  flex: 1;
+  background: rgba(253, 235, 208, 0.9);
   border-radius: 15px;
   padding: 30px;
-  transition: transform 0.3s ease;
   backdrop-filter: blur(4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 600px;
 }
 
-.feature-card:hover {
-  transform: translateY(-5px);
-}
-
-.content-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-}
-
-.text-content {
-  flex: 2;
-}
-
-.feature-title {
-  color: #8b7765;
-  font-size: 1.8rem;
-  margin-bottom: 15px;
-  font-family: 'Merriweather', serif;
-}
-
-.feature-description {
-  color: #2A4D3E;
-  line-height: 1.6;
-  font-size: 1.1rem;
-}
-
-.image-wrapper {
+.feature-image-wrapper {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  max-width: 400px;
+}
+
+.feature-image-wrapper.left {
+  justify-content: flex-end;
+}
+
+.feature-image-wrapper.right {
+  justify-content: flex-start;
+}
+
+.feature-title {
+  color: #8b7765;
+  font-size: 2rem;
+  margin-bottom: 20px;
+  font-family: 'Merriweather', serif;
+}
+
+.feature-description {
+  color: #2A4D3E; /* 保持原来的颜色，因为feature-card有自己的背景色 */
+  line-height: 1.8;
+  font-size: 1.1rem;
 }
 
 .feature-image {
-  max-width: 200px;
+  max-width: 100%;
   height: auto;
-  border-radius: 10px;
   transition: transform 0.3s ease;
 }
 
-.feature-card:hover .feature-image {
-  transform: scale(1.05);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .content-wrapper {
-    flex-direction: column-reverse;
-    text-align: center;
+@media (max-width: 1024px) {
+  .feature-section {
+    gap: 60px; /* 在中等屏幕上保持较大间距 */
+    padding: 0 30px; /* 适当减小左右内边距 */
   }
 
-  .image-wrapper {
-    margin-bottom: 20px;
+  .feature-card {
+    padding: 25px;
+  }
+
+  .feature-title {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .feature-image-wrapper {
+    max-width: 300px;
+  }
+
+  .feature-image-wrapper.left,
+  .feature-image-wrapper.right {
+    justify-content: center;
+  }
+
+  .feature-card {
+    max-width: 100%;
   }
 
   .feature-title {
@@ -258,6 +369,46 @@
 
   .main-title {
     font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* 特别处理小屏幕设备 */
+@media (max-width: 400px) {
+  .feature-section:nth-child(odd) {
+    flex-direction: column;
+  }
+
+  .feature-section:nth-child(even) {
+    flex-direction: column-reverse;
+  }
+
+  .feature-section {
+    gap: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-image-wrapper {
+    max-width: 200px;
+  }
+
+  .feature-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .feature-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .main-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .features-grid {
+    padding: 10px;
   }
 }
 </style>
