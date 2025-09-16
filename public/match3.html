@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Healthy Match-3 Game</title>
+
+  <!-- 🎉 礼花特效库 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui,Segoe UI,Roboto,sans-serif;
+      margin: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fdfdfd;
+    }
+    h1 { margin: 0 0 12px; }
+
+    .hud {
+      display: flex;
+      gap: 24px;
+      margin: 8px 0 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .hud div { font-weight: 500; }
+
+    .board {
+      position: relative;
+      margin: 12px 0;
+      background: #fafafa;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .tile {
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,.1);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      background: #fff;
+    }
+    button:hover { background: #f3f3f3; }
+
+    /* 特殊说明框 */
+    .legend {
+      margin-top: 16px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f9f9f9;
+      max-width: 360px;
+    }
+    .legend h3 { margin: 0 0 8px; font-size: 16px; }
+    .legend ul { margin: 0; padding-left: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Healthy Match-3</h1>
+
+  <div class="hud">
+    <div>Level：<span id="level">1</span></div>
+    <div>Score：<span id="score">0</span></div>
+    <div>Moves left：<span id="moves">20</span></div>
+    <div>Goal：<span id="goal">200</span></div>
+    <div>Reminder：<span id="tip">——</span></div>
+    <button id="reset">Restart</button>
+  </div>
+
+  <div id="board" class="board" aria-label="game board"></div>
+
+  <!-- 特殊块说明 -->
+  <div class="legend">
+    <h3>Special Blocks</h3>
+    <ul>
+      <li>💥 (4 in a row) → Clears an entire row (Click to trigger)</li>
+      <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
+    </ul>
+  </div>
+
+  <!-- 游戏逻辑 -->
+  <script src="./match3.js"></script>
+</body>
+</html>
