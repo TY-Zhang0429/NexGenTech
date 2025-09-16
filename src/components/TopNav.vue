@@ -21,7 +21,7 @@
       <RouterLink to="/game" class="link" @click="closeMenu">Discover Games</RouterLink>
       <RouterLink to="/calculator" class="link" @click="closeMenu">Nutrient Calculator</RouterLink>
       <RouterLink to="/food-swap" class="link" @click="closeMenu">Healthier Swaps</RouterLink>
-      <RouterLink to="/support" class="link" @click="closeMenu">Support</RouterLink>
+      <RouterLink to="/support" class="link" @click="closeMenu">How it Works</RouterLink>
     </nav>
   </header>
 </template>

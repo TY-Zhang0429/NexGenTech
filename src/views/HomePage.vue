@@ -3,15 +3,19 @@
     <video autoplay loop muted playsinline class="background-video">
       <source src="../assets/backsample.mp4" type="video/mp4">
     </video>
+    <h1 class="main-title">NexGen Levels You Up with Smarter Food Choices</h1>
     <!-- Hero Section -->
     <section class="hero">
+      <div class="hero-avatar">
+        <img src="../assets/homeavatar.png" alt="Sol Avatar" class="avatar-image" />
+        <div class="glow-effect"></div>
+      </div>
       <div class="hero-content">
-        <h1 class="hero-title" style="color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.2);">NexGen Levels You Up with Smarter Food Choices</h1>
         <p class="hero-subtitle">“Every choice matters — swap junk for power-ups, fuel your body with the right foods, and watch your health (and your avatar) level up. With NexGen, healthy eating is no longer boring, it's your new adventure.”</p>
         <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
       </div>
       <div class="hero-avatar">
-        <img src="../assets/avatardef.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="../assets/homefruit.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-bg-animation"></div>
@@ -21,6 +25,15 @@
     <section class="highlights">
       <h2 class="highlights-title">Highlights</h2>
       <div class="highlights-grid">
+        <div class="highlight-card" @click="navigateToAvatar">
+          <div class="highlight-image-container">
+            <img src="../assets/avatardef.png" alt="Your Avatar" class="highlight-image" />
+            <div class="highlight-overlay">
+              <h3>Your Avatar</h3>
+              <p>Create and customize your own health avatar. Watch it grow and evolve as you make healthier food choices!</p>
+            </div>
+          </div>
+        </div>
         <div class="highlight-card" @click="navigateToGames">
           <div class="highlight-image-container">
             <img src="../assets/wheel.png" alt="Spin Wheel" class="highlight-image" />
@@ -39,16 +52,26 @@
             </div>
           </div>
         </div>
-        
+        <div class="highlight-card" @click="navigateToCalculator">
+          <div class="highlight-image-container">
+            <img src="../assets/calculator.png" alt="Nutrient Calculator" class="highlight-image" />
+            <div class="highlight-overlay">
+              <h3 class="calculator-title">Nutrient Calculator</h3>
+              <p>Track your daily nutrients and get personalized recommendations for a balanced diet.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
-
-    <p class="tagline">Built for the next generation 💡 Healthy minds, healthy bodies.</p>
+    <Footer />
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
+import AvatarView from './AvatarView.vue'
+import CalculatorView from './CalculatorView.vue'
+import Footer from '../components/Footer.vue'
 
 const router = useRouter()
 
@@ -59,14 +82,28 @@ const navigateToGames = () => {
 const navigateToFoodSwap = () => {
   router.push('/food-swap')
 }
+
+const navigateToAvatar = () => {
+  router.push('/avatar')
+}
+
+const navigateToCalculator = () => {
+  router.push('/calculator')
+}
 </script>
 
 <style scoped>
 .home {
-  max-width: 1200px;
+  width: 100%;
+  font-family: 'Merriweather', serif;
+  overflow-x: hidden;  /* 防止横向滚动 */
+}
+
+/* Hero Section 容器 */
+.hero {
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 16px;
-  font-family: 'Merriweather', serif;
 }
 
 .home h1, .home h2, .home h3, .home p, .home button {
@@ -79,30 +116,56 @@ const navigateToFoodSwap = () => {
   min-height: 80vh;
   display: flex;
   align-items: center;
-  padding: 60px 0;
+  padding: 0px 0;
   overflow: hidden;
 }
 
-.hero-content {
+.hero-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.hero-left {
   flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.hero-image {
+  width: 100%;
+  max-width: 450px;
+  height: auto;
   z-index: 1;
-  max-width: 600px;
+}
+
+.hero-content {
+  flex: 1.4; /* 增加中间内容区域的比例 */
+  z-index: 1;
+  max-width: 700px; /* 增加最大宽度 */
+  text-align: center;
+  padding: 0 2rem; /* 添加内边距 */
 }
 
 .hero-title {
   font-size: 3.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #ffffff;
   margin-bottom: 1.5rem;
   font-family: 'Joti One', cursive;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .hero-subtitle {
   font-size: 1.2rem;
-  color: black;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 2rem;
   line-height: 1.6;
   font-family: 'Joti One', cursive;
@@ -110,21 +173,66 @@ const navigateToFoodSwap = () => {
 
 .hero-tagline {
   font-size: 1.5rem;
-  color: var(--text);
+  color: #ffffff;
   font-weight: 600;
   font-family: 'Joti One', cursive;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 1024px) {
+  .hero-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 30px;
+  }
+
+  .hero-image {
+    max-width: 350px;
+  }
+
+  .hero-title {
+    font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 60px 0;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .hero-image {
+    max-width: 280px;
+  }
 }
 
 .hero-avatar {
   position: relative;
-  flex: 1;
+  flex: 0.8;  /* 减少两侧头像所占空间 */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+.hero-avatar:first-child {
+  justify-content: flex-start; /* 左侧头像靠左 */
+  margin-left: -2rem; /* 向左移动 */
+}
+
+.hero-avatar:last-child {
+  justify-content: flex-end; /* 右侧头像靠右 */
+  margin-right: -2rem; /* 向右移动 */
+}
+
 .avatar-image {
-  width: 400px;
+  width: 300px;
   height: auto;
   z-index: 1;
 }
@@ -145,7 +253,7 @@ const navigateToFoodSwap = () => {
   text-align: center;
   margin: 80px calc(-50vw + 50%);
   padding: 80px calc(50vw - 50%);
-  background: #FDEBD0;
+  background: rgb(195, 158, 104);  /* Darker background color */
   backdrop-filter: blur(8px);
   border-top: 8px solid rgb(139, 119, 101);
   border-bottom: 8px solid rgb(139, 119, 101);
@@ -359,17 +467,82 @@ const navigateToFoodSwap = () => {
 
 /* Highlights Section */
 .highlights {
-  padding: 80px 0;
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-bottom: 0;
+  padding: 40px 0;
+  background-color: #FFF8DC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .highlights-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
-  max-width: 1000px;
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
-  justify-items: center;
+  justify-content: center;
+}
+
+.highlights-grid {
+  max-width: 100%;  /* 允许充分利用屏幕宽度 */
+  padding: 0 40px;  /* 增加左右边距 */
+}
+
+.highlight-card {
+  flex: 1;  /* 允许卡片平均分配空间 */
+  min-width: 240px;  /* 稍微增大最小宽度 */
+  max-width: 360px;  /* 增大最大宽度 */
+  height: 320px;  /* 稍微增大高度 */
+  background: var(--panel);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s var(--ease);
+  margin: 0 12px;  /* 添加水平间距 */
+}
+
+.highlight-image-container {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.calculator-title {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 1400px) {
+  .highlight-card {
+    min-width: 260px;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .highlights-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .highlight-card {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 300px;
+    height: 280px;  /* 手机端稍微矮一点 */
+  }
 }
 
 .highlights-title {
@@ -377,21 +550,7 @@ const navigateToFoodSwap = () => {
   font-size: 2.5rem;
   text-align: center;
   margin-bottom: 2rem;
-  color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.highlight-card {
-  background: var(--panel);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: pointer;
-  font-family: 'Merriweather', serif;
-  height: 450px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.4s var(--ease);
+  color: #2C4F3E;  /* 墨绿色，与顶部导航栏颜色一致 */
 }
 
 .highlight-card:hover {
@@ -399,19 +558,12 @@ const navigateToFoodSwap = () => {
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
 }
 
-.highlight-image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
 .highlight-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;  /* 改为cover以更好地填充空间 */
   transition: transform 0.4s var(--ease);
-  padding: 20px;
+  padding: 10px;  /* 减小内边距 */
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -443,17 +595,18 @@ const navigateToFoodSwap = () => {
 
 .highlight-overlay h3 {
   font-family: 'Merriweather', serif;
-  font-size: 1.5rem;
+  font-size: 1.3rem;  /* 稍微减小标题大小 */
   color: white;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;  /* 减少下边距 */
 }
 
 .highlight-overlay p {
   font-family: 'Merriweather', serif;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 0.9rem;  /* 稍微减小文字大小 */
+  line-height: 1.5;
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
+  padding: 0 10px;  /* 添加一些水平内边距 */
 }
 
 /* Responsive design for highlights */
@@ -608,6 +761,39 @@ const navigateToFoodSwap = () => {
   transform: scale(1.1); /* prevent blank space at edges */
 }
 
+.main-title {
+  width: 100%;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 10rem;
+  margin-bottom: -8rem; /* 改为正值，确保有间距 */
+  color: #ffffff;
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
+  font-family: 'Joti One', cursive;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2.5rem;
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 2rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
 @keyframes pulse {
   0% { opacity: 0.2; }
   50% { opacity: 0.4; }
@@ -629,10 +815,47 @@ const navigateToFoodSwap = () => {
   .hero {
     flex-direction: column;
     text-align: center;
+    padding: 20px 0;
+    min-height: auto;
+  }
+
+  .hero-content {
+    padding: 1rem;
+    order: 2;
+  }
+
+  .hero-avatar {
+    margin: 0;
+    padding: 0 1rem;
+  }
+
+  .hero-avatar:first-child {
+    margin: 0;
+    padding-top: 1rem;
+    order: 1;
+  }
+
+  .hero-avatar:last-child {
+    margin: 0;
+    padding-bottom: 1rem;
+    order: 3;
+  }
+
+  .avatar-image {
+    width: 180px;
   }
 
   .hero-title {
     font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero-tagline {
+    font-size: 1.2rem;
   }
 
   .steps-container {
@@ -643,5 +866,28 @@ const navigateToFoodSwap = () => {
     grid-template-columns: 1fr;
   }
 }
-</style>
 
+@media (max-width: 480px) {
+  .hero {
+    padding: 20px 0;
+  }
+
+  .hero-content {
+    padding: 0.5rem;
+  }
+
+  .avatar-image {
+    width: 150px;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0.8rem;
+  }
+
+  .hero-tagline {
+    font-size: 1.1rem;
+  }
+}
+</style>
