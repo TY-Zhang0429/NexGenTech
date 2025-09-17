@@ -1,6 +1,6 @@
 <template>
   <section class="wordly">
-    <!-- Draggable avatar & breadcrumbs -->
+    <!-- Avatar & Breadcrumbs -->
     <DraggableAvatar />
     <BreadcrumbNav />
 
@@ -32,9 +32,9 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- ===== Desktop stage: LEFT (instructions) | CENTER (board + keyboard) | RIGHT (ghost) ===== -->
+    <!-- ===== Desktop stage: LEFT (instructions) | CENTER (board+keyboard) | RIGHT (ghost) ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: independent collapsible cards (do not affect board height) -->
+      <!-- LEFT: two independent collapsible cards -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
         <!-- Card 1 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
@@ -50,18 +50,9 @@
               <li>The tile colors show how close your guess was:</li>
             </ol>
             <div class="wd-legend">
-              <div class="legend-row">
-                <span class="wd-cell tiny correct">A</span>
-                <span>Right letter, right spot</span>
-              </div>
-              <div class="legend-row">
-                <span class="wd-cell tiny present">A</span>
-                <span>Right letter, wrong spot</span>
-              </div>
-              <div class="legend-row">
-                <span class="wd-cell tiny absent">A</span>
-                <span>Letter not in the word</span>
-              </div>
+              <div class="legend-row"><span class="wd-cell tiny correct">A</span><span>Right letter, right spot</span></div>
+              <div class="legend-row"><span class="wd-cell tiny present">A</span><span>Right letter, wrong spot</span></div>
+              <div class="legend-row"><span class="wd-cell tiny absent">A</span><span>Letter not in the word</span></div>
             </div>
             <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
           </div>
@@ -73,7 +64,7 @@
             <span class="chev" :class="{ open: rulesOpen }">▸</span>
             Rules & Tips
           </button>
-        <div class="wd-aside-body">
+          <div class="wd-aside-body">
             <h3 class="wd-aside-title">Rules & Tips</h3>
             <ul class="wd-bullets">
               <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
@@ -85,7 +76,7 @@
         </div>
       </aside>
 
-      <!-- CENTER: board + mobile panels + keyboard (keyboard moved inside here) -->
+      <!-- CENTER: board + mobile panels + keyboard -->
       <main class="wd-center" @click="maybeFocusMobile" aria-label="Game board">
         <div class="wd-board-col">
           <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
@@ -142,7 +133,7 @@
           </details>
         </div>
 
-        <!-- On-screen keyboard lives inside the center column -->
+        <!-- On-screen keyboard INSIDE center column -->
         <div class="wd-kbd">
           <div class="wd-row">
             <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
@@ -158,75 +149,74 @@
         </div>
       </main>
 
-      <!-- RIGHT: ghost spacer to mirror the left width (keeps board geometrically centered) -->
+      <!-- RIGHT: ghost spacer mirrors the left width to keep true center -->
       <div class="wd-right-ghost" aria-hidden="true"></div>
     </div>
 
-    <!-- Confetti (full-screen overlay) -->
+    <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
   </section>
 </template>
 
 <script setup>
-// ===== Imports =====
+/* ===== Imports ===== */
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
-// Same-origin API (through your proxy)
 const API_BASE = '';
 
-// ===== Game state =====
-const difficulty = ref('Medium');                           // 'Easy' | 'Medium' | 'Hard'
+/* ===== Game state ===== */
+const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);                                   // [{ word, difficulty, hint }]
+const wordsRaw = ref([]);
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);                               // ['apple', ...]
-const status  = reactive([]);                               // [['correct'|'present'|'absent'|'pending', ...], ...]
+const guesses = reactive([]);
+const status  = reactive([]);
 const cur = ref('');
 const statusMsg = ref('');
 
-// Desktop collapsible states
+/* Desktop collapsibles */
 const playOpen  = ref(false);
 const rulesOpen = ref(false);
 
-// Animation timing
+/* Animations */
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP  = 140;                                    // ms between tile flips
-const SINGLE_FLIP = 250;                                    // per-tile flip duration
+const REVEAL_GAP  = 140;
+const SINGLE_FLIP = 250;
 const HALF_FLIP   = Math.floor(SINGLE_FLIP / 2);
 
-// Keyboard coloring (green > yellow > gray)
+/* Keyboard coloring */
 const keyState = reactive(Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])));
 function updateKeyState(letter, newState) {
   const curSt = keyState[letter];
-  if (curSt === 'correct') return;                          // never downgrade green
-  if (curSt === 'present' && newState === 'absent') return; // never overwrite yellow with gray
+  if (curSt === 'correct') return;
+  if (curSt === 'present' && newState === 'absent') return;
   keyState[letter] = newState;
 }
 
-// Confetti
+/* Confetti */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-// Input device
+/* Input helpers */
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-// On-screen keyboard rows
+/* Keyboard rows */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-// ===== Lifecycle =====
+/* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
     await fetchWords();
@@ -245,7 +235,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-// ===== API =====
+/* ===== API ===== */
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -253,13 +243,11 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-// ===== New game =====
+/* ===== New game ===== */
 function pickAnswerObj() {
   const needLen = targetLen.value;
-  const pool = wordsRaw.value.filter(w =>
-    w?.difficulty === difficulty.value &&
-    typeof w?.word === 'string' &&
-    w.word.length === needLen
+  const pool = wordsRaw.value.filter(
+    (w) => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
   );
   if (!pool.length) {
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
@@ -288,7 +276,7 @@ function startGame() {
   currentHint.value = picked.hint;
 }
 
-// ===== Input handling =====
+/* ===== Input handling ===== */
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
@@ -312,7 +300,7 @@ function press(k) {
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-// ===== Submit guess & reveal =====
+/* ===== Submit & reveal ===== */
 function submitGuess() {
   if (cur.value.length !== targetLen.value) { triggerRowShake(guesses.length); return; }
 
@@ -325,7 +313,6 @@ function submitGuess() {
   cur.value = '';
   revealingRowIndex.value = rowIndex;
 
-  // flip one by one; change color at 50%
   for (let i = 0; i < targetLen.value; i++) {
     setTimeout(() => {
       const st = res[i];
@@ -353,21 +340,20 @@ function afterReveal(guess) {
   }
 }
 
-// ===== Scoring (handles duplicates) =====
+/* ===== Scoring ===== */
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
   for (let i = 0; i < n; i++) {
     if (res[i] === 'correct') continue;
-    const ch = guess[i];
-    let hit = false;
+    const ch = guess[i]; let hit = false;
     for (let j = 0; j < n; j++) if (!used[j] && ans[j] === ch) { used[j] = true; hit = true; break; }
     if (hit) res[i] = 'present';
   }
   return res;
 }
 
-// ===== Rendering helpers =====
+/* ===== Render helpers ===== */
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -375,7 +361,7 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
+  if (r < status.length) base.push(status[r][c]);
   if (r === revealingRowIndex.value) base.push('flipping');
   if (shakingRows.has(r)) base.push('shaking');
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) base.push('active');
@@ -385,7 +371,7 @@ function flipStyle(r, c) {
   return r === revealingRowIndex.value ? { '--reveal-delay': `${c * REVEAL_GAP}ms` } : {};
 }
 
-// ===== Confetti =====
+/* ===== Confetti ===== */
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
@@ -433,7 +419,7 @@ function stopConfetti() {
   confettiRunning.value = false;
 }
 
-// ===== Row shake =====
+/* ===== Row shake ===== */
 const shakingRows = reactive(new Set());
 function triggerRowShake(r) {
   shakingRows.add(r);
@@ -445,7 +431,7 @@ function triggerRowShake(r) {
 /* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1100px;           /* page content width */
+  max-width: 1100px;
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -467,33 +453,31 @@ function triggerRowShake(r) {
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT (pure flex; no CSS grid columns) =====
-   Trio: LEFT (300px) | CENTER (auto) | RIGHT ghost (300px) */
+/* ===== DESKTOP LAYOUT (pure flex) ===== */
 .wd-stage{
   display:flex;
   align-items:flex-start;
-  justify-content:center;     /* geometrically center the middle column */
+  justify-content:center;  /* center middle column geometrically */
   gap: 28px;
 }
 
 /* LEFT column */
 .wd-left-stack{
-  flex: 0 0 300px;            /* fixed width */
-  position: sticky;           /* keep visible while scrolling */
+  flex: 0 0 300px;
+  position: sticky;
   top: 84px;
 }
-.wd-left-stack .wd-aside + .wd-aside{ margin-top: 14px; }
+.wd-left-stack .wd-aside + .wd-aside{ margin-top:14px; }
 
 /* CENTER column */
-.wd-center{ flex: 0 1 auto; min-width: 420px; }
-.wd-center { display:flex; flex-direction:column; }      /* for sticky keyboard */
+.wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* RIGHT ghost column: mirrors the left width to keep board centered */
+/* RIGHT ghost mirrors left width */
 .wd-right-ghost{ flex: 0 0 300px; }
 
-/* Collapsible cards (smooth animation) */
+/* Collapsible cards (smooth) */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
@@ -505,10 +489,8 @@ function triggerRowShake(r) {
 }
 .wd-aside-toggle .chev{ transition: transform .18s ease; }
 .wd-aside-collapsible.open .wd-aside-toggle .chev{ transform: rotate(90deg); }
-
 .wd-aside-body{
-  padding:10px 12px;
-  max-height:0; opacity:0; overflow:hidden;
+  padding:10px 12px; max-height:0; opacity:0; overflow:hidden;
   transition:max-height .28s ease, opacity .25s ease;
   border-top:1px solid #2a2c3a;
 }
@@ -536,33 +518,19 @@ function triggerRowShake(r) {
 .wd-cell.correct{ background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-cell.present{ background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-cell.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
-.wd-cell.pending{ background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* Flip animation */
-.wd-cell.flipping{
-  animation: wd-flip 250ms ease forwards;
-  animation-delay: var(--reveal-delay, 0ms);
-  transform-style: preserve-3d;
-}
-@keyframes wd-flip{
-  0%{ transform: rotateX(0deg); }
-  49%{ transform: rotateX(90deg); }
-  50%{ transform: rotateX(-90deg); }
-  100%{ transform: rotateX(0deg); }
-}
+/* Flip */
+.wd-cell.flipping{ animation: wd-flip 250ms ease forwards; animation-delay: var(--reveal-delay,0ms); transform-style: preserve-3d; }
+@keyframes wd-flip{ 0%{transform:rotateX(0)} 49%{transform:rotateX(90deg)} 50%{transform:rotateX(-90deg)} 100%{transform:rotateX(0)} }
 
-/* Hidden input (for mobile soft keyboard) */
-.wd-hidden-input{
-  position:absolute; left:-9999px; width:0; height:0; opacity:0; pointer-events:none;
-}
+/* Hidden input */
+.wd-hidden-input{ position:absolute; left:-9999px; width:0; height:0; opacity:0; pointer-events:none; }
 
 /* Confetti */
-.wd-confetti{
-  position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999;
-}
+.wd-confetti{ position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999; }
 
-/* On-screen keyboard (now inside center column) */
-.wd-kbd{ max-width: 640px; margin: 18px auto 0; user-select:none; }
+/* On-screen keyboard */
+.wd-kbd{ max-width:640px; margin:18px auto 0; user-select:none; }
 .wd-row{ display:flex; justify-content:center; gap:8px; margin-top:8px; }
 .wd-key{ background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
 .wd-key.wd-wide{ min-width:72px; }
@@ -571,58 +539,49 @@ function triggerRowShake(r) {
 .wd-key.present{ background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
-/* Keep the keyboard visually attached to the board column on desktop */
-@media (min-width: 981px){
-  .wd-kbd{ position: sticky; bottom: 0; }
-}
+/* Sticky keyboard on desktop */
+@media (min-width: 981px){ .wd-kbd{ position: sticky; bottom: 0; } }
 
-/* Row shake */
+/* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
-@keyframes wd-shake{
-  0%,100%{ transform: translateX(0); }
-  15%,45%,75%{ transform: translateX(-6px); }
-  30%,60%,90%{ transform: translateX(6px); }
-}
+@keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== MOBILE ===== */
-/* ---------- Mobile tweaks ---------- */
-@media (max-width: 980px) {
-  /* make layout adjustments for mobile */
-  .wd-center { display: flex; flex-direction: column; }
-  .wd-board-col   { order: 1; }
-  .wd-kbd         { order: 2; margin-top: 12px; }   /* move keyboard up */
-  .wd-mobile-panels { order: 3; margin-top: 12px; }
+/* ===== HARD RESET visibility to avoid overrides ===== */
+.wd-mobile-panels { display: none !important; } /* hide mobile accordions on desktop */
+.wd-left-stack    { display: block !important; }
+.wd-right-ghost   { display: block !important; }
 
-  /* give mobile hints a clearer border and card feel */
+/* ===== MOBILE (<=980px): board -> keyboard -> panels, with bordered cards ===== */
+@media (max-width: 980px){
+  .wd-stage{ display:block !important; }
+  .wd-left-stack, .wd-right-ghost{ display:none !important; }
+
+  .wd-center{ display:flex; flex-direction:column; }
+  .wd-board-col{ order:1; }
+  .wd-kbd{ order:2; margin-top:12px; }
+  .wd-mobile-panels{ order:3; margin-top:12px; display:block !important; }
+
+  .wordly{ --cell: 46px; }
+  .wd-key{ padding:8px 10px; }
+
+  /* Card look for <details> */
   .wd-coll{
-    display: block;
-    background: #10121a;
-    border: 1.5px solid #50536b;     /* clearer border */
-    border-radius: 12px;
-    padding: 10px 12px;
-    box-shadow: 0 0 0 1px rgba(80,83,107,.08) inset;
+    display:block;
+    background:#10121a;
+    border:1.5px solid #50536b;
+    border-radius:12px;
+    padding:10px 12px;
+    box-shadow:0 0 0 1px rgba(80,83,107,.08) inset;
   }
-  .wd-coll + .wd-coll{ margin-top: 10px; }
-
+  .wd-coll + .wd-coll{ margin-top:10px; }
   .wd-coll > summary{
-    cursor: pointer;
-    font-weight: 800;
-    color: #e8e9f3;
-    list-style: none;
-    display: flex; align-items: center; gap: 8px;
-    /* let summary take full width for larger click area */
-    margin: -6px -6px 0 -6px;        /* slightly "pull" card padding */
-    padding: 6px;
-    border-radius: 10px;
+    cursor:pointer; font-weight:800; color:#e8e9f3;
+    list-style:none; display:flex; align-items:center; gap:8px;
+    margin:-6px -6px 0 -6px; padding:6px; border-radius:10px;
   }
   .wd-coll > summary::-webkit-details-marker{ display:none; }
-  .wd-coll > summary::before{
-    content: '▸';
-    display:inline-block; transform: translateY(1px);
-    opacity:.9;
-  }
-  .wd-coll[open] > summary::before{ content: '▾'; }
+  .wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
+  .wd-coll[open] > summary::before{ content:'▾'; }
   .wd-coll > *:not(summary){ margin-top:8px; }
 }
-
 </style>
