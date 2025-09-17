@@ -9,6 +9,17 @@
       <div>Goal：{{ levelGoals[level - 1] }}</div>
       <div>Reminder：{{ tip }}</div>
       <button @click="init">Restart</button>
+
+      <!-- Goal Progress Bar -->
+      <div class="goalbar">
+        <div
+          class="goalbar-fill"
+          :style="{ width: Math.min(100, Math.floor(score / levelGoals[level-1] * 100)) + '%' }"
+        ></div>
+        <span class="goalbar-text">
+          {{ Math.min(score, levelGoals[level-1]) }} / {{ levelGoals[level-1] }}
+        </span>
+      </div>
     </div>
 
     <div ref="board" class="board" aria-label="game board"></div>
@@ -31,7 +42,7 @@ export default {
   data() {
     return {
       SIZE: 10,
-      TYPES: ["🍎","🥦","🥕","🥛","🍞","🧃","🍌","🍇"],
+      TYPES: ["🍎", "🥦", "🥕", "🥛", "🍞", "🧃", "🍌", "🍇"],
       CELL: 48,
       grid: [],
       score: 0,
@@ -62,6 +73,7 @@ export default {
       this.level = 1;
       this.tip = "——";
       this.selected = null;
+      this.animating = false;
       this.render();
     },
 
@@ -92,62 +104,56 @@ export default {
 
     // --- click logic ---
     onTileClick(i, el) {
-        if (this.animating) return;
+      if (this.animating) return;
 
-        // special：💥 and 🌈
-        if (this.grid[i] === "💥") {
-            this.animateSpecial(el).then(() => this.triggerBomb(i));
-            return;
-        }
-        if (this.grid[i] === "🌈") {
-            this.animateSpecial(el).then(() => this.triggerRainbow(i));
-            return;
-        }
+      // special：💥 and 🌈
+      if (this.grid[i] === "💥") {
+        this.animateSpecial(el).then(() => this.triggerBomb(i));
+        return;
+      }
+      if (this.grid[i] === "🌈") {
+        this.animateSpecial(el).then(() => this.triggerRainbow(i));
+        return;
+      }
 
-        // normal click logic
-        if (this.selected === null) { 
-            this.selected = i; 
-            this.highlight(i); 
-            return; 
-        }
-        if (i === this.selected) { 
-            this.unhighlight(); 
-            this.selected = null; 
-            return; 
-        }
-        if (!this.adjacent(i, this.selected)) {
-            this.unhighlight();
-            this.selected = i;
-            this.highlight(i);
-            return;
-        }
+      // normal click logic
+      if (this.selected === null) {
+        this.selected = i;
+        this.highlight(i);
+        return;
+      }
+      if (i === this.selected) {
+        this.unhighlight();
+        this.selected = null;
+        return;
+      }
+      if (!this.adjacent(i, this.selected)) {
+        this.unhighlight();
+        this.selected = i;
+        this.highlight(i);
+        return;
+      }
 
-        // two adjacent tiles selected → swap
-        this.swapWithAnimation(i, this.selected).then(() => {
-            const m = this.findMatches();
+      // two adjacent tiles selected → swap and check
+      if (this.moves > 0) this.moves--;
+      this.swapWithAnimation(i, this.selected).then(() => {
+        const m = this.findMatches();
 
-            // if no moves left, check win/lose immediately
-            if (this.moves <= 0) {
+        if (m.size === 0) {
+          // no matches → wiggle + swap back
+          this.wiggleTiles(i, this.selected);
+          this.swapWithAnimation(i, this.selected, true).then(() => {
             this.checkWinLose();
-            return;
-            }
+          });
+        } else {
+          // matches found → cascade
+          this.cascade(m).then(this.checkWinLose);
+        }
 
-            // every swap consumes a move
-            this.moves--;
-
-            if (m.size === 0) {
-            // no matches → swap back
-            this.swapWithAnimation(i, this.selected, true);
-            } else {
-            // matches found → cascade
-            this.cascade(m).then(this.checkWinLose);
-            }
-
-            this.unhighlight();
-            this.selected = null;
-        });
+        this.unhighlight();
+        this.selected = null;
+      });
     },
-
 
     highlight(i) {
       const el = this.$refs.board.children[i];
@@ -169,23 +175,28 @@ export default {
 
     // --- animation swap ---
     swapWithAnimation(a, b, reverse = false) {
-        this.animating = true;
-        const elA = this.$refs.board.children[a], elB = this.$refs.board.children[b];
-        const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
+      this.animating = true;
+      const elA = this.$refs.board.children[a], elB = this.$refs.board.children[b];
+      const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
 
-        // according to reverse decide swap direction
-        if (!reverse) {
-            [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
-        } else {
-            [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
-        }
+      // wether reverse or not to swap back
+      [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
 
+      if (elA && elB) {
         elA.style.transform = `translate(${bc * this.CELL}px,${br * this.CELL}px)`;
         elB.style.transform = `translate(${ac * this.CELL}px,${ar * this.CELL}px)`;
+      }
 
-        return new Promise(res => {
-            setTimeout(() => { this.render(); this.animating = false; res(); }, 250);
-        });
+      return new Promise(res => {
+        setTimeout(() => { this.render(); this.animating = false; res(); }, 250);
+      });
+    },
+
+    // --- extra feedback: invalid swap wiggle ---
+    wiggleTiles(a, b) {
+      const els = [this.$refs.board.children[a], this.$refs.board.children[b]].filter(Boolean);
+      els.forEach(el => el.classList.add('wiggle', 'flash'));
+      setTimeout(() => els.forEach(el => el && el.classList.remove('wiggle', 'flash')), 260);
     },
 
     // --- matching ---
@@ -243,7 +254,15 @@ export default {
     },
     removeMatches(matches) {
       this.score += matches.size * 10;
-      this.tip = ["Drink more water and less sugary drinks~","Vegetables and fruits provide dietary fiber!","Whole grains are more filling.","Replace beverages with water and you can reduce a lot of sugar in a week!","Protein should be balanced: beans, eggs, milk","Look at the nutrition label: less sugar, less salt, less saturated fat!"][this.rnd(6)];
+      this.tip = [
+        "Drink more water and less sugary drinks~",
+        "Vegetables and fruits provide dietary fiber!",
+        "Whole grains are more filling.",
+        "Replace beverages with water and you can reduce a lot of sugar in a week!",
+        "Protein should be balanced: beans, eggs, milk",
+        "Look at the nutrition label: less sugar, less salt, less saturated fat!"
+      ][this.rnd(6)];
+
       return new Promise(res => {
         for (const i of matches) {
           const el = this.$refs.board.children[i];
@@ -252,9 +271,13 @@ export default {
             el.style.transform += " scale(1.5)";
             el.style.opacity = "0.2";
           }
+          // --- floating score animation ---
+          this.spawnFloatingScore(i, 10);
         }
         setTimeout(() => {
-          for (const i of matches) if (this.grid[i] !== "💥" && this.grid[i] !== "🌈") this.grid[i] = null;
+          for (const i of matches) {
+            if (this.grid[i] !== "💥" && this.grid[i] !== "🌈") this.grid[i] = null;
+          }
           this.render(); res();
         }, 300);
       });
@@ -278,12 +301,47 @@ export default {
       }
     },
 
+    // --- floating score animation ---
+    spawnFloatingScore(i, points = 10) {
+      const board = this.$refs.board;
+      const [r, c] = this.rc(i);
+      const x = c * this.CELL + this.CELL / 2;
+      const y = r * this.CELL + this.CELL / 2;
+      const el = document.createElement('div');
+      el.className = 'floating-score';
+      el.textContent = `+${points}`;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.position = 'absolute';
+      board.appendChild(el);
+      setTimeout(() => el.remove(), 650);
+    },
+
     // --- special ---
     triggerBomb(index) {
       const [r] = this.rc(index);
-      for (let c = 0; c < this.SIZE; c++) this.grid[this.idx(r, c)] = null;
-      this.render();
-      this.cascade(this.findMatches()).then(this.checkWinLose);
+
+      // 1) row sweep effect
+      const board = this.$refs.board;
+      const sweep = document.createElement('div');
+      sweep.className = 'row-sweep';
+      sweep.style.top = (r * this.CELL) + 'px';
+      sweep.style.width = (this.SIZE * this.CELL) + 'px';
+      sweep.style.height = this.CELL + 'px';
+      board.appendChild(sweep);
+      setTimeout(() => sweep.remove(), 360);
+
+      // 2) slight board jolt
+      board.style.transition = "transform .08s";
+      board.style.transform = "translateY(2px)";
+      setTimeout(() => (board.style.transform = "translateY(0)"), 90);
+
+      // 3) wipe out row
+      setTimeout(() => {
+        for (let c = 0; c < this.SIZE; c++) this.grid[this.idx(r, c)] = null;
+        this.render();
+        this.cascade(this.findMatches()).then(this.checkWinLose);
+      }, 180);
     },
     triggerRainbow(index) {
       const type = this.TYPES[this.rnd(this.TYPES.length)];
@@ -304,40 +362,39 @@ export default {
 
     // --- win/lose check ---
     checkWinLose() {
-        if (this.score >= this.levelGoals[this.level - 1]) {
-            // victory confetti
-            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
-            setTimeout(() => {
-            alert("🎉 Level " + this.level + " Clear!");
-            this.level++;
-            if (this.level > this.levelGoals.length) {
-                alert("🏆 All Levels Complete!");
-                this.init();
-            } else {
-                this.moves = 15;
-                this.render();
-            }
-            }, 500);
-        } 
-        else if (this.moves <= 0) {
-            // failure effect: gray confetti + board flash red
-            confetti({ 
-            particleCount: 150, 
-            spread: 100, 
-            origin: { y: 0.6 },
-            colors: ['#555', '#888', '#aaa'] // gray tones
-            });
-
-            const board = this.$refs.board;
-            board.style.transition = "background 0.5s";
-            board.style.background = "#662222"; // flash red
-            setTimeout(() => board.style.background = "#2c2f48", 600);
-
-            setTimeout(() => {
-            alert("❌ Game Over. Final Score: " + this.score);
+      if (this.score >= this.levelGoals[this.level - 1]) {
+        // victory confetti
+        confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+        setTimeout(() => {
+          alert("🎉 Level " + this.level + " Clear!");
+          this.level++;
+          if (this.level > this.levelGoals.length) {
+            alert("🏆 All Levels Complete!");
             this.init();
-            }, 800);
-        }
+          } else {
+            this.moves = 15;
+            this.render();
+          }
+        }, 500);
+      } else if (this.moves <= 0) {
+        // failure effect: gray confetti + board flash red
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ['#555', '#888', '#aaa']
+        });
+
+        const board = this.$refs.board;
+        board.style.transition = "background 0.5s";
+        board.style.background = "#662222";
+        setTimeout(() => board.style.background = "#2c2f48", 600);
+
+        setTimeout(() => {
+          alert("❌ Game Over. Final Score: " + this.score);
+          this.init();
+        }, 800);
+      }
     }
   }
 };
@@ -381,6 +438,34 @@ export default {
   transform: scale(1.05);
 }
 
+/* HUD progress bar */
+.goalbar {
+  position: relative;
+  width: 260px;
+  height: 12px;
+  background: #1f2235;
+  border: 1px solid #444;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px auto 0;
+}
+.goalbar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #22d3ee);
+  transition: width .35s ease;
+}
+.goalbar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #e5e7eb;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #0008;
+}
+
 /* legend */
 .legend {
   margin-top: 16px;
@@ -394,7 +479,7 @@ export default {
 .legend h3 {
   margin: 0 0 8px;
   font-size: 16px;
-  color: #ffd369;       /* change title to bright yellow */
+  color: #ffd369;       /* bright yellow */
 }
 .legend ul {
   margin: 0;
@@ -405,4 +490,41 @@ export default {
   margin-bottom: 6px;
 }
 
+/* invalid-swap feedback */
+@keyframes wiggle {
+  0%,100%{ transform: translateX(0) }
+  25%{ transform: translateX(-6px) }
+  75%{ transform: translateX(6px) }
+}
+.tile.wiggle { animation: wiggle .25s ease; }
+.tile.flash  { animation: flash .3s ease; }
+@keyframes flash { from{ background:#8b3a3a } to{ background:#3a3d5c } }
+
+/* floating score */
+.floating-score {
+  position: absolute;
+  color: #ffec99;
+  font-weight: 700;
+  text-shadow: 0 2px 6px #0009;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  animation: floatUp .6s ease forwards;
+}
+@keyframes floatUp {
+  from { transform: translate(-50%,-20%); opacity:.1 }
+  to   { transform: translate(-50%,-80%); opacity:1 }
+}
+
+/* row sweep for 💥 */
+.row-sweep {
+  position: absolute; left: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.35), rgba(255,255,255,0));
+  filter: blur(2px); pointer-events: none; border-radius: 8px; opacity: .9;
+  animation: sweep .35s ease forwards;
+}
+@keyframes sweep {
+  from { transform: translateX(-20%); opacity: .6 }
+  to   { transform: translateX(100%); opacity: 0 }
+}
 </style>
