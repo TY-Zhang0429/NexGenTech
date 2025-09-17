@@ -32,9 +32,9 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- ===== Desktop Stage: LEFT (instructions) | CENTER (board) | RIGHT (ghost) ===== -->
+    <!-- ===== Desktop stage: LEFT (instructions) | CENTER (board + keyboard) | RIGHT (ghost) ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: two independent collapsible cards (do not affect board) -->
+      <!-- LEFT: independent collapsible cards (do not affect board height) -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
         <!-- Card 1 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
@@ -73,7 +73,7 @@
             <span class="chev" :class="{ open: rulesOpen }">▸</span>
             Rules & Tips
           </button>
-          <div class="wd-aside-body">
+        <div class="wd-aside-body">
             <h3 class="wd-aside-title">Rules & Tips</h3>
             <ul class="wd-bullets">
               <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
@@ -85,7 +85,7 @@
         </div>
       </aside>
 
-      <!-- CENTER: board (always centered overall thanks to the right ghost) -->
+      <!-- CENTER: board + mobile panels + keyboard (keyboard moved inside here) -->
       <main class="wd-center" @click="maybeFocusMobile" aria-label="Game board">
         <div class="wd-board-col">
           <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
@@ -102,7 +102,7 @@
             </template>
           </div>
 
-          <!-- Mobile soft keyboard helper -->
+          <!-- Hidden input to summon mobile soft keyboard -->
           <input
             ref="mobileInput"
             class="wd-hidden-input"
@@ -141,91 +141,92 @@
             </ul>
           </details>
         </div>
+
+        <!-- On-screen keyboard lives inside the center column -->
+        <div class="wd-kbd">
+          <div class="wd-row">
+            <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
+          </div>
+          <div class="wd-row">
+            <button v-for="k in row2" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
+          </div>
+          <div class="wd-row">
+            <button class="wd-key wd-wide" @click="press('Enter')">Enter</button>
+            <button v-for="k in row3" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
+            <button class="wd-key wd-wide" @click="press('Backspace')">Back</button>
+          </div>
+        </div>
       </main>
 
       <!-- RIGHT: ghost spacer to mirror the left width (keeps board geometrically centered) -->
       <div class="wd-right-ghost" aria-hidden="true"></div>
     </div>
 
-    <!-- Confetti -->
+    <!-- Confetti (full-screen overlay) -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
-
-    <!-- On-screen keyboard -->
-    <footer class="wd-kbd" v-if="!loading">
-      <div class="wd-row">
-        <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
-      </div>
-      <div class="wd-row">
-        <button v-for="k in row2" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
-      </div>
-      <div class="wd-row">
-        <button class="wd-key wd-wide" @click="press('Enter')">Enter</button>
-        <button v-for="k in row3" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
-        <button class="wd-key wd-wide" @click="press('Backspace')">Back</button>
-      </div>
-    </footer>
   </section>
 </template>
 
 <script setup>
-/* Imports */
+// ===== Imports =====
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
+// Same-origin API (through your proxy)
 const API_BASE = '';
 
-/* Core state */
-const difficulty = ref('Medium');
+// ===== Game state =====
+const difficulty = ref('Medium');                           // 'Easy' | 'Medium' | 'Hard'
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);
+const wordsRaw = ref([]);                                   // [{ word, difficulty, hint }]
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);
-const status  = reactive([]);
+const guesses = reactive([]);                               // ['apple', ...]
+const status  = reactive([]);                               // [['correct'|'present'|'absent'|'pending', ...], ...]
 const cur = ref('');
 const statusMsg = ref('');
 
-/* Desktop collapsibles */
+// Desktop collapsible states
 const playOpen  = ref(false);
 const rulesOpen = ref(false);
 
-/* Animations */
+// Animation timing
 const revealingRowIndex = ref(-1);
-const REVEAL_GAP  = 140;
-const SINGLE_FLIP = 250;
+const REVEAL_GAP  = 140;                                    // ms between tile flips
+const SINGLE_FLIP = 250;                                    // per-tile flip duration
 const HALF_FLIP   = Math.floor(SINGLE_FLIP / 2);
 
-/* Keyboard key coloring */
+// Keyboard coloring (green > yellow > gray)
 const keyState = reactive(Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])));
 function updateKeyState(letter, newState) {
   const curSt = keyState[letter];
-  if (curSt === 'correct') return;
-  if (curSt === 'present' && newState === 'absent') return;
+  if (curSt === 'correct') return;                          // never downgrade green
+  if (curSt === 'present' && newState === 'absent') return; // never overwrite yellow with gray
   keyState[letter] = newState;
 }
 
-/* Confetti */
+// Confetti
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* Input helpers */
+// Input device
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* Keyboard rows */
+// On-screen keyboard rows
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* Lifecycle */
+// ===== Lifecycle =====
 onMounted(async () => {
   try {
     await fetchWords();
@@ -244,7 +245,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-/* Load words */
+// ===== API =====
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -252,10 +253,14 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* Start/reset game */
+// ===== New game =====
 function pickAnswerObj() {
   const needLen = targetLen.value;
-  const pool = wordsRaw.value.filter(w => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen);
+  const pool = wordsRaw.value.filter(w =>
+    w?.difficulty === difficulty.value &&
+    typeof w?.word === 'string' &&
+    w.word.length === needLen
+  );
   if (!pool.length) {
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
     const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple', hint: '' };
@@ -264,9 +269,13 @@ function pickAnswerObj() {
   const choice = pool[Math.floor(Math.random() * pool.length)];
   return { word: (choice.word || '').toLowerCase(), hint: choice.hint || '' };
 }
+
 function resetBoard() {
-  guesses.splice(0); status.splice(0);
-  cur.value = ''; statusMsg.value = ''; hintVisible.value = false;
+  guesses.splice(0);
+  status.splice(0);
+  cur.value = '';
+  statusMsg.value = '';
+  hintVisible.value = false;
   revealingRowIndex.value = -1;
   Object.keys(keyState).forEach(k => keyState[k] = '');
   stopConfetti();
@@ -279,11 +288,16 @@ function startGame() {
   currentHint.value = picked.hint;
 }
 
-/* Input */
+// ===== Input handling =====
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
-  if (/^[a-zA-Z]$/.test(key)) { if (cur.value.length < targetLen.value) cur.value += key.toLowerCase(); e.preventDefault?.(); return; }
+
+  if (/^[a-zA-Z]$/.test(key)) {
+    if (cur.value.length < targetLen.value) cur.value += key.toLowerCase();
+    e.preventDefault?.();
+    return;
+  }
   if (key === 'Backspace') { cur.value = cur.value.slice(0, -1); e.preventDefault?.(); return; }
   if (key === 'Enter') { submitGuess(); e.preventDefault?.(); }
 }
@@ -291,13 +305,17 @@ function press(k) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   if (k === 'Enter') return submitGuess();
   if (k === 'Backspace') { cur.value = cur.value.slice(0, -1); return; }
-  if (/^[A-Z]$/.test(k)) { const ch = k.toLowerCase(); if (cur.value.length < targetLen.value) cur.value += ch; }
+  if (/^[A-Z]$/.test(k)) {
+    const ch = k.toLowerCase();
+    if (cur.value.length < targetLen.value) cur.value += ch;
+  }
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* Submit & reveal */
+// ===== Submit guess & reveal =====
 function submitGuess() {
   if (cur.value.length !== targetLen.value) { triggerRowShake(guesses.length); return; }
+
   const guess = cur.value;
   const res = scoreGuess(guess, answer.value);
   const rowIndex = guesses.length;
@@ -307,33 +325,49 @@ function submitGuess() {
   cur.value = '';
   revealingRowIndex.value = rowIndex;
 
+  // flip one by one; change color at 50%
   for (let i = 0; i < targetLen.value; i++) {
-    setTimeout(() => { status[rowIndex][i] = res[i]; updateKeyState(guess[i], res[i]); }, i * REVEAL_GAP + HALF_FLIP);
+    setTimeout(() => {
+      const st = res[i];
+      status[rowIndex][i] = st;
+      updateKeyState(guess[i], st);
+    }, i * REVEAL_GAP + HALF_FLIP);
   }
+
   const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
-  setTimeout(() => { revealingRowIndex.value = -1; afterReveal(guess); }, total + 20);
-}
-function afterReveal(guess) {
-  const rowIndex = guesses.length - 1;
-  if (guess === answer.value) { statusMsg.value = '🎉 You Win!'; launchConfetti(); }
-  else if (guesses.length >= maxAttempts) { statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`; }
-  else if (status[rowIndex]?.every(st => st === 'absent')) { triggerRowShake(rowIndex); }
+  setTimeout(() => {
+    revealingRowIndex.value = -1;
+    afterReveal(guess);
+  }, total + 20);
 }
 
-/* Scoring */
+function afterReveal(guess) {
+  const rowIndex = guesses.length - 1;
+  if (guess === answer.value) {
+    statusMsg.value = '🎉 You Win!';
+    launchConfetti();
+  } else if (guesses.length >= maxAttempts) {
+    statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
+  } else if (status[rowIndex]?.every(st => st === 'absent')) {
+    triggerRowShake(rowIndex);
+  }
+}
+
+// ===== Scoring (handles duplicates) =====
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
   for (let i = 0; i < n; i++) {
     if (res[i] === 'correct') continue;
-    const ch = guess[i]; let hit = false;
+    const ch = guess[i];
+    let hit = false;
     for (let j = 0; j < n; j++) if (!used[j] && ans[j] === ch) { used[j] = true; hit = true; break; }
     if (hit) res[i] = 'present';
   }
   return res;
 }
 
-/* Render helpers */
+// ===== Rendering helpers =====
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -341,52 +375,77 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  if (r < status.length) base.push(status[r][c]);
+  if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
   if (r === revealingRowIndex.value) base.push('flipping');
   if (shakingRows.has(r)) base.push('shaking');
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) base.push('active');
   return base;
 }
-function flipStyle(r, c) { return r === revealingRowIndex.value ? { '--reveal-delay': `${c * REVEAL_GAP}ms` } : {}; }
+function flipStyle(r, c) {
+  return r === revealingRowIndex.value ? { '--reveal-delay': `${c * REVEAL_GAP}ms` } : {};
+}
 
-/* Confetti */
+// ===== Confetti =====
 function resizeCanvas() {
-  const cvs = confettiCanvas.value; if (!cvs) return;
-  cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+  const cvs = confettiCanvas.value;
+  if (!cvs) return;
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight;
   cvs.style.background = 'transparent';
 }
 async function launchConfetti() {
-  confettiRunning.value = true; await nextTick();
-  const cvs = confettiCanvas.value; if (!cvs) return;
-  resizeCanvas(); const ctx = cvs.getContext('2d');
-  const parts = Array.from({ length: 200 }).map(() => ({
-    x: Math.random()*cvs.width, y: -20 - Math.random()*120,
-    r: 2+Math.random()*4, vx: -1+Math.random()*2, vy: 2+Math.random()*3.5,
-    a: Math.random()*Math.PI*2, va: -0.25+Math.random()*0.5
+  confettiRunning.value = true;
+  await nextTick();
+  const cvs = confettiCanvas.value;
+  if (!cvs) return;
+
+  resizeCanvas();
+  const ctx = cvs.getContext('2d');
+  const particles = Array.from({ length: 200 }).map(() => ({
+    x: Math.random() * cvs.width,
+    y: -20 - Math.random() * 120,
+    r: 2 + Math.random() * 4,
+    vx: -1 + Math.random() * 2,
+    vy: 2 + Math.random() * 3.5,
+    a: Math.random() * Math.PI * 2,
+    va: -0.25 + Math.random() * 0.5
   }));
+
   const start = performance.now();
-  function frame(t){
-    ctx.clearRect(0,0,cvs.width,cvs.height);
-    for(const p of parts){ p.x+=p.vx; p.y+=p.vy; p.a+=p.va;
-      ctx.fillStyle = `hsl(${(p.x/cvs.width)*360},90%,60%)`;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore();
+  function frame(t) {
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.a += p.va;
+      const hue = (p.x / cvs.width) * 360;
+      ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
+      ctx.restore();
     }
-    if(t-start<2200) confettiTimer=requestAnimationFrame(frame); else stopConfetti();
+    if (t - start < 2200) confettiTimer = requestAnimationFrame(frame);
+    else stopConfetti();
   }
   confettiTimer = requestAnimationFrame(frame);
 }
-function stopConfetti(){ if(confettiTimer) cancelAnimationFrame(confettiTimer); confettiTimer=null; confettiRunning.value=false; }
+function stopConfetti() {
+  if (confettiTimer) cancelAnimationFrame(confettiTimer);
+  confettiTimer = null;
+  confettiRunning.value = false;
+}
 
-/* Shake */
+// ===== Row shake =====
 const shakingRows = reactive(new Set());
-function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.delete(r), 600); }
+function triggerRowShake(r) {
+  shakingRows.add(r);
+  setTimeout(() => shakingRows.delete(r), 600);
+}
 </script>
 
 <style scoped>
 /* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1100px;      /* page content width */
+  max-width: 1100px;           /* page content width */
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -408,43 +467,45 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT (no grid; pure flex) =====
-   Flex trio: left (300px) | center (auto) | right ghost (300px) */
+/* ===== DESKTOP LAYOUT (pure flex; no CSS grid columns) =====
+   Trio: LEFT (300px) | CENTER (auto) | RIGHT ghost (300px) */
 .wd-stage{
   display:flex;
   align-items:flex-start;
-  justify-content:center;    /* centers the middle column geometrically */
+  justify-content:center;     /* geometrically center the middle column */
   gap: 28px;
 }
 
 /* LEFT column */
 .wd-left-stack{
-  flex: 0 0 300px;           /* fixed width */
-  position: sticky;          /* stays visible while scrolling */
+  flex: 0 0 300px;            /* fixed width */
+  position: sticky;           /* keep visible while scrolling */
   top: 84px;
 }
 .wd-left-stack .wd-aside + .wd-aside{ margin-top: 14px; }
 
 /* CENTER column */
 .wd-center{ flex: 0 1 auto; min-width: 420px; }
+.wd-center { display:flex; flex-direction:column; }      /* for sticky keyboard */
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* RIGHT ghost column: matches left width to keep true center */
+/* RIGHT ghost column: mirrors the left width to keep board centered */
 .wd-right-ghost{ flex: 0 0 300px; }
 
-/* Cards (collapsibles) */
+/* Collapsible cards (smooth animation) */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
 }
 .wd-aside-toggle{
   width:100%; display:flex; align-items:center; gap:8px;
-  background:#151721; color:#e8e9f3; border:0;
-  padding:10px 12px; cursor:pointer; font-weight:800;
+  background:#151721; color:#e8e9f3; border:0; padding:10px 12px;
+  cursor:pointer; font-weight:800;
 }
 .wd-aside-toggle .chev{ transition: transform .18s ease; }
 .wd-aside-collapsible.open .wd-aside-toggle .chev{ transform: rotate(90deg); }
+
 .wd-aside-body{
   padding:10px 12px;
   max-height:0; opacity:0; overflow:hidden;
@@ -462,9 +523,14 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-bullets{ margin:0; padding-left:18px; line-height:1.5; }
 
 /* Tiles */
-.wd-cell{ width:var(--cell); height:var(--cell); display:grid; place-items:center;
-  border:2px solid #343644; border-radius:8px; font-weight:800; font-size:20px; text-transform:uppercase;
-  background:#16171d; color:#e6e6eb; transition:transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;}
+.wd-cell{
+  width:var(--cell); height:var(--cell);
+  display:grid; place-items:center;
+  border:2px solid #343644; border-radius:8px;
+  font-weight:800; font-size:20px; text-transform:uppercase;
+  background:#16171d; color:#e6e6eb;
+  transition: transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;
+}
 .wd-cell.active{ border-color:#6b7280; }
 .wd-cell.tiny{ width:22px; height:22px; font-size:12px; border-radius:6px; border-width:2px; }
 .wd-cell.correct{ background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
@@ -472,18 +538,31 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-cell.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 .wd-cell.pending{ background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* Flip */
-.wd-cell.flipping{ animation: wd-flip 250ms ease forwards; animation-delay: var(--reveal-delay,0ms); transform-style: preserve-3d; }
-@keyframes wd-flip{ 0%{transform:rotateX(0)} 49%{transform:rotateX(90deg)} 50%{transform:rotateX(-90deg)} 100%{transform:rotateX(0)} }
+/* Flip animation */
+.wd-cell.flipping{
+  animation: wd-flip 250ms ease forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+  transform-style: preserve-3d;
+}
+@keyframes wd-flip{
+  0%{ transform: rotateX(0deg); }
+  49%{ transform: rotateX(90deg); }
+  50%{ transform: rotateX(-90deg); }
+  100%{ transform: rotateX(0deg); }
+}
 
-/* Hidden input */
-.wd-hidden-input{ position:absolute; left:-9999px; width:0; height:0; opacity:0; pointer-events:none; }
+/* Hidden input (for mobile soft keyboard) */
+.wd-hidden-input{
+  position:absolute; left:-9999px; width:0; height:0; opacity:0; pointer-events:none;
+}
 
 /* Confetti */
-.wd-confetti{ position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999; }
+.wd-confetti{
+  position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999;
+}
 
-/* On-screen keyboard */
-.wd-kbd{ max-width:640px; margin:18px auto 0; user-select:none; }
+/* On-screen keyboard (now inside center column) */
+.wd-kbd{ max-width: 640px; margin: 18px auto 0; user-select:none; }
 .wd-row{ display:flex; justify-content:center; gap:8px; margin-top:8px; }
 .wd-key{ background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
 .wd-key.wd-wide{ min-width:72px; }
@@ -492,9 +571,18 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-key.present{ background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
-/* Shake */
+/* Keep the keyboard visually attached to the board column on desktop */
+@media (min-width: 981px){
+  .wd-kbd{ position: sticky; bottom: 0; }
+}
+
+/* Row shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
-@keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
+@keyframes wd-shake{
+  0%,100%{ transform: translateX(0); }
+  15%,45%,75%{ transform: translateX(-6px); }
+  30%,60%,90%{ transform: translateX(6px); }
+}
 
 /* ===== MOBILE ===== */
 .wd-mobile-panels{ display:none; }
