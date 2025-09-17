@@ -529,7 +529,12 @@ function triggerRowShake(r) {
   gap: 20px;
   align-items: start;
 }
-.wd-board-col{ display:flex; justify-content:center; }
+.wd-board-col {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;   /* center horizontally */
+}
+
 
 /* ===== Aside (base card) ===== */
 .wd-aside{
