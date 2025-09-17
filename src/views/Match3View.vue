@@ -55,7 +55,7 @@ export default {
       animating: false,
     };
   },
-  mounted() { this.init(); },
+  mounted(){ this.init(); },
   methods: {
     rnd(n){ return Math.floor(Math.random()*n); },
     randomType(){ return this.TYPES[this.rnd(this.TYPES.length)]; },
@@ -73,35 +73,36 @@ export default {
     },
 
     render(){
+      // 画布尺寸 = 棋子区域 + 左右/上下 gutter（CSS padding 负责，JS 仍用棋子区域尺寸）
       const board=this.$refs.board;
-      board.style.width = `${this.SIZE*this.CELL}px`;
-      board.style.height= `${this.SIZE*this.CELL}px`;
+      board.style.width  = `${this.SIZE*this.CELL}px`;
+      board.style.height = `${this.SIZE*this.CELL}px`;
 
       const layer=this.tilesEl();
       layer.innerHTML="";
 
       this.grid.forEach((tile,i)=>{
         const [r,c]=this.rc(i);
-        const div=document.createElement("div");
-        div.className="tile"+(tile===null?" hole":"");
-        div.style.position="absolute";
-        div.style.width=div.style.height=this.CELL+"px";
-        div.style.transform=`translate3d(${c*this.CELL}px, ${r*this.CELL}px, 0)`;
-        div.style.userSelect="none";
-        div.style.cursor= tile===null ? "default":"pointer";
-        div.textContent=tile ?? "";
+        const el=document.createElement("div");
+        el.className="tile"+(tile===null?" hole":"");
+        el.style.position="absolute";
+        el.style.width=el.style.height=this.CELL+"px";
+        el.style.transform=`translate3d(${c*this.CELL}px, ${r*this.CELL}px, 0)`;
+        el.style.userSelect="none";
+        el.style.cursor = tile===null ? "default":"pointer";
+        el.textContent = tile ?? "";
 
         if(tile!==null){
-          div.onclick=()=>{ this.spawnClickRipple(i); this.onTileClick(i,div); };
+          el.onclick=()=>{ this.spawnClickRipple(i); this.onTileClick(i, el); };
         }else{
-          div.style.pointerEvents="none";
+          el.style.pointerEvents="none";
         }
-        layer.appendChild(div);
+        layer.appendChild(el);
       });
 
       if(this.selected!==null){
-        const el=layer.children[this.selected];
-        if(el) el.classList.add("tile-selected");
+        const sel = layer.children[this.selected];
+        if(sel) sel.classList.add("tile-selected");
       }
     },
 
@@ -112,7 +113,7 @@ export default {
       d.style.left = `${c*this.CELL + this.CELL/2}px`;
       d.style.top  = `${r*this.CELL + this.CELL/2}px`;
       this.fxEl().appendChild(d);
-      setTimeout(()=>d.remove?.(),450);
+      setTimeout(()=>d.remove?.(), 450);
     },
 
     async onTileClick(i, el){
@@ -129,7 +130,7 @@ export default {
       }
 
       const a=i, b=this.selected;
-      const isSpecial = v => v==="💥"||v==="🌈";
+      const isSpecial = v => v==="💥" || v==="🌈";
       if(!isSpecial(this.grid[a]) && !isSpecial(this.grid[b]) && !this.wouldCreateMatch(a,b)){
         this.invalidWiggle(a,b);
         this.unhighlight(); this.selected=null;
@@ -141,7 +142,7 @@ export default {
 
       const m=this.findMatches();
       if(m.size===0){
-        await this.swapWithAnimation(a,b,true); // 兜底
+        await this.swapWithAnimation(a,b,true);
       }else{
         await this.cascade(m);
       }
@@ -150,31 +151,23 @@ export default {
       this.unhighlight(); this.selected=null;
     },
 
-    highlight(i){
-      const el=this.tilesEl().children[i];
-      if(el) el.classList.add("tile-selected");
-    },
-    unhighlight(){
-      [...this.tilesEl().children].forEach(el=>el.classList.remove("tile-selected"));
-    },
-    adjacent(a,b){
-      const [ar,ac]=this.rc(a), [br,bc]=this.rc(b);
-      return Math.abs(ar-br)+Math.abs(ac-bc)===1;
-    },
+    highlight(i){ const el=this.tilesEl().children[i]; el && el.classList.add("tile-selected"); },
+    unhighlight(){ [...this.tilesEl().children].forEach(el=>el.classList.remove("tile-selected")); },
+    adjacent(a,b){ const [ar,ac]=this.rc(a), [br,bc]=this.rc(b); return Math.abs(ar-br)+Math.abs(ac-bc)===1; },
 
     swapWithAnimation(a,b,reverse=false){
       this.animating=true;
-      const elA=this.tilesEl().children[a], elB=this.tilesEl().children[b];
+      const A=this.tilesEl().children[a], B=this.tilesEl().children[b];
       const [ar,ac]=this.rc(a), [br,bc]=this.rc(b);
 
       if(!reverse){
         [this.grid[a],this.grid[b]]=[this.grid[b],this.grid[a]];
-        if(elA) elA.style.transform=`translate3d(${bc*this.CELL}px, ${br*this.CELL}px, 0)`;
-        if(elB) elB.style.transform=`translate3d(${ac*this.CELL}px, ${ar*this.CELL}px, 0)`;
+        if(A) A.style.transform=`translate3d(${bc*this.CELL}px, ${br*this.CELL}px, 0)`;
+        if(B) B.style.transform=`translate3d(${ac*this.CELL}px, ${ar*this.CELL}px, 0)`;
         return new Promise(res=>setTimeout(()=>{ this.render(); this.animating=false; res(); },250));
       }else{
-        if(elA) elA.style.transform=`translate3d(${ac*this.CELL}px, ${ar*this.CELL}px, 0)`;
-        if(elB) elB.style.transform=`translate3d(${bc*this.CELL}px, ${br*this.CELL}px, 0)`;
+        if(A) A.style.transform=`translate3d(${ac*this.CELL}px, ${ar*this.CELL}px, 0)`;
+        if(B) B.style.transform=`translate3d(${bc*this.CELL}px, ${br*this.CELL}px, 0)`;
         return new Promise(res=>setTimeout(()=>{
           [this.grid[a],this.grid[b]]=[this.grid[b],this.grid[a]];
           this.render(); this.animating=false; res();
@@ -182,13 +175,14 @@ export default {
       }
     },
 
+    // 预判（不生成特殊块）
     findMatchesPure(g){
       const matched=new Set();
       for(let r=0;r<this.SIZE;r++){
         let run=1;
         for(let c=1;c<=this.SIZE;c++){
           const cur=c<this.SIZE ? g[this.idx(r,c)] : null;
-          const prev=g[this.idx(r,c-1)];
+          const prev= g[this.idx(r,c-1)];
           if(cur&&prev&&cur===prev) run++;
           else{ if(run>=3) for(let k=1;k<=run;k++) matched.add(this.idx(r,c-k)); run=1; }
         }
@@ -197,30 +191,21 @@ export default {
         let run=1;
         for(let r=1;r<=this.SIZE;r++){
           const cur=r<this.SIZE ? g[this.idx(r,c)] : null;
-          const prev=g[this.idx(r-1,c)];
+          const prev= g[this.idx(r-1,c)];
           if(cur&&prev&&cur===prev) run++;
           else{ if(run>=3) for(let k=1;k<=run;k++) matched.add(this.idx(r-k,c)); run=1; }
         }
       }
       return matched;
     },
-    wouldCreateMatch(a,b){
-      const g=this.grid.slice();
-      [g[a],g[b]]=[g[b],g[a]];
-      return this.findMatchesPure(g).size>0;
-    },
+    wouldCreateMatch(a,b){ const g=this.grid.slice(); [g[a],g[b]]=[g[b],g[a]]; return this.findMatchesPure(g).size>0; },
     invalidWiggle(a,b){
       const A=this.tilesEl().children[a], B=this.tilesEl().children[b];
-      const jiggle=(el)=>{
-        if(!el) return;
-        const t=el.style.transform||"";
-        el.style.transition="transform 110ms";
-        el.style.transform=t+" translateY(-6px)";
-        setTimeout(()=>{ el.style.transform=t; },110);
-      };
+      const jiggle=(el)=>{ if(!el) return; const t=el.style.transform||""; el.style.transition="transform 110ms"; el.style.transform=t+" translateY(-6px)"; setTimeout(()=>{ el.style.transform=t; },110); };
       jiggle(A); jiggle(B);
     },
 
+    // 真正匹配（会生成 💥/🌈）
     findMatches(){
       const matched=new Set();
       // 行
@@ -260,6 +245,7 @@ export default {
       return matched;
     },
 
+    // 重力
     computeGravityPlan(){
       const temp=this.grid.slice();
       const moves=[];
@@ -284,19 +270,16 @@ export default {
       const layer=this.tilesEl();
       const steps=[];
       for(const {from,to,rows} of moves){
-        const el=layer.children[from];
-        if(!el) continue;
+        const el=layer.children[from]; if(!el) continue;
         const [tr,tc]=this.rc(to);
-        const duration=Math.min(120+rows*90,750);
+        const duration=Math.min(120+rows*90, 750);
         const delay=(tc*8)+Math.min(rows*10,120);
         el.style.transition="none";
         steps.push({ el, tx:tc*this.CELL, ty:tr*this.CELL, duration, delay });
       }
       if(!steps.length) return;
       // 强制重排
-      // eslint-disable-next-line no-unused-expressions
-      layer.offsetHeight;
-      await new Promise(requestAnimationFrame);
+      layer.offsetHeight; await new Promise(requestAnimationFrame);
       const promises=[];
       for(const s of steps){
         s.el.style.transition=`transform ${s.duration}ms cubic-bezier(.2,.75,.25,1)`;
@@ -360,12 +343,9 @@ export default {
           const el=this.tilesEl().children[i];
           if(el){
             el.style.transition="transform 180ms ease, opacity 220ms ease, filter 120ms";
-            el.style.transform+= " scale(1.25)";
+            el.style.transform+=" scale(1.25)";
             el.style.filter="brightness(1.35)";
-            setTimeout(()=>{
-              el.style.opacity="0";
-              el.style.transform=el.style.transform.replace("scale(1.25)","scale(0.7)");
-            },90);
+            setTimeout(()=>{ el.style.opacity="0"; el.style.transform=el.style.transform.replace("scale(1.25)","scale(0.7)"); },90);
           }
           const [r,c]=this.rc(i);
           const float=document.createElement("div");
@@ -376,13 +356,7 @@ export default {
           this.fxEl().appendChild(float);
           setTimeout(()=>float.remove?.(),600);
         }
-
-        setTimeout(()=>{
-          for(const i of matches){
-            if(this.grid[i]!=="💥" && this.grid[i]!=="🌈") this.grid[i]=null;
-          }
-          this.render(); res();
-        },240);
+        setTimeout(()=>{ for(const i of matches){ if(this.grid[i]!=="💥" && this.grid[i]!=="🌈") this.grid[i]=null; } this.render(); res(); },240);
       });
     },
 
@@ -393,7 +367,7 @@ export default {
       sweep.style.top=`${r*this.CELL}px`;
       sweep.style.height=`${this.CELL}px`;
       this.fxEl().appendChild(sweep);
-      setTimeout(()=>sweep.remove?.(),420);
+      setTimeout(()=>sweep.remove?.(), 420);
 
       for(let c=0;c<this.SIZE;c++) this.grid[this.idx(r,c)]=null;
       this.render();
@@ -406,7 +380,7 @@ export default {
       wave.style.left = `${c*this.CELL + this.CELL/2}px`;
       wave.style.top  = `${r*this.CELL + this.CELL/2}px`;
       this.fxEl().appendChild(wave);
-      setTimeout(()=>wave.remove?.(),600);
+      setTimeout(()=>wave.remove?.(), 600);
 
       const type=this.TYPES[this.rnd(this.TYPES.length)];
       for(let j=0;j<this.grid.length;j++) if(this.grid[j]===type) this.grid[j]=null;
@@ -414,12 +388,7 @@ export default {
       this.cascade(this.findMatches()).then(this.checkWinLose);
     },
     animateSpecial(el){
-      return new Promise(res=>{
-        el.style.transition="transform .25s ease, opacity .25s ease";
-        el.style.transform+=" scale(1.3)";
-        el.style.opacity="0.5";
-        setTimeout(res,250);
-      });
+      return new Promise(res=>{ el.style.transition="transform .25s ease, opacity .25s ease"; el.style.transform+=" scale(1.3)"; el.style.opacity="0.5"; setTimeout(res,250); });
     },
 
     checkWinLose(){
@@ -442,7 +411,7 @@ export default {
 };
 </script>
 
-<!-- 注意：不要加 scoped！ -->
+<!-- 注意：不要加 scoped；这里完全取消任何裁剪，仅用更大的 gutter 避免贴边 -->
 <style>
 .match3.game-wrapper{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .match3 h1{ letter-spacing:.5px; margin:10px 0 6px; text-shadow:0 2px 12px rgba(108,99,255,.25); }
@@ -460,11 +429,11 @@ export default {
 .match3 .btn{ padding:8px 14px; border-radius:10px; border:1px solid #2f3350; background:#2b2f49; color:#f2f3ff; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .12s, background .2s; }
 .match3 .btn:hover{ transform:translateY(-1px); background:#343a5a; }
 
-/* 棋盘与两层（变量让圆角与内边距精确匹配） */
+/* === 棋盘：外层负责圆角 + 边框；不裁剪内部；增大安全边距 === */
 .match3 .board{
-  --bd-r: 16px;      /* 外层圆角 */
-  --gap:  6px;       /* 内边距 */
-  --bd-bw: 1px;      /* 边框宽度 */
+  --bd-r: 16px;
+  --gutter: 10px;   /* ↑ 增大一点安全边距，避免贴边造成视觉“缺角” */
+  --bd-bw: 1px;
 
   position:relative;
   margin:18px auto;
@@ -472,28 +441,27 @@ export default {
   border: var(--bd-bw) solid #3a3e66;
   border-radius: var(--bd-r);
   box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
-  padding: var(--gap);
-  overflow:hidden; /* 裁剪内部，避免圆角细线 */
+  padding: var(--gutter);   /* 只靠外层留白来“增大画布”，不裁剪任何内层 */
+  overflow: visible;        /* ✅ 不裁剪 */
 }
+
+/* 两层：只做定位，不再有圆角/裁剪 */
 .match3 .tiles-layer,
 .match3 .fx-layer{
   position:absolute;
-  inset: var(--gap);
-  border-radius: calc(var(--bd-r) - var(--gap) - var(--bd-bw)); /* 关键：避免“缺角” */
-  background:transparent;
+  inset:0;
+  background: transparent;
+  /* 不要 border-radius / overflow / clip-path */
 }
-.match3 .fx-layer{
-  pointer-events:none;
-  z-index:100; /* 特效永远在最上 */
-}
+.match3 .fx-layer{ pointer-events:none; z-index:100; }
 
-/* tile 层级：选中抬高，避免被遮挡 */
+/* tile 层级 */
 .match3 .tile{
   position:absolute;
   width:48px; height:48px; border-radius:10px; background:#3a3d5c; color:#fff;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.3);
   display:flex; align-items:center; justify-content:center; font-size:22px;
-  transition: transform .25s ease, background .25s ease, box-shadow .25s ease, opacity .25s ease;
+  transition:transform .25s ease, background .25s ease, box-shadow .25s ease, opacity .25s ease;
   z-index:1;
 }
 .match3 .tile.hole{ background:transparent !important; box-shadow:none !important; opacity:0; }
