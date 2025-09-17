@@ -2,7 +2,7 @@
   <div class="game-page">
     <h1 class="title">Healthy Match-3</h1>
 
-    <!-- HUD 卡片 -->
+    <!-- HUD -->
     <section class="hud-card">
       <div class="hud-row">
         <div class="hud-item">
@@ -38,10 +38,10 @@
       </div>
     </section>
 
-    <!-- 游戏棋盘 -->
+    <!-- Board -->
     <div ref="board" class="board" aria-label="game board"></div>
 
-    <!-- 说明 -->
+    <!-- Legend -->
     <div class="legend">
       <h3>Special Blocks</h3>
       <ul>
@@ -55,7 +55,7 @@
       <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">{{ t.text }}</div>
     </div>
 
-    <!-- 专属礼花画布（置顶） -->
+    <!-- Confetti canvas -->
     <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -67,11 +67,10 @@ export default {
   name: "Match3View",
   data() {
     return {
-      // config
       SIZE: 10,
       TYPES: ["🍎","🥦","🥕","🥛","🍞","🧃","🍌","🍇"],
       CELL: 48,
-      // state
+
       grid: [],
       score: 0,
       moves: 15,
@@ -80,11 +79,10 @@ export default {
       tip: "——",
       selected: null,
       animating: false,
-      // render cache
+
       tileEls: [],
       toasts: [],
       toastId: 1,
-      // confetti
       cf: null,
     };
   },
@@ -94,22 +92,20 @@ export default {
     this.init();
   },
   methods: {
-    // --- utils ---
+    // utils
     rnd(n){ return Math.floor(Math.random()*n); },
     randomType(){ return this.TYPES[this.rnd(this.TYPES.length)]; },
     idx(r,c){ return r*this.SIZE + c; },
     rc(i){ return [Math.floor(i/this.SIZE), i%this.SIZE]; },
     sleep(ms){ return new Promise(r=>setTimeout(r, ms)); },
     toast(text, type='info', ms=1400){
-      const id = this.toastId++;
-      this.toasts.push({ id, text, type });
+      const id = this.toastId++; this.toasts.push({ id, text, type });
       setTimeout(()=>{ this.toasts = this.toasts.filter(x=>x.id!==id) }, ms);
     },
     burst(opts){ if (this.cf) this.cf(opts); else confetti(opts); },
 
-    // 新增：邻居索引 & 提示
     neighbors(i){
-      const [r,c] = this.rc(i); const ns = [];
+      const [r,c] = this.rc(i); const ns=[];
       if (r>0) ns.push(this.idx(r-1,c));
       if (r<this.SIZE-1) ns.push(this.idx(r+1,c));
       if (c>0) ns.push(this.idx(r,c-1));
@@ -123,10 +119,10 @@ export default {
       }
     },
     clearAdjacents(){
-      this.tileEls.forEach(el => el && el.classList.remove('adjacent-hint'));
+      this.tileEls.forEach(el => el && el.classList.remove('adjacent-hint','hover-swap'));
     },
 
-    // --- init ---
+    // init
     init(){
       this.grid = Array(this.SIZE*this.SIZE).fill(null).map(()=>this.randomType());
       this.score = 0; this.moves = 15; this.level = 1;
@@ -150,13 +146,15 @@ export default {
         el.style.transition = 'transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s';
         el.style.willChange = 'transform, opacity';
         el.onclick = () => this.onTileClick(i, el);
+        el.onmouseenter = () => this.onTileEnter(i);
+        el.onmouseleave = () => this.onTileLeave(i);
         board.appendChild(el);
         this.tileEls.push(el);
       }
       this.render();
     },
 
-    // --- render（持久节点 + transform 过渡） ---
+    // render (persistent nodes + transform transition)
     render(){
       for (let i=0;i<this.grid.length;i++){
         const el = this.tileEls[i];
@@ -169,19 +167,19 @@ export default {
       }
     },
 
-    // --- 点击主逻辑 + 即时反馈 ---
+    // interactions
     onTileClick(i, el){
       if (this.animating) return;
 
-      // 1) 立刻反馈：脉冲 & 按压回弹
+      // instant feedback
       this.tapPulse(i);
       this.pressBounce(el);
 
-      // 2) 特殊块
+      // specials
       if (this.grid[i] === "💥") { this.animateSpecial(el).then(()=>this.triggerBomb(i)); return; }
       if (this.grid[i] === "🌈") { this.animateSpecial(el).then(()=>this.triggerRainbow(i)); return; }
 
-      // 3) 选择与交换
+      // selection & swap
       if (this.selected === null){
         this.selected = i; this.highlight(i); this.showAdjacents(i); return;
       }
@@ -193,14 +191,14 @@ export default {
         this.selected = i; this.highlight(i); this.showAdjacents(i); return;
       }
 
-      // 相邻 → 交换（先扣步）
+      // adjacent → swap (spend move)
       if (this.moves > 0) this.moves--;
       this.clearAdjacents();
       this.swapWithAnimation(i, this.selected).then(()=>{
         const m = this.findMatches();
         if (m.size === 0){
           this.wiggleTiles(i, this.selected);
-          this.swapWithAnimation(i, this.selected, true).then(()=>this.checkWinLose());
+          this.swapWithAnimation(i, this.selected).then(()=>this.checkWinLose()); // swap back
         } else {
           this.cascade(m).then(this.checkWinLose);
         }
@@ -208,7 +206,16 @@ export default {
       });
     },
 
-    // 即时反馈：脉冲圈
+    onTileEnter(i){
+      if (this.selected !== null && this.adjacent(i, this.selected)) {
+        const a = this.tileEls[this.selected];
+        const b = this.tileEls[i];
+        a && a.classList.add('hover-swap');
+        b && b.classList.add('hover-swap');
+      }
+    },
+    onTileLeave(){ this.tileEls.forEach(el => el && el.classList.remove('hover-swap')); },
+
     tapPulse(i){
       const board = this.$refs.board;
       const [r,c] = this.rc(i);
@@ -221,40 +228,56 @@ export default {
       board.appendChild(ring);
       setTimeout(()=> ring.remove(), 500);
     },
-    // 即时反馈：按压回弹（不覆盖原 transform）
     pressBounce(el){
       const old = el.style.transform;
       el.style.transform = old + " scale(0.94)";
       setTimeout(()=>{ el.style.transform = old; }, 120);
     },
 
-    // 选中高亮
-    highlight(i){
-      const el = this.tileEls[i];
-      if (el){ el.classList.add('selected'); el.style.zIndex='10'; }
-    },
-    unhighlight(){
-      this.tileEls.forEach(el=>{ el.classList.remove('selected'); el.style.zIndex='1'; });
-    },
-    adjacent(a,b){
-      const [ar,ac]=this.rc(a), [br,bc]=this.rc(b);
-      return Math.abs(ar-br)+Math.abs(ac-bc)===1;
-    },
+    highlight(i){ const el = this.tileEls[i]; if (el){ el.classList.add('selected'); el.style.zIndex='10'; } },
+    unhighlight(){ this.tileEls.forEach(el=>{ el.classList.remove('selected'); el.style.zIndex='1'; }); },
+    adjacent(a,b){ const [ar,ac]=this.rc(a), [br,bc]=this.rc(b); return Math.abs(ar-br)+Math.abs(ac-bc)===1; },
 
-    // 交换动画
-    swapWithAnimation(a,b){
+    // FIXED: no "flash back" after swap
+    swapWithAnimation(a, b) {
       this.animating = true;
-      [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
-      const [ar,ac] = this.rc(a), [br,bc]=this.rc(b);
+
       const elA = this.tileEls[a], elB = this.tileEls[b];
-      if (elA && elB){
-        elA.style.transform = `translate(${bc*this.CELL}px,${br*this.CELL}px)`;
-        elB.style.transform = `translate(${ac*this.CELL}px,${ar*this.CELL}px)`;
+      const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
+
+      // animate movement only (no data swap yet)
+      if (elA && elB) {
+        elA.style.transform = `translate(${bc * this.CELL}px,${br * this.CELL}px)`;
+        elB.style.transform = `translate(${ac * this.CELL}px,${ar * this.CELL}px)`;
       }
-      return new Promise(res=>{ setTimeout(()=>{ this.render(); this.animating=false; res(); }, 280); });
+
+      return new Promise(res => {
+        setTimeout(() => {
+          // 1) now swap data
+          [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
+
+          // 2) temporarily disable transition to avoid second animation ("flash back")
+          const tA = elA ? elA.style.transition : "";
+          const tB = elB ? elB.style.transition : "";
+          if (elA) elA.style.transition = "none";
+          if (elB) elB.style.transition = "none";
+
+          this.render();   // align DOM to new grid instantly
+
+          // 3) force reflow
+          if (elA) void elA.offsetHeight;
+          if (elB) void elB.offsetHeight;
+
+          // 4) restore transition
+          if (elA) elA.style.transition = tA || "";
+          if (elB) elB.style.transition = tB || "";
+
+          this.animating = false;
+          res();
+        }, 280); // must match CSS transition duration
+      });
     },
 
-    // 无效交换反馈
     wiggleTiles(a,b){
       [this.tileEls[a], this.tileEls[b]].forEach(el=>{
         if (!el) return;
@@ -264,10 +287,10 @@ export default {
       this.toast("No match!", "warn", 900);
     },
 
-    // 匹配检测
+    // matching
     findMatches(){
       const matched = new Set();
-      // 行
+      // rows
       for (let r=0;r<this.SIZE;r++){
         let run=1;
         for (let c=1;c<=this.SIZE;c++){
@@ -284,7 +307,7 @@ export default {
           }
         }
       }
-      // 列
+      // cols
       for (let c=0;c<this.SIZE;c++){
         let run=1;
         for (let r=1;r<=this.SIZE;r++){
@@ -304,7 +327,7 @@ export default {
       return matched;
     },
 
-    // 级联
+    // cascade
     async cascade(first){
       this.animating = true;
       await this.removeMatches(first);
@@ -370,7 +393,7 @@ export default {
       }
     },
 
-    // 飘分
+    // floating score
     spawnFloatingScore(i, points=10){
       const board = this.$refs.board;
       const [r,c] = this.rc(i);
@@ -386,7 +409,7 @@ export default {
       setTimeout(()=>el.remove(), 650);
     },
 
-    // 💥 清行 + 扫光
+    // specials
     triggerBomb(index){
       const [r] = this.rc(index);
       const board = this.$refs.board;
@@ -409,8 +432,6 @@ export default {
         this.cascade(this.findMatches()).then(this.checkWinLose);
       }, 160);
     },
-
-    // 🌈 清随机一种（可升级为：点击选择目标类型）
     triggerRainbow(){
       const type = this.TYPES[this.rnd(this.TYPES.length)];
       for (let j=0;j<this.grid.length;j++){
@@ -419,7 +440,6 @@ export default {
       this.render();
       this.cascade(this.findMatches()).then(this.checkWinLose);
     },
-
     animateSpecial(el){
       return new Promise(res=>{
         el.style.transition = "transform .28s ease, opacity .28s ease";
@@ -429,7 +449,7 @@ export default {
       });
     },
 
-    // 胜负（toast + 专属礼花）
+    // win/lose
     checkWinLose(){
       if (this.score >= this.levelGoals[this.level-1]){
         this.burst({ particleCount: 220, spread: 120, origin:{ y:.6 } });
@@ -462,10 +482,7 @@ export default {
 <style scoped>
 /* ===== 背景 / 标题 ===== */
 .game-page{
-  min-height: 100vh;
-  display: grid;
-  justify-items: center;
-  gap: 14px;
+  min-height: 100vh; display: grid; justify-items: center; gap: 14px;
   padding: 24px 16px 60px;
   background: radial-gradient(1200px 700px at 50% -200px, #1f2941, #0f172a);
 }
@@ -473,11 +490,9 @@ export default {
 
 /* ===== HUD ===== */
 .hud-card{
-  width: min(880px, 92vw);
-  padding: 14px 16px 12px;
-  background: rgba(20,25,45,.72);
-  border: 1px solid #334155; border-radius: 14px; backdrop-filter: blur(6px);
-  box-shadow: 0 12px 30px #0005;
+  width: min(880px, 92vw); padding: 14px 16px 12px;
+  background: rgba(20,25,45,.72); border: 1px solid #334155; border-radius: 14px;
+  backdrop-filter: blur(6px); box-shadow: 0 12px 30px #0005;
 }
 .hud-row{ display:grid; grid-template-columns: repeat(4,1fr) auto; align-items:center; gap:12px; }
 .hud-item{ display:flex; flex-direction:column; gap:4px; }
@@ -495,10 +510,10 @@ export default {
 .tip-icon{ filter: drop-shadow(0 2px 6px #0007); }
 .tip-text{ opacity:.95; }
 
-/* ===== 棋盘 ===== */
+/* ===== Board / Tiles ===== */
 .board{
-  position: relative; margin:16px auto;
-  background:#2c2f48; border:2px solid #444; border-radius:14px; box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  position: relative; margin:16px auto; background:#2c2f48;
+  border:2px solid #444; border-radius:14px; box-shadow: 0 12px 40px rgba(0,0,0,.45);
 }
 .tile{
   border-radius:8px; background:#3a3d5c; color:#fff; box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
@@ -507,21 +522,32 @@ export default {
 }
 .tile:hover{ background:#50557c; transform: scale(1.05); }
 
-/* 选中高亮：霓虹脉冲环 */
+/* 选中：青色粗框 */
 .tile.selected{ position: relative; }
 .tile.selected::after{
-  content:''; position:absolute; inset:4px; border:2px solid #22d3ee; border-radius:10px;
-  box-shadow: 0 0 10px #22d3eeaa, inset 0 0 8px #22d3ee55; pointer-events:none; animation: selPulse 1s ease-in-out infinite;
+  content:''; position:absolute; inset:3px;
+  border:3px solid #22d3ee; border-radius:10px;
+  box-shadow: 0 0 12px #22d3eeaa, inset 0 0 8px #22d3ee66;
+  pointer-events:none; animation: selPulse 1s ease-in-out infinite;
 }
-@keyframes selPulse{ 0%,100%{ opacity:.95 } 50%{ opacity:.45 } }
+@keyframes selPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.55 } }
 
-/* 可交换邻格提示（虚线框 + 轻微呼吸） */
+/* 可交换邻格：紫色框 */
 .tile.adjacent-hint{ position:relative; }
 .tile.adjacent-hint::after{
-  content:''; position:absolute; inset:8px; border:2px dashed #a78bfa; border-radius:10px; opacity:.85; pointer-events:none;
-  animation: hintPulse 1.2s ease-in-out infinite;
+  content:''; position:absolute; inset:7px;
+  border:2px solid #a78bfa; border-radius:10px; opacity:.95;
+  box-shadow: 0 0 8px #a78bfa66; pointer-events:none;
 }
-@keyframes hintPulse{ 0%,100%{ transform: scale(.98) } 50%{ transform: scale(1.02) } }
+
+/* 准备交换：黄色强调框（两格同时出现） */
+.tile.hover-swap{ position:relative; }
+.tile.hover-swap::before{
+  content:''; position:absolute; inset:0;
+  border:3px solid #facc15; border-radius:12px;
+  box-shadow: 0 0 10px #facc1566; pointer-events:none; animation: swapBlink .6s ease-in-out infinite;
+}
+@keyframes swapBlink{ 0%,100%{ opacity:1 } 50%{ opacity:.6 } }
 
 /* 无效交换反馈 */
 @keyframes wiggle { 0%,100%{ transform: translateX(0)} 25%{ transform: translateX(-6px)} 75%{ transform: translateX(6px)} }
@@ -529,10 +555,11 @@ export default {
 @keyframes flash { from{ background:#8b3a3a } to{ background:#3a3d5c } }
 .tile.flash{ animation: flash .28s ease; }
 
-/* 点击脉冲 Ripple（追加到 board 内） */
+/* 点击涟漪 */
 .click-ripple{
   position:absolute; width:10px; height:10px; left:0; top:0; transform: translate(-50%,-50%); pointer-events:none;
-  border:2px solid rgba(173,216,255,.95); border-radius:999px; box-shadow: 0 0 12px rgba(173,216,255,.9), 0 0 24px rgba(173,216,255,.4);
+  border:2px solid rgba(173,216,255,.95); border-radius:999px;
+  box-shadow: 0 0 12px rgba(173,216,255,.9), 0 0 24px rgba(173,216,255,.4);
   animation: ripple .45s ease-out forwards;
 }
 @keyframes ripple{ from{ opacity:.9; transform: translate(-50%,-50%) scale(.6) } to{ opacity:0; transform: translate(-50%,-50%) scale(2.2) } }
@@ -544,14 +571,15 @@ export default {
 }
 @keyframes floatUp{ from{ transform:translate(-50%,-20%); opacity:.1 } to{ transform:translate(-50%,-80%); opacity:1 } }
 
-/* 💥 扫光 */
+/* 行扫光（💥） */
 .row-sweep{
-  position:absolute; left:0; background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.35), rgba(255,255,255,0));
+  position:absolute; left:0;
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.35), rgba(255,255,255,0));
   filter:blur(2px); border-radius:8px; pointer-events:none; opacity:.9; animation: sweep .35s ease forwards;
 }
 @keyframes sweep{ from{ transform:translateX(-20%); opacity:.6 } to{ transform:translateX(100%); opacity:0 } }
 
-/* 说明卡片 */
+/* Legend */
 .legend{
   width:min(880px, 92vw); margin-top:6px; padding:12px; border:1px solid #3a405c; border-radius:12px; background:#1b2037; color:#f0f0f0;
 }
@@ -572,9 +600,9 @@ export default {
 @keyframes toastIn{ from{ transform: translate(-50%, -8px); opacity:0 } to{ transform: translate(-50%, 0); opacity:1 } }
 @keyframes toastOut{ to{ transform: translate(-50%, -8px); opacity:0 } }
 
-/* 专属 confetti 画布 */
+/* Confetti canvas */
 .confetti-canvas{ position: fixed; inset: 0; pointer-events: none; z-index: 10020; }
 
-/* 响应式 */
+/* Responsive */
 @media (max-width: 720px){ .hud-row{ grid-template-columns: repeat(2,1fr) auto; } }
 </style>
