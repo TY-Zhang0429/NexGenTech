@@ -28,24 +28,23 @@
       </div>
     </header>
 
-    <!-- Loading / Error states -->
+    <!-- Loading / Error -->
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- ===== Main area: Left (two collapsibles) | Center (board) | Right (hidden) ===== -->
+    <!-- ===== Main area: Left (two collapsibles) | Center (board auto) | Right (flex gutter) ===== -->
     <main class="wd-playzone" v-else @click="maybeFocusMobile">
       <!-- Left: Collapsible #1 - How to Play (desktop only) -->
       <aside
         class="wd-aside left wd-aside-collapsible"
         :class="{ open: playOpen }"
       >
-        <!-- Toggle button (kept visible while body animates) -->
         <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
           <span class="chev" :class="{ open: playOpen }">▸</span>
           How to Play
         </button>
 
-        <!-- Collapsible body (animated via CSS: max-height + opacity) -->
+        <!-- Animated body (max-height + opacity) -->
         <div class="wd-aside-body">
           <h3 class="wd-aside-title">How to Play</h3>
           <ol class="wd-steps">
@@ -92,7 +91,7 @@
         </div>
       </aside>
 
-      <!-- Center: Board + hidden mobile input (to summon soft keyboard) -->
+      <!-- Center: Board (auto-sized column; always centered in the page) -->
       <div class="wd-board-col">
         <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
           <template v-for="r in maxAttempts" :key="r">
@@ -202,7 +201,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'v
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
-// Backend base – same-origin API via CloudFront
+// Same-origin API via CloudFront
 const API_BASE = '';
 
 // ===== Core game state =====
@@ -522,19 +521,31 @@ function triggerRowShake(r) {
 .wd-notice { background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error { border-color:#b91c1c; color:#fecaca; }
 
-/* ===== Grid layout: Left (300px) | Center (auto) | Right (0) ===== */
+/* ===== Center-first grid (key change):
+   1fr | auto | 1fr keeps the middle column centered regardless of side content. ===== */
 .wd-playzone{
   display:grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 1fr auto 1fr;   /* middle = board (auto width), sides = symmetric gutters */
   gap: 20px;
   align-items: start;
 }
-.wd-board-col {
-  grid-column: 2;
-  display: flex;
-  justify-content: center;   /* center horizontally */
+
+/* Left cards sit in the first column, stacked vertically, fixed width so they don't look too wide. */
+.wd-aside.left{
+  grid-column: 1;
+  justify-self: start;
+  width: 300px;             /* visual width of the cards */
+  max-width: 320px;
 }
 
+/* Small spacing between the two cards */
+.wd-aside.left + .wd-aside.left { margin-top: 14px; }
+
+/* Board sits in the middle column and is horizontally centered by the grid itself. */
+.wd-board-col{
+  grid-column: 2;
+  justify-self: center;     /* centers the board within the middle (auto) column */
+}
 
 /* ===== Aside (base card) ===== */
 .wd-aside{
@@ -543,7 +554,6 @@ function triggerRowShake(r) {
   padding:12px 14px;
   border-radius:12px;
   color:#cfd2dd;
-  max-width: 300px;
   position: sticky;
   top: 84px;
   height: fit-content;
@@ -560,9 +570,7 @@ function triggerRowShake(r) {
 .wd-aside-toggle .chev{ transition: transform .18s ease; }
 .wd-aside-toggle .chev.open{ transform: rotate(90deg); }
 
-/* Animated body:
-   - Keep in DOM (no display:none) so height can transition
-   - max-height is a safe upper bound for content height */
+/* Animated body – keep in DOM to allow height transition */
 .wd-aside-body{
   margin-top:10px; padding:10px 12px;
   max-height: 0;            /* collapsed */
@@ -570,9 +578,8 @@ function triggerRowShake(r) {
   opacity: 0;
   transition: max-height .28s ease, opacity .25s ease;
 }
-/* When the aside has .open (Vue toggles via :class), body expands smoothly */
 .wd-aside-collapsible.open .wd-aside-body{
-  max-height: 800px;        /* increase if your content is taller */
+  max-height: 800px;        /* raise if your content is taller */
   opacity: 1;
 }
 
@@ -589,9 +596,6 @@ function triggerRowShake(r) {
 .legend-row{ display:flex; align-items:center; gap:10px; margin:6px 0; }
 .wd-note{ opacity:.9; font-size: 13px; margin-top: 4px; }
 .wd-bullets{ margin: 0; padding-left: 18px; line-height: 1.5; }
-
-/* Hide old right panel (we moved its content to the left) */
-.wd-aside.right{ display: none; }
 
 /* ===== Board ===== */
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
@@ -667,16 +671,11 @@ function triggerRowShake(r) {
   30%, 60%, 90% { transform: translateX(6px); }
 }
 
-/* ===== Mobile behavior: hide desktop asides; use <details> panels ===== */
+/* ===== Mobile behavior: collapse to single column; use <details> panels ===== */
 .wd-mobile-panels { display: none; }
 
 @media (max-width: 980px) {
-  .wd-playzone {
-  display: grid;
-  grid-template-columns: 300px 1fr auto;  /* 3 columns */
-  gap: 20px;
-  align-items: start;
-}
+  .wd-playzone { grid-template-columns: 1fr; }
   .wd-aside.left { display: none; }
   .wd-mobile-panels {
     display: block;
@@ -710,14 +709,4 @@ function triggerRowShake(r) {
 }
 .wd-coll[open] > summary::before{ content: '▾'; }
 .wd-coll > *:not(summary){ margin-top:8px; }
-
-/* Force both left asides into column 1; board in column 2 */
-.wd-aside.left { grid-column: 1; }   /* two instruction panels stack vertically in column 1 */
-.wd-board-col { grid-column: 2; display:flex; justify-content:center; }
-.wd-aside.right { grid-column: 3; } /* right hint/avatar */
-
-/* vertical spacing between the two left panels */
-.wd-aside.left + .wd-aside.left { margin-top: 12px; }
-
-
 </style>
