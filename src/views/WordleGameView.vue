@@ -1,10 +1,10 @@
 <template>
   <section class="wordly">
-    <!-- 引入可拖动头像组件 -->
+    <!-- Draggable avatar & breadcrumbs -->
     <DraggableAvatar />
     <BreadcrumbNav />
 
-    <!-- Top -->
+    <!-- ===== Top toolbar ===== -->
     <header class="wd-toolbar">
       <div class="wd-left">
         <label class="wd-label">Difficulty</label>
@@ -28,38 +28,71 @@
       </div>
     </header>
 
-    <!-- Loading / Error -->
+    <!-- Loading / Error states -->
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- Play zone: left instruction | center board | right rules/tips -->
+    <!-- ===== Main area: Left (two collapsibles) | Center (board) | Right (hidden) ===== -->
     <main class="wd-playzone" v-else @click="maybeFocusMobile">
-      <!-- Left: How to Play -->
-      <aside class="wd-aside left">
-        <h3 class="wd-aside-title">How to Play</h3>
-        <ol class="wd-steps">
-          <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
-          <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
-          <li>The tile colors show how close your guess was:</li>
-        </ol>
-        <div class="wd-legend">
-          <div class="legend-row">
-            <span class="wd-cell tiny correct">A</span>
-            <span>Right letter, right spot</span>
+      <!-- Left: Collapsible #1 - How to Play (desktop only) -->
+      <aside
+        class="wd-aside left wd-aside-collapsible"
+        :class="{ open: playOpen }"
+      >
+        <!-- Toggle button (kept visible while body animates) -->
+        <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
+          <span class="chev" :class="{ open: playOpen }">▸</span>
+          How to Play
+        </button>
+
+        <!-- Collapsible body (animated via CSS: max-height + opacity) -->
+        <div class="wd-aside-body">
+          <h3 class="wd-aside-title">How to Play</h3>
+          <ol class="wd-steps">
+            <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+            <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+            <li>The tile colors show how close your guess was:</li>
+          </ol>
+          <div class="wd-legend">
+            <div class="legend-row">
+              <span class="wd-cell tiny correct">A</span>
+              <span>Right letter, right spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny present">A</span>
+              <span>Right letter, wrong spot</span>
+            </div>
+            <div class="legend-row">
+              <span class="wd-cell tiny absent">A</span>
+              <span>Letter not in the word</span>
+            </div>
           </div>
-          <div class="legend-row">
-            <span class="wd-cell tiny present">A</span>
-            <span>Right letter, wrong spot</span>
-          </div>
-          <div class="legend-row">
-            <span class="wd-cell tiny absent">A</span>
-            <span>Letter not in the word</span>
-          </div>
+          <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
         </div>
-        <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
       </aside>
 
-      <!-- Center: Board -->
+      <!-- Left: Collapsible #2 - Rules & Tips (desktop only) -->
+      <aside
+        class="wd-aside left wd-aside-collapsible"
+        :class="{ open: rulesOpen }"
+      >
+        <button class="wd-aside-toggle" @click="rulesOpen = !rulesOpen" :aria-expanded="rulesOpen">
+          <span class="chev" :class="{ open: rulesOpen }">▸</span>
+          Rules & Tips
+        </button>
+
+        <div class="wd-aside-body">
+          <h3 class="wd-aside-title">Rules & Tips</h3>
+          <ul class="wd-bullets">
+            <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+            <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+            <li><strong>Duplicates</strong>: Letters can repeat.</li>
+            <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Center: Board + hidden mobile input (to summon soft keyboard) -->
       <div class="wd-board-col">
         <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
           <template v-for="r in maxAttempts" :key="r">
@@ -75,7 +108,7 @@
           </template>
         </div>
 
-        <!-- mobile input(invoke soft keyboard) -->
+        <!-- Hidden input for mobile soft keyboard; all key events are unified -->
         <input
           ref="mobileInput"
           class="wd-hidden-input"
@@ -87,18 +120,7 @@
         />
       </div>
 
-      <!-- Right: Rules / Tips -->
-      <aside class="wd-aside right">
-        <h3 class="wd-aside-title">Rules & Tips</h3>
-        <ul class="wd-bullets">
-          <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
-          <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
-          <li><strong>Duplicates</strong>: Letters can repeat.</li>
-          <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
-        </ul>
-      </aside>
-
-      <!-- ===== Mobile-only accordion panels (≤980px screen) ===== -->
+      <!-- Mobile-only accordion panels (≤980px) – unchanged -->
       <div class="wd-mobile-panels">
         <details class="wd-coll">
           <summary>How to Play</summary>
@@ -134,7 +156,6 @@
           </ul>
         </details>
       </div>
-      <!-- ===== end mobile panels ===== -->
     </main>
 
     <!-- Full-screen confetti -->
@@ -176,61 +197,67 @@
 </template>
 
 <script setup>
+// ===== Imports =====
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
-const API_BASE = ''; // Same origin (via CloudFront proxy)
+// Backend base – same-origin API via CloudFront
+const API_BASE = '';
 
-/* ---------- basic state ---------- */
-const difficulty = ref('Medium');
+// ===== Core game state =====
+const difficulty = ref('Medium');                           // 'Easy' | 'Medium' | 'Hard'
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
 
 const loading = ref(true);
 const error = ref('');
-const wordsRaw = ref([]);           // [{word, difficulty, hint}]
+const wordsRaw = ref([]);                                   // [{ word, difficulty, hint }]
 const answer = ref('');
 const currentHint = ref('');
 const hintVisible = ref(false);
 
-const guesses = reactive([]);       // ['apple', ...]
-const status  = reactive([]);       // [['pending'|'correct'|'present'|'absent', ...], ...]
-const cur = ref('');
-const statusMsg = ref('');
+const guesses = reactive([]);                               // array of guess strings
+const status  = reactive([]);                               // per-row arrays of cell states
+const cur = ref('');                                        // current input row
+const statusMsg = ref('');                                  // win/lose banner
 
-/* ---------- animation ---------- */
-const revealingRowIndex = ref(-1);
-const REVEAL_GAP   = 140;                          // every (ms)
-const SINGLE_FLIP  = 250;                          // single cell flip duration (ms)
-const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2);  // 50% moment
+// ===== Desktop collapsible states =====
+const playOpen = ref(false);                                // "How to Play" open/closed
+const rulesOpen = ref(false);                               // "Rules & Tips" open/closed
 
-/* ---------- keyboard state (green > yellow > gray) ---------- */
+// ===== Animation constants =====
+const revealingRowIndex = ref(-1);                          // row currently flipping
+const REVEAL_GAP   = 140;                                   // ms between cell flips
+const SINGLE_FLIP  = 250;                                   // per-cell flip duration
+const HALF_FLIP    = Math.floor(SINGLE_FLIP / 2);           // 50% moment to swap color
+
+// ===== Keyboard coloring (priority: correct > present > absent) =====
 const keyState = reactive(Object.fromEntries(
   'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])
 ));
 function updateKeyState(letter, newState) {
   const curSt = keyState[letter];
-  if (curSt === 'correct') return;                         // highest priority
-  if (curSt === 'present' && newState === 'absent') return; // yellow cannot be covered by gray
+  if (curSt === 'correct') return;                          // never downgrade green
+  if (curSt === 'present' && newState === 'absent') return; // never overwrite yellow with gray
   keyState[letter] = newState;
 }
 
-/* ---------- confetti ---------- */
+// ===== Confetti canvas =====
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* ---------- input device ---------- */
+// ===== Input device helpers =====
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* ---------- keyboard layout ---------- */
+// On-screen keyboard rows
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* ---------- lifecycle ---------- */
+// ===== Lifecycle =====
 onMounted(async () => {
   try {
     await fetchWords();
@@ -249,7 +276,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-/* ---------- API ---------- */
+// ===== API: load words =====
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -257,13 +284,14 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* ---------- question ---------- */
+// ===== Pick a new answer according to difficulty/length =====
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
     (w) => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
   );
   if (pool.length === 0) {
+    // Fallback: keep same difficulty, trim/pad to length to avoid crashes
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
     const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple', hint: '' };
     return { word: (ch.word || 'apple').toLowerCase().slice(0, needLen).padEnd(needLen, 'a'), hint: ch.hint || '' };
@@ -272,6 +300,7 @@ function pickAnswerObj() {
   return { word: (choice.word || '').toLowerCase(), hint: choice.hint || '' };
 }
 
+// ===== Game (re)start =====
 function resetBoard() {
   guesses.splice(0);
   status.splice(0);
@@ -279,8 +308,7 @@ function resetBoard() {
   statusMsg.value = '';
   hintVisible.value = false;
   revealingRowIndex.value = -1;
-  // clear keyboard state
-  Object.keys(keyState).forEach(k => keyState[k] = '');
+  Object.keys(keyState).forEach(k => keyState[k] = '');     // clear keyboard colors
   stopConfetti();
 }
 function startGame() {
@@ -291,7 +319,7 @@ function startGame() {
   currentHint.value = picked.hint;
 }
 
-/* ---------- input ---------- */
+// ===== Input handling (desktop & on-screen) =====
 function onKeydown(e) {
   if (statusMsg.value || revealingRowIndex.value !== -1) return;
   const key = e.key;
@@ -315,10 +343,10 @@ function press(k) {
 }
 function maybeFocusMobile() { if (isMobile) mobileInput.value?.focus(); }
 
-/* ---------- submit one by one and flip ---------- */
+// ===== Submit guess with staggered flip animation =====
 function submitGuess() {
   if (cur.value.length !== targetLen.value) {
-    triggerRowShake(guesses.length);
+    triggerRowShake(guesses.length);                         // visual feedback for short guess
     return;
   }
 
@@ -327,24 +355,21 @@ function submitGuess() {
   const rowIndex = guesses.length;
 
   guesses.push(guess);
-
-  // 1) all line pending, prevent early coloring
   status.push(Array(targetLen.value).fill('pending'));
   cur.value = '';
 
-  // 2) start flipping one by one
   revealingRowIndex.value = rowIndex;
 
-  // 3) each cell changes color at 50% + update keyboard state
+  // reveal each cell at the 50% flip moment; also update keyboard state
   for (let i = 0; i < targetLen.value; i++) {
     setTimeout(() => {
       const st = res[i];
-      status[rowIndex][i] = st;          // change color of this cell
-      updateKeyState(guess[i], st);      // sync keyboard
+      status[rowIndex][i] = st;
+      updateKeyState(guess[i], st);
     }, i * REVEAL_GAP + HALF_FLIP);
   }
 
-  // 4) after row animation ends, determine win/lose
+  // when the row animation is complete, decide outcome
   const total = (targetLen.value - 1) * REVEAL_GAP + SINGLE_FLIP;
   setTimeout(() => {
     revealingRowIndex.value = -1;
@@ -353,8 +378,7 @@ function submitGuess() {
 }
 
 function afterReveal(guess) {
-  const rowIndex = guesses.length - 1; // current row
-
+  const rowIndex = guesses.length - 1;
   if (guess === answer.value) {
     statusMsg.value = '🎉 You Win!';
     launchConfetti();
@@ -367,7 +391,7 @@ function afterReveal(guess) {
   }
 }
 
-/* ---------- scoring ---------- */
+// ===== Scoring (handles duplicate letters correctly) =====
 function scoreGuess(guess, ans) {
   const n = ans.length, res = Array(n).fill('absent'), used = Array(n).fill(false);
   for (let i = 0; i < n; i++) if (guess[i] === ans[i]) { res[i] = 'correct'; used[i] = true; }
@@ -381,7 +405,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-/* ---------- rendering helpers ---------- */
+// ===== Rendering helpers =====
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -389,11 +413,11 @@ function letterAt(r, c) {
 }
 function cellClass(r, c) {
   const base = [];
-  if (r < status.length) base.push(status[r][c]);           // pending / correct / present / absent
-  if (r === revealingRowIndex.value) base.push('flipping'); // flipping
-  if (shakingRows.has(r)) base.push('shaking');             // shaking effect
+  if (r < status.length) base.push(status[r][c]);            // pending / correct / present / absent
+  if (r === revealingRowIndex.value) base.push('flipping');  // currently flipping row
+  if (shakingRows.has(r)) base.push('shaking');              // row shake feedback
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) {
-    base.push('active');
+    base.push('active');                                     // current input caret-like highlight
   }
   return base;
 }
@@ -402,7 +426,7 @@ function flipStyle(r, c) {
   return { '--reveal-delay': `${c * REVEAL_GAP}ms` };
 }
 
-/* ---------- confetti ---------- */
+// ===== Confetti helpers =====
 function resizeCanvas() {
   const cvs = confettiCanvas.value;
   if (!cvs) return;
@@ -450,17 +474,19 @@ function stopConfetti() {
   confettiRunning.value = false;
 }
 
+// ===== Row shake feedback =====
 const shakingRows = reactive(new Set());
 function triggerRowShake(r) {
   shakingRows.add(r);
-  setTimeout(() => shakingRows.delete(r), 600); // animation duration
+  setTimeout(() => shakingRows.delete(r), 600);
 }
 </script>
 
 <style scoped>
+/* ===== Global layout & theme ===== */
 .wordly {
   --cell: 52px;
-  max-width: 1100px; /* enlarge container to fit side instructions */
+  max-width: 1100px;
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -469,7 +495,7 @@ function triggerRowShake(r) {
 
 .wordly .breadcrumb { margin-bottom: 20px; }
 
-/* toolbar */
+/* ===== Toolbar ===== */
 .wd-toolbar{
   display:flex; align-items:center; justify-content:flex-start;
   gap:12px; margin-bottom:16px; flex-wrap:nowrap;
@@ -492,21 +518,20 @@ function triggerRowShake(r) {
 .wd-btn.ghost { background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; padding:4px 8px; }
 .wd-btn:hover { filter:brightness(1.07); }
 
-/* hint card */
+/* ===== Info banners ===== */
 .wd-notice { background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error { border-color:#b91c1c; color:#fecaca; }
 
-/* ================= Playzone layout ================= */
+/* ===== Grid layout: Left (300px) | Center (auto) | Right (0) ===== */
 .wd-playzone{
   display:grid;
-  grid-template-columns: 1fr auto 1fr; /* left | board | right */
+  grid-template-columns: 300px auto 0;
   gap: 20px;
   align-items: start;
 }
-.wd-board-col{
-  display:flex;
-  justify-content:center;
-}
+.wd-board-col{ display:flex; justify-content:center; }
+
+/* ===== Aside (base card) ===== */
 .wd-aside{
   background:#10121a;
   border:1px solid #343644;
@@ -515,9 +540,38 @@ function triggerRowShake(r) {
   color:#cfd2dd;
   max-width: 300px;
   position: sticky;
-  top: 84px;             /* roughly align with the bottom of the toolbar, adjust as needed */
+  top: 84px;
   height: fit-content;
 }
+
+/* ===== Collapsibles (desktop) – smooth expand/collapse ===== */
+.wd-aside-collapsible{ padding: 0; }
+.wd-aside-toggle{
+  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  background:#151721; color:#e8e9f3; border:1px solid #343644;
+  padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:800;
+}
+.wd-aside-toggle .chev{ transition: transform .18s ease; }
+.wd-aside-toggle .chev.open{ transform: rotate(90deg); }
+
+/* Animated body:
+   - Keep in DOM (no display:none) so height can transition
+   - max-height is a safe upper bound for content height */
+.wd-aside-body{
+  margin-top:10px; padding:10px 12px;
+  max-height: 0;            /* collapsed */
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height .28s ease, opacity .25s ease;
+}
+/* When the aside has .open (Vue toggles via :class), body expands smoothly */
+.wd-aside-collapsible.open .wd-aside-body{
+  max-height: 800px;        /* increase if your content is taller */
+  opacity: 1;
+}
+
+/* Headings & lists inside asides */
 .wd-aside-title{
   margin: 2px 0 8px;
   font-size: 15px;
@@ -525,27 +579,17 @@ function triggerRowShake(r) {
   letter-spacing: .2px;
   color: #e8e9f3;
 }
-.wd-steps{
-  margin: 0 0 8px 18px;
-  padding: 0;
-  line-height: 1.5;
-}
+.wd-steps{ margin: 0 0 8px 18px; padding: 0; line-height: 1.5; }
 .wd-legend { margin: 8px 0; }
-.legend-row{
-  display:flex; align-items:center;
-  gap:10px; margin:6px 0;
-}
+.legend-row{ display:flex; align-items:center; gap:10px; margin:6px 0; }
 .wd-note{ opacity:.9; font-size: 13px; margin-top: 4px; }
+.wd-bullets{ margin: 0; padding-left: 18px; line-height: 1.5; }
 
-.wd-bullets{
-  margin: 0; padding-left: 18px;
-  line-height: 1.5;
-}
+/* Hide old right panel (we moved its content to the left) */
+.wd-aside.right{ display: none; }
 
-/* board */
-.wd-board-wrap { display:flex; justify-content:center; position:relative; }
+/* ===== Board ===== */
 .wd-board { display:grid; grid-template-rows:repeat(6, var(--cell)); gap:10px; perspective:900px; }
-
 .wd-cell {
   width:var(--cell); height:var(--cell);
   display:grid; place-items:center;
@@ -556,20 +600,16 @@ function triggerRowShake(r) {
 }
 .wd-cell.active { border-color:#6b7280; }
 
-/* legend tiny tiles */
-.wd-cell.tiny{
-  width:22px; height:22px;
-  font-size:12px; border-radius:6px;
-  border-width: 2px;
-}
+/* Tiny legend tiles */
+.wd-cell.tiny{ width:22px; height:22px; font-size:12px; border-radius:6px; border-width: 2px; }
 
-/* statistic */
+/* State colors */
 .wd-cell.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-cell.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-cell.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 .wd-cell.pending { background:#16171d; border-color:#343644; color:#e6e6eb; }
 
-/* flipping animation */
+/* Flip animation (staggered via --reveal-delay from JS) */
 .wd-cell.flipping{
   animation: wd-flip 250ms ease forwards;
   animation-delay: var(--reveal-delay, 0ms);
@@ -582,7 +622,7 @@ function triggerRowShake(r) {
   100% { transform: rotateX(0deg); }
 }
 
-/* hidden input */
+/* Hidden input (for mobile soft keyboard) */
 .wd-hidden-input{
   position:absolute !important;
   left:-9999px !important; top:0 !important;
@@ -593,7 +633,7 @@ function triggerRowShake(r) {
   white-space: nowrap !important;
 }
 
-/* confetti */
+/* Confetti canvas */
 .wd-confetti{
   position: fixed; inset: 0;
   pointer-events: none;
@@ -602,19 +642,19 @@ function triggerRowShake(r) {
   z-index: 9999;
 }
 
-/* keyboard */
+/* On-screen keyboard */
 .wd-kbd { max-width: 640px; margin: 18px auto 0; user-select: none; }
 .wd-row { display:flex; justify-content:center; gap:8px; margin-top:8px; }
 .wd-key { background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
 .wd-key.wd-wide { min-width:72px; }
 .wd-key:active { transform:translateY(1px); }
 
-/* keyboard state colors */
+/* Keyboard state colors */
 .wd-key.correct { background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
 .wd-key.present { background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent  { background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
-/* shaking animation */
+/* Shake animation for invalid/zero-info rows */
 .wd-cell.shaking { animation: wd-shake 0.6s ease; }
 @keyframes wd-shake {
   0%, 100% { transform: translateX(0); }
@@ -622,23 +662,22 @@ function triggerRowShake(r) {
   30%, 60%, 90% { transform: translateX(6px); }
 }
 
-/* ====== Mobile panels visibility ====== */
+/* ===== Mobile behavior: hide desktop asides; use <details> panels ===== */
 .wd-mobile-panels { display: none; }
 
-/* ≤980px：hide side panels */
 @media (max-width: 980px) {
   .wd-playzone { grid-template-columns: 1fr; }
-  .wd-aside { display: none; }               /* hide left and right side panels */
-  .wd-mobile-panels { 
-    display: block; 
-    margin-top: 12px; 
+  .wd-aside.left { display: none; }
+  .wd-mobile-panels {
+    display: block;
+    margin-top: 12px;
   }
   .wordly { --cell: 46px; }
   .wd-right .wd-hint { max-width: 80vw; }
   .wd-key { padding: 8px 10px; }
 }
 
-/* foldable panels */
+/* Mobile <details> styling (unchanged) */
 .wd-coll {
   background:#10121a;
   border:1px solid #343644;
