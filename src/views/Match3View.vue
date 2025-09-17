@@ -47,14 +47,14 @@ export default {
     this.init();
   },
   methods: {
-    // --- 工具 ---
+    // --- tools ---
     rnd(n) { return Math.floor(Math.random() * n); },
     randomType() { return this.TYPES[this.rnd(this.TYPES.length)]; },
     idx(r, c) { return r * this.SIZE + c; },
     rc(i) { return [Math.floor(i / this.SIZE), i % this.SIZE]; },
     sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
 
-    // --- 初始化 ---
+    // --- init ---
     init() {
       this.grid = Array(this.SIZE * this.SIZE).fill(null).map(() => this.randomType());
       this.score = 0;
@@ -65,7 +65,7 @@ export default {
       this.render();
     },
 
-    // --- 渲染 ---
+    // --- render ---
     render() {
       const boardEl = this.$refs.board;
       boardEl.style.width = `${this.SIZE * this.CELL}px`;
@@ -90,11 +90,11 @@ export default {
       });
     },
 
-    // --- 点击逻辑 ---
+    // --- click logic ---
     onTileClick(i, el) {
         if (this.animating) return;
 
-        // 特殊块：💥 和 🌈
+        // special：💥 and 🌈
         if (this.grid[i] === "💥") {
             this.animateSpecial(el).then(() => this.triggerBomb(i));
             return;
@@ -104,7 +104,7 @@ export default {
             return;
         }
 
-        // 普通点击逻辑
+        // normal click logic
         if (this.selected === null) { 
             this.selected = i; 
             this.highlight(i); 
@@ -122,24 +122,24 @@ export default {
             return;
         }
 
-        // 尝试交换
+        // two adjacent tiles selected → swap
         this.swapWithAnimation(i, this.selected).then(() => {
             const m = this.findMatches();
 
-            // 如果步数已经为 0，直接判负
+            // if no moves left, check win/lose immediately
             if (this.moves <= 0) {
             this.checkWinLose();
             return;
             }
 
-            // 每次交换都要扣步
+            // every swap consumes a move
             this.moves--;
 
             if (m.size === 0) {
-            // 没有匹配 → 交换回去
+            // no matches → swap back
             this.swapWithAnimation(i, this.selected, true);
             } else {
-            // 有匹配 → 消除并检查胜负
+            // matches found → cascade
             this.cascade(m).then(this.checkWinLose);
             }
 
@@ -167,13 +167,13 @@ export default {
       return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
     },
 
-    // --- 动画交换 ---
+    // --- animation swap ---
     swapWithAnimation(a, b, reverse = false) {
         this.animating = true;
         const elA = this.$refs.board.children[a], elB = this.$refs.board.children[b];
         const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
 
-        // 根据 reverse 决定交换方向
+        // according to reverse decide swap direction
         if (!reverse) {
             [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
         } else {
@@ -188,10 +188,10 @@ export default {
         });
     },
 
-    // --- 匹配 ---
+    // --- matching ---
     findMatches() {
       const matched = new Set();
-      // 行
+      // line
       for (let r = 0; r < this.SIZE; r++) {
         let run = 1;
         for (let c = 1; c <= this.SIZE; c++) {
@@ -208,7 +208,7 @@ export default {
           }
         }
       }
-      // 列
+      // column
       for (let c = 0; c < this.SIZE; c++) {
         let run = 1;
         for (let r = 1; r <= this.SIZE; r++) {
@@ -228,7 +228,7 @@ export default {
       return matched;
     },
 
-    // --- 消除 / 下落 ---
+    // --- cascade / fall ---
     async cascade(first) {
       this.animating = true;
       await this.removeMatches(first);
@@ -278,7 +278,7 @@ export default {
       }
     },
 
-    // --- 特殊块 ---
+    // --- special ---
     triggerBomb(index) {
       const [r] = this.rc(index);
       for (let c = 0; c < this.SIZE; c++) this.grid[this.idx(r, c)] = null;
@@ -302,10 +302,10 @@ export default {
       });
     },
 
-    // --- 胜负判定 ---
+    // --- win/lose check ---
     checkWinLose() {
         if (this.score >= this.levelGoals[this.level - 1]) {
-            // 胜利礼花
+            // victory confetti
             confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
             setTimeout(() => {
             alert("🎉 Level " + this.level + " Clear!");
@@ -320,17 +320,17 @@ export default {
             }, 500);
         } 
         else if (this.moves <= 0) {
-            // 失败效果：灰色礼花 + 棋盘闪红
+            // failure effect: gray confetti + board flash red
             confetti({ 
             particleCount: 150, 
             spread: 100, 
             origin: { y: 0.6 },
-            colors: ['#555', '#888', '#aaa'] // 灰色调
+            colors: ['#555', '#888', '#aaa'] // gray tones
             });
 
             const board = this.$refs.board;
             board.style.transition = "background 0.5s";
-            board.style.background = "#662222"; // 闪红
+            board.style.background = "#662222"; // flash red
             setTimeout(() => board.style.background = "#2c2f48", 600);
 
             setTimeout(() => {
@@ -344,7 +344,7 @@ export default {
 </script>
 
 <style scoped>
-/* 让游戏整体居中 */
+/* make game centered */
 .game-wrapper {
   display: flex;
   flex-direction: column;
@@ -352,21 +352,21 @@ export default {
   justify-content: center;
 }
 
-/* 棋盘容器居中 + 柔和背景 */
+/* board + soft background */
 .board {
   position: relative;
   margin: 20px auto;
-  background: #2c2f48; /* 深色背景，更融入整体 */
+  background: #2c2f48; /* dark background for better integration */
   border: 2px solid #444;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
-/* 每个格子样式，改掉白底 */
+/* tile */
 .tile {
   border-radius: 6px;
-  background: #3a3d5c; /* 深灰蓝背景 */
-  color: #fff;         /* 让 emoji 更清晰 */
+  background: #3a3d5c; /* dark gray-blue background */
+  color: #fff;         /* make emoji clearer */
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   cursor: pointer;
   user-select: none;
@@ -381,20 +381,20 @@ export default {
   transform: scale(1.05);
 }
 
-/* 底部提示卡片 */
+/* legend */
 .legend {
   margin-top: 16px;
   padding: 12px;
   border: 1px solid #666;
   border-radius: 8px;
-  background: #1f2235;  /* 深色背景 */
+  background: #1f2235;  /* dark background */
   max-width: 360px;
-  color: #f0f0f0;       /* 文字变亮 */
+  color: #f0f0f0;       /* make text brighter */
 }
 .legend h3 {
   margin: 0 0 8px;
   font-size: 16px;
-  color: #ffd369;       /* 标题改成亮黄色 */
+  color: #ffd369;       /* change title to bright yellow */
 }
 .legend ul {
   margin: 0;

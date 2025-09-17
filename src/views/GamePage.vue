@@ -89,6 +89,7 @@ function goBegin() {
   const map = {
     'Wordle': '/wordle-game',
     'Food Swap': '/food-swap',
+    'Match 3': '/match3'
   }
   router.push(map[selectedTitle.value] || '/wordle-game')
 }
