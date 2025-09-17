@@ -54,6 +54,9 @@
     <div class="toast-wrap">
       <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">{{ t.text }}</div>
     </div>
+
+    <!-- 专属礼花画布（确保不被遮挡） -->
+    <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
 
@@ -80,12 +83,18 @@ export default {
       animating: false,
 
       // 渲染持久化
-      tileEls: [],          // 保存每个格子的 DOM 引用
-      toasts: [],           // 非阻塞通知
+      tileEls: [],
+      toasts: [],
       toastId: 1,
+
+      // confetti 实例
+      cf: null,
     };
   },
   mounted() {
+    // 初始化 confetti 画布（组件内）
+    const cvs = this.$refs.confettiCanvas;
+    this.cf = confetti.create(cvs, { resize: true, useWorker: true });
     this.init();
   },
   methods: {
@@ -95,11 +104,15 @@ export default {
     idx(r,c){ return r*this.SIZE + c; },
     rc(i){ return [Math.floor(i/this.SIZE), i%this.SIZE]; },
     sleep(ms){ return new Promise(r=>setTimeout(r, ms)); },
-
     toast(text, type='info', ms=1400){
       const id = this.toastId++;
       this.toasts.push({ id, text, type });
       setTimeout(()=>{ this.toasts = this.toasts.filter(x=>x.id!==id) }, ms);
+    },
+    burst(opts){
+      // 统一的礼花触发（使用专属画布）
+      if (this.cf) this.cf(opts);
+      else confetti(opts);
     },
 
     // --- init ---
@@ -108,11 +121,10 @@ export default {
       this.score = 0; this.moves = 15; this.level = 1;
       this.tip = "——"; this.selected = null; this.animating = false;
 
-      // 初始化棋盘与持久节点
       const board = this.$refs.board;
       board.style.width = (this.SIZE*this.CELL) + "px";
       board.style.height = (this.SIZE*this.CELL) + "px";
-      board.innerHTML = "";        // 清空（仅初始化时）
+      board.innerHTML = "";
       this.tileEls = [];
 
       for (let i=0;i<this.grid.length;i++){
@@ -130,18 +142,18 @@ export default {
         board.appendChild(el);
         this.tileEls.push(el);
       }
-      this.render(); // 首次渲染
+      this.render();
     },
 
-    // --- render（持久节点 + 位置过渡 => 下落更丝滑） ---
+    // --- render（持久节点 + transform 过渡） ---
     render(){
       for (let i=0;i<this.grid.length;i++){
         const el = this.tileEls[i];
         const tile = this.grid[i];
         const [r,c] = this.rc(i);
-        el.textContent = tile ?? "";               // null 时为空
-        el.style.transform = `translate(${c*this.CELL}px, ${r*this.CELL}px) scale(1)`;
-        el.style.opacity = tile ? '1' : '0';       // 空位隐藏
+        el.textContent = tile ?? "";
+        el.style.transform = `translate(${c*this.CELL}px, ${r*this.CELL}px)`;
+        el.style.opacity = tile ? '1' : '0';
         el.style.cursor = 'pointer';
       }
     },
@@ -150,11 +162,11 @@ export default {
     onTileClick(i, el){
       if (this.animating) return;
 
-      // 特殊块
+      // 特殊
       if (this.grid[i] === "💥") { this.animateSpecial(el).then(()=>this.triggerBomb(i)); return; }
       if (this.grid[i] === "🌈") { this.animateSpecial(el).then(()=>this.triggerRainbow(i)); return; }
 
-      // 选择逻辑
+      // 选择
       if (this.selected === null){ this.selected = i; this.highlight(i); return; }
       if (i === this.selected){ this.unhighlight(); this.selected = null; return; }
       if (!this.adjacent(i, this.selected)){
@@ -175,10 +187,9 @@ export default {
       });
     },
 
-    // 高亮
     highlight(i){
       const el = this.tileEls[i];
-      if (el){ el.classList.add('selected'); el.style.zIndex = '10'; }
+      if (el){ el.classList.add('selected'); el.style.zIndex='10'; }
     },
     unhighlight(){
       this.tileEls.forEach(el=>{ el.classList.remove('selected'); el.style.zIndex='1'; });
@@ -188,26 +199,20 @@ export default {
       return Math.abs(ar-br)+Math.abs(ac-bc)===1;
     },
 
-    // 交换动画（持久节点：只更新 transform）
-    swapWithAnimation(a,b, reverse=false){
+    // 交换动画
+    swapWithAnimation(a,b){
       this.animating = true;
-
-      // 交换数据
       [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
-
-      // 交换位置（transform 会过渡）
       const [ar,ac] = this.rc(a), [br,bc]=this.rc(b);
       const elA = this.tileEls[a], elB = this.tileEls[b];
       if (elA && elB){
         elA.style.transform = `translate(${bc*this.CELL}px,${br*this.CELL}px)`;
         elB.style.transform = `translate(${ac*this.CELL}px,${ar*this.CELL}px)`;
       }
-      return new Promise(res=>{
-        setTimeout(()=>{ this.render(); this.animating=false; res(); }, 280);
-      });
+      return new Promise(res=>{ setTimeout(()=>{ this.render(); this.animating=false; res(); }, 280); });
     },
 
-    // 反馈：无效交换抖动/闪烁
+    // 无效交换反馈
     wiggleTiles(a,b){
       [this.tileEls[a], this.tileEls[b]].forEach(el=>{
         if (!el) return;
@@ -238,7 +243,6 @@ export default {
           }
         }
       }
-
       // 列
       for (let c=0;c<this.SIZE;c++){
         let run=1;
@@ -259,16 +263,15 @@ export default {
       return matched;
     },
 
-    // 级联：消除→下落→补齐（持久节点带来“自由下落”）
+    // 级联
     async cascade(first){
       this.animating = true;
       await this.removeMatches(first);
       while(true){
-        // 重力与补全改变 grid；render 让 tile 从“旧 transform”过渡到“新 transform”
         this.applyGravity();
         this.fillNew();
         this.render();
-        await this.sleep(280); // 等待下落过渡
+        await this.sleep(280);
         const m = this.findMatches();
         if (m.size===0) break;
         await this.removeMatches(m);
@@ -287,7 +290,6 @@ export default {
         "Check nutrition labels: less sugar, less salt, less saturated fat!"
       ][this.rnd(6)];
 
-      // 退出动效 & 飘分（节点不销毁，仅设为 null 后隐藏）
       return new Promise(res=>{
         for (const i of matches){
           const el = this.tileEls[i];
@@ -343,12 +345,11 @@ export default {
       setTimeout(()=>el.remove(), 650);
     },
 
-    // 特殊：💥 清行 + 扫光
+    // 💥 清行 + 扫光
     triggerBomb(index){
       const [r] = this.rc(index);
       const board = this.$refs.board;
 
-      // 扫光条
       const sweep = document.createElement('div');
       sweep.className = 'row-sweep';
       sweep.style.top = (r*this.CELL)+'px';
@@ -357,7 +358,6 @@ export default {
       board.appendChild(sweep);
       setTimeout(()=>sweep.remove(), 360);
 
-      // 轻微震动
       board.style.transition = "transform .08s";
       board.style.transform = "translateY(2px)";
       setTimeout(()=>board.style.transform="translateY(0)", 90);
@@ -369,7 +369,7 @@ export default {
       }, 160);
     },
 
-    // 特殊：🌈 清随机一种（后续可改为“点击选择目标类型”）
+    // 🌈 清随机一种（后续可改为“点击选择目标类型”）
     triggerRainbow(){
       const type = this.TYPES[this.rnd(this.TYPES.length)];
       for (let j=0;j<this.grid.length;j++){
@@ -388,15 +388,15 @@ export default {
       });
     },
 
-    // 胜负：非阻塞横幅 + 礼花
+    // 胜负（toast + 专属礼花）
     checkWinLose(){
       if (this.score >= this.levelGoals[this.level-1]){
-        confetti({ particleCount: 200, spread: 120, origin:{ y: .6 } });
+        this.burst({ particleCount: 220, spread: 120, origin:{ y:.6 } });
         this.toast(`🎉 Level ${this.level} Clear!`, "ok", 1400);
         setTimeout(()=>{
           this.level++;
           if (this.level > this.levelGoals.length){
-            confetti({ particleCount: 280, spread: 160, origin:{ y:.5 } });
+            this.burst({ particleCount: 320, spread: 160, origin:{ y:.5 } });
             this.toast("🏆 All Levels Complete!", "ok", 1600);
             setTimeout(()=>this.init(), 900);
           } else {
@@ -405,7 +405,7 @@ export default {
           }
         }, 500);
       } else if (this.moves <= 0){
-        confetti({ particleCount: 160, spread: 100, origin:{ y:.6 }, colors:['#555','#888','#aaa'] });
+        this.burst({ particleCount: 180, spread: 100, origin:{ y:.6 }, colors:['#555','#888','#aaa'] });
         const board = this.$refs.board;
         board.style.transition = "background .5s";
         board.style.background = "#662222";
@@ -419,7 +419,7 @@ export default {
 </script>
 
 <style scoped>
-/* ===== 页面背景 / 标题 ===== */
+/* ===== 背景 / 标题 ===== */
 .game-page{
   min-height: 100vh;
   display: grid;
@@ -429,11 +429,7 @@ export default {
   background: radial-gradient(1200px 700px at 50% -200px, #1f2941, #0f172a);
 }
 .title{
-  margin: 0;
-  color: #eef2ff;
-  letter-spacing: .5px;
-  font-weight: 800;
-  text-shadow: 0 6px 24px #0006;
+  margin: 0; color: #eef2ff; letter-spacing: .5px; font-weight: 800; text-shadow: 0 6px 24px #0006;
 }
 
 /* ===== HUD 卡片 ===== */
@@ -446,37 +442,19 @@ export default {
   backdrop-filter: blur(6px);
   box-shadow: 0 12px 30px #0005;
 }
-.hud-row{
-  display: grid;
-  grid-template-columns: repeat(4, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-}
+.hud-row{ display: grid; grid-template-columns: repeat(4, 1fr) auto; align-items: center; gap: 12px; }
 .hud-item{ display:flex; flex-direction:column; gap:4px; }
 .hud-label{ font-size:12px; color:#93c5fd; opacity:.9; }
 .hud-value{ font-weight:700; color:#e5e7eb; }
-.badge{
-  background:#0ea5e9; color:#04223a; border-radius:999px; padding:2px 10px; display:inline-block;
-}
-.btn{
-  height:32px; padding:0 12px; border-radius:10px; border:1px solid #3b425a; color:#e5e7eb; background:#1f2438;
-}
+.badge{ background:#0ea5e9; color:#04223a; border-radius:999px; padding:2px 10px; display:inline-block; }
+.btn{ height:32px; padding:0 12px; border-radius:10px; border:1px solid #3b425a; color:#e5e7eb; background:#1f2438; }
 .btn.ghost:hover{ background:#2a3150; }
 
-.goalbar{
-  position: relative; margin: 10px 4px 6px;
-  width: 100%; height: 12px; background:#12172a; border:1px solid #2a3351; border-radius:999px; overflow:hidden;
-}
+.goalbar{ position: relative; margin: 10px 4px 6px; width: 100%; height: 12px; background:#12172a; border:1px solid #2a3351; border-radius:999px; overflow:hidden; }
 .goalbar-fill{ height:100%; background:linear-gradient(90deg, #34d399, #22d3ee); transition: width .35s ease; }
-.goalbar-text{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  color:#dbeafe; font-size:12px; text-shadow:0 1px 2px #0008; pointer-events:none;
-}
+.goalbar-text{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#dbeafe; font-size:12px; text-shadow:0 1px 2px #0008; pointer-events:none; }
 
-.tip{
-  margin-top: 8px; display:flex; align-items:center; gap:8px;
-  color:#e2e8f0; font-size:14px;
-}
+.tip{ margin-top: 8px; display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:14px; }
 .tip-icon{ filter: drop-shadow(0 2px 6px #0007); }
 .tip-text{ opacity:.95; }
 
@@ -490,9 +468,7 @@ export default {
   box-shadow: 0 12px 40px rgba(0,0,0,.45);
 }
 .tile{
-  border-radius: 8px;
-  background:#3a3d5c;
-  color:#fff;
+  border-radius: 8px; background:#3a3d5c; color:#fff;
   box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
   display:flex; align-items:center; justify-content:center;
   user-select:none; cursor:pointer; font-size:22px;
@@ -500,7 +476,15 @@ export default {
   will-change: transform, opacity;
 }
 .tile:hover{ background:#50557c; transform: scale(1.05); }
-.tile.selected{ outline:3px solid #4f46e5; }
+
+/* 选中高亮：霓虹脉冲环（不改 transform） */
+.tile.selected{ position: relative; }
+.tile.selected::after{
+  content:''; position:absolute; inset:4px; border:2px solid #22d3ee; border-radius:10px;
+  box-shadow: 0 0 10px #22d3eeaa, inset 0 0 8px #22d3ee55; pointer-events:none;
+  animation: selPulse 1s ease-in-out infinite;
+}
+@keyframes selPulse{ 0%,100%{ opacity:.95 } 50%{ opacity:.45 } }
 
 /* 无效交换反馈 */
 @keyframes wiggle { 0%,100%{ transform: translateX(0)} 25%{ transform: translateX(-6px)} 75%{ transform: translateX(6px)} }
@@ -536,7 +520,7 @@ export default {
 /* Toast */
 .toast-wrap{
   position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
-  display: grid; gap: 8px; z-index: 9999;  /* 高于礼花 canvas */
+  display: grid; gap: 8px; z-index: 10010; /* 低于 confetti-canvas（看得到礼花） */
 }
 .toast{
   padding: 8px 12px; border-radius: 10px; color:#eaf2ff; background:#1f2a44cc;
@@ -548,6 +532,11 @@ export default {
 .toast.warn{ background:#4b3b1bcc; border-color:#7a5f2d; }
 @keyframes toastIn{ from{ transform: translate(-50%, -8px); opacity:0 } to{ transform: translate(-50%, 0); opacity:1 } }
 @keyframes toastOut{ to{ transform: translate(-50%, -8px); opacity:0 } }
+
+/* 专属 confetti 画布：最顶层展示 */
+.confetti-canvas{
+  position: fixed; inset: 0; pointer-events: none; z-index: 10020;
+}
 
 /* 响应式 */
 @media (max-width: 720px){
