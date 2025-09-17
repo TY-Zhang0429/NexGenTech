@@ -4,7 +4,7 @@
     <DraggableAvatar />
     <BreadcrumbNav />
 
-    <!-- ===== Top toolbar ===== -->
+    <!-- ===== Toolbar ===== -->
     <header class="wd-toolbar">
       <div class="wd-left">
         <label class="wd-label">Difficulty</label>
@@ -32,127 +32,122 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- ===== Desktop-only left sidebar: independent from the board ===== -->
-    <aside class="wd-instructions-desktop" aria-label="Instructions (desktop only)">
-      <!-- Collapsible #1 -->
-      <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
-        <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
-          <span class="chev" :class="{ open: playOpen }">▸</span>
-          How to Play
-        </button>
-        <div class="wd-aside-body">
-          <h3 class="wd-aside-title">How to Play</h3>
-          <ol class="wd-steps">
-            <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
-            <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
-            <li>The tile colors show how close your guess was:</li>
-          </ol>
-          <div class="wd-legend">
-            <div class="legend-row">
-              <span class="wd-cell tiny correct">A</span>
-              <span>Right letter, right spot</span>
+    <!-- ===== Desktop Stage: LEFT (instructions) | CENTER (board) | RIGHT (ghost) ===== -->
+    <div class="wd-stage" v-if="!loading && !error">
+      <!-- LEFT: two independent collapsible cards (do not affect board) -->
+      <aside class="wd-left-stack" aria-label="Instructions (desktop)">
+        <!-- Card 1 -->
+        <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
+          <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
+            <span class="chev" :class="{ open: playOpen }">▸</span>
+            How to Play
+          </button>
+          <div class="wd-aside-body">
+            <h3 class="wd-aside-title">How to Play</h3>
+            <ol class="wd-steps">
+              <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+              <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+              <li>The tile colors show how close your guess was:</li>
+            </ol>
+            <div class="wd-legend">
+              <div class="legend-row">
+                <span class="wd-cell tiny correct">A</span>
+                <span>Right letter, right spot</span>
+              </div>
+              <div class="legend-row">
+                <span class="wd-cell tiny present">A</span>
+                <span>Right letter, wrong spot</span>
+              </div>
+              <div class="legend-row">
+                <span class="wd-cell tiny absent">A</span>
+                <span>Letter not in the word</span>
+              </div>
             </div>
-            <div class="legend-row">
-              <span class="wd-cell tiny present">A</span>
-              <span>Right letter, wrong spot</span>
-            </div>
-            <div class="legend-row">
-              <span class="wd-cell tiny absent">A</span>
-              <span>Letter not in the word</span>
-            </div>
+            <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
           </div>
-          <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
-        </div>
-      </div>
-
-      <!-- Collapsible #2 -->
-      <div class="wd-aside wd-aside-collapsible" :class="{ open: rulesOpen }" style="margin-top:14px">
-        <button class="wd-aside-toggle" @click="rulesOpen = !rulesOpen" :aria-expanded="rulesOpen">
-          <span class="chev" :class="{ open: rulesOpen }">▸</span>
-          Rules & Tips
-        </button>
-        <div class="wd-aside-body">
-          <h3 class="wd-aside-title">Rules & Tips</h3>
-          <ul class="wd-bullets">
-            <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
-            <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
-            <li><strong>Duplicates</strong>: Letters can repeat.</li>
-            <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
-          </ul>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ===== Main content (board + mobile panels + keyboard) ===== -->
-    <main class="wd-playzone" v-if="!loading && !error" @click="maybeFocusMobile">
-      <!-- Center: Board -->
-      <div class="wd-board-col">
-        <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
-          <template v-for="r in maxAttempts" :key="r">
-            <div
-              v-for="c in targetLen"
-              :key="`${r}-${c}`"
-              class="wd-cell"
-              :class="cellClass(r-1, c-1)"
-              :style="flipStyle(r-1, c-1)"
-            >
-              {{ letterAt(r-1, c-1) }}
-            </div>
-          </template>
         </div>
 
-        <!-- Hidden input to summon mobile soft keyboard -->
-        <input
-          ref="mobileInput"
-          class="wd-hidden-input"
-          inputmode="latin"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          @keydown.prevent="onKeydown"
-        />
-      </div>
-
-      <!-- Mobile-only accordion panels -->
-      <div class="wd-mobile-panels">
-        <details class="wd-coll">
-          <summary>How to Play</summary>
-          <ol class="wd-steps">
-            <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
-            <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
-            <li>The tile colors show how close your guess was:</li>
-          </ol>
-          <div class="wd-legend">
-            <div class="legend-row">
-              <span class="wd-cell tiny correct">A</span>
-              <span>Right letter, right spot</span>
-            </div>
-            <div class="legend-row">
-              <span class="wd-cell tiny present">A</span>
-              <span>Right letter, wrong spot</span>
-            </div>
-            <div class="legend-row">
-              <span class="wd-cell tiny absent">A</span>
-              <span>Letter not in the word</span>
-            </div>
+        <!-- Card 2 -->
+        <div class="wd-aside wd-aside-collapsible" :class="{ open: rulesOpen }">
+          <button class="wd-aside-toggle" @click="rulesOpen = !rulesOpen" :aria-expanded="rulesOpen">
+            <span class="chev" :class="{ open: rulesOpen }">▸</span>
+            Rules & Tips
+          </button>
+          <div class="wd-aside-body">
+            <h3 class="wd-aside-title">Rules & Tips</h3>
+            <ul class="wd-bullets">
+              <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+              <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+              <li><strong>Duplicates</strong>: Letters can repeat.</li>
+              <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+            </ul>
           </div>
-          <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
-        </details>
+        </div>
+      </aside>
 
-        <details class="wd-coll" style="margin-top:10px">
-          <summary>Rules & Tips</summary>
-          <ul class="wd-bullets">
-            <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
-            <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
-            <li><strong>Duplicates</strong>: Letters can repeat.</li>
-            <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
-          </ul>
-        </details>
-      </div>
-    </main>
+      <!-- CENTER: board (always centered overall thanks to the right ghost) -->
+      <main class="wd-center" @click="maybeFocusMobile" aria-label="Game board">
+        <div class="wd-board-col">
+          <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
+            <template v-for="r in maxAttempts" :key="r">
+              <div
+                v-for="c in targetLen"
+                :key="`${r}-${c}`"
+                class="wd-cell"
+                :class="cellClass(r-1, c-1)"
+                :style="flipStyle(r-1, c-1)"
+              >
+                {{ letterAt(r-1, c-1) }}
+              </div>
+            </template>
+          </div>
 
+          <!-- Mobile soft keyboard helper -->
+          <input
+            ref="mobileInput"
+            class="wd-hidden-input"
+            inputmode="latin"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            @keydown.prevent="onKeydown"
+          />
+        </div>
 
-    <!-- Full-screen confetti -->
+        <!-- Mobile-only accordions -->
+        <div class="wd-mobile-panels">
+          <details class="wd-coll">
+            <summary>How to Play</summary>
+            <ol class="wd-steps">
+              <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
+              <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+              <li>The tile colors show how close your guess was:</li>
+            </ol>
+            <div class="wd-legend">
+              <div class="legend-row"><span class="wd-cell tiny correct">A</span><span>Right letter, right spot</span></div>
+              <div class="legend-row"><span class="wd-cell tiny present">A</span><span>Right letter, wrong spot</span></div>
+              <div class="legend-row"><span class="wd-cell tiny absent">A</span><span>Letter not in the word</span></div>
+            </div>
+            <p class="wd-note">Use the on-screen keyboard or your physical keyboard.</p>
+          </details>
+
+          <details class="wd-coll" style="margin-top:10px">
+            <summary>Rules & Tips</summary>
+            <ul class="wd-bullets">
+              <li><strong>Difficulty</strong>: {{ difficulty }} ({{ targetLen }} letters)</li>
+              <li><strong>Attempts</strong>: {{ maxAttempts }}</li>
+              <li><strong>Duplicates</strong>: Letters can repeat.</li>
+              <li><strong>Hints</strong>: Click “Show” in the toolbar to view.</li>
+            </ul>
+          </details>
+        </div>
+      </main>
+
+      <!-- RIGHT: ghost spacer to mirror the left width (keeps board geometrically centered) -->
+      <div class="wd-right-ghost" aria-hidden="true"></div>
+    </div>
+
+    <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
     <!-- On-screen keyboard -->
@@ -180,7 +175,7 @@ import DraggableAvatar from '@/components/DraggableAvatar.vue';
 
 const API_BASE = '';
 
-/* Core game state */
+/* Core state */
 const difficulty = ref('Medium');
 const targetLen = computed(() => (difficulty.value === 'Hard' ? 6 : 5));
 const maxAttempts = 6;
@@ -201,13 +196,13 @@ const statusMsg = ref('');
 const playOpen  = ref(false);
 const rulesOpen = ref(false);
 
-/* Animation timing */
+/* Animations */
 const revealingRowIndex = ref(-1);
 const REVEAL_GAP  = 140;
 const SINGLE_FLIP = 250;
 const HALF_FLIP   = Math.floor(SINGLE_FLIP / 2);
 
-/* Keyboard coloring */
+/* Keyboard key coloring */
 const keyState = reactive(Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map(ch => [ch, ''])));
 function updateKeyState(letter, newState) {
   const curSt = keyState[letter];
@@ -221,11 +216,11 @@ const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
 
-/* Input devices */
+/* Input helpers */
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* On-screen keyboard rows */
+/* Keyboard rows */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
@@ -249,7 +244,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-/* API */
+/* Load words */
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -257,7 +252,7 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* New game */
+/* Start/reset game */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(w => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen);
@@ -280,7 +275,8 @@ function startGame() {
   if (!wordsRaw.value.length) return;
   resetBoard();
   const picked = pickAnswerObj();
-  answer.value = picked.word; currentHint.value = picked.hint;
+  answer.value = picked.word;
+  currentHint.value = picked.hint;
 }
 
 /* Input */
@@ -337,7 +333,7 @@ function scoreGuess(guess, ans) {
   return res;
 }
 
-/* Rendering helpers */
+/* Render helpers */
 function letterAt(r, c) {
   if (r < guesses.length) return guesses[r][c] ?? '';
   if (r === guesses.length) return cur.value[c] ?? '';
@@ -351,20 +347,32 @@ function cellClass(r, c) {
   if (r === guesses.length && !statusMsg.value && revealingRowIndex.value === -1 && cur.value[c]) base.push('active');
   return base;
 }
-function flipStyle(r, c) { if (r !== revealingRowIndex.value) return {}; return { '--reveal-delay': `${c * REVEAL_GAP}ms` }; }
+function flipStyle(r, c) { return r === revealingRowIndex.value ? { '--reveal-delay': `${c * REVEAL_GAP}ms` } : {}; }
 
 /* Confetti */
 function resizeCanvas() {
   const cvs = confettiCanvas.value; if (!cvs) return;
-  cvs.width = window.innerWidth; cvs.height = window.innerHeight; cvs.style.background = 'transparent';
+  cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+  cvs.style.background = 'transparent';
 }
 async function launchConfetti() {
   confettiRunning.value = true; await nextTick();
   const cvs = confettiCanvas.value; if (!cvs) return;
   resizeCanvas(); const ctx = cvs.getContext('2d');
-  const ps = Array.from({ length: 200 }).map(() => ({ x: Math.random()*cvs.width, y: -20 - Math.random()*120, r: 2+Math.random()*4, vx: -1+Math.random()*2, vy: 2+Math.random()*3.5, a: Math.random()*Math.PI*2, va: -0.25+Math.random()*0.5 }));
+  const parts = Array.from({ length: 200 }).map(() => ({
+    x: Math.random()*cvs.width, y: -20 - Math.random()*120,
+    r: 2+Math.random()*4, vx: -1+Math.random()*2, vy: 2+Math.random()*3.5,
+    a: Math.random()*Math.PI*2, va: -0.25+Math.random()*0.5
+  }));
   const start = performance.now();
-  function frame(t){ ctx.clearRect(0,0,cvs.width,cvs.height); for(const p of ps){ p.x+=p.vx; p.y+=p.vy; p.a+=p.va; const hue=(p.x/cvs.width)*360; ctx.fillStyle=`hsl(${hue},90%,60%)`; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore(); } if(t-start<2200) confettiTimer=requestAnimationFrame(frame); else stopConfetti(); }
+  function frame(t){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    for(const p of parts){ p.x+=p.vx; p.y+=p.vy; p.a+=p.va;
+      ctx.fillStyle = `hsl(${(p.x/cvs.width)*360},90%,60%)`;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore();
+    }
+    if(t-start<2200) confettiTimer=requestAnimationFrame(frame); else stopConfetti();
+  }
   confettiTimer = requestAnimationFrame(frame);
 }
 function stopConfetti(){ if(confettiTimer) cancelAnimationFrame(confettiTimer); confettiTimer=null; confettiRunning.value=false; }
@@ -375,16 +383,14 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 </script>
 
 <style scoped>
-/* ===== Base ===== */
+/* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1100px;
+  max-width: 1100px;      /* page content width */
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
-  position: relative; /* anchor for absolute sidebar */
 }
-.wordly .breadcrumb{ margin-bottom: 20px; }
 
 /* Toolbar */
 .wd-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
@@ -402,41 +408,52 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== Desktop-only left sidebar (independent of board) =====
-   - Absolutely positioned inside .wordly
-   - Main content gets left padding so they don't overlap */
-.wd-instructions-desktop{
-  position: absolute;
-  top: 110px;              /* place under toolbar; adjust if your header height changes */
-  left: 16px;              /* align with page padding */
-  width: 300px;
-  z-index: 2;
+/* ===== DESKTOP LAYOUT (no grid; pure flex) =====
+   Flex trio: left (300px) | center (auto) | right ghost (300px) */
+.wd-stage{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;    /* centers the middle column geometrically */
+  gap: 28px;
 }
-.wd-instructions-desktop .wd-aside + .wd-aside{ margin-top: 14px; }
 
-/* Collapsible card styles with smooth animation */
+/* LEFT column */
+.wd-left-stack{
+  flex: 0 0 300px;           /* fixed width */
+  position: sticky;          /* stays visible while scrolling */
+  top: 84px;
+}
+.wd-left-stack .wd-aside + .wd-aside{ margin-top: 14px; }
+
+/* CENTER column */
+.wd-center{ flex: 0 1 auto; min-width: 420px; }
+.wd-board-col{ display:flex; justify-content:center; }
+.wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
+
+/* RIGHT ghost column: matches left width to keep true center */
+.wd-right-ghost{ flex: 0 0 300px; }
+
+/* Cards (collapsibles) */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
-  padding: 0;             /* header has its own padding */
+  padding:0; overflow:hidden;
 }
 .wd-aside-toggle{
   width:100%; display:flex; align-items:center; gap:8px;
   background:#151721; color:#e8e9f3; border:0;
-  padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:800;
+  padding:10px 12px; cursor:pointer; font-weight:800;
 }
 .wd-aside-toggle .chev{ transition: transform .18s ease; }
 .wd-aside-collapsible.open .wd-aside-toggle .chev{ transform: rotate(90deg); }
-
 .wd-aside-body{
-  padding:10px 12px; margin-top:6px;
-  max-height: 0; overflow: hidden; opacity: 0;
-  transition: max-height .28s ease, opacity .25s ease;
-  border-top: 1px solid #2a2c3a;
-  border-radius: 0 0 12px 12px;
+  padding:10px 12px;
+  max-height:0; opacity:0; overflow:hidden;
+  transition:max-height .28s ease, opacity .25s ease;
+  border-top:1px solid #2a2c3a;
 }
-.wd-aside-collapsible.open .wd-aside-body{ max-height: 900px; opacity: 1; }
+.wd-aside-collapsible.open .wd-aside-body{ max-height:900px; opacity:1; }
 
-/* Left card inner content */
+/* Inner content */
 .wd-aside-title{ margin:2px 0 8px; font-size:15px; font-weight:800; color:#e8e9f3; }
 .wd-steps{ margin:0 0 8px 18px; padding:0; line-height:1.5; }
 .wd-legend{ margin:8px 0; }
@@ -444,22 +461,10 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-note{ opacity:.9; font-size:13px; margin-top:4px; }
 .wd-bullets{ margin:0; padding-left:18px; line-height:1.5; }
 
-/* ===== Main content area =====
-   On desktop we reserve space on the left so the absolute sidebar doesn't overlap. */
-.wd-playzone{
-  display:block;
-  padding-left: 340px;     /* 300 + gutter; keeps board centered visually */
-}
-.wd-board-col{ display:flex; justify-content:center; }
-.wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
-.wd-cell{
-  width:var(--cell); height:var(--cell);
-  display:grid; place-items:center;
-  border:2px solid #343644; border-radius:8px;
-  font-weight:800; font-size:20px; text-transform:uppercase;
-  background:#16171d; color:#e6e6eb;
-  transition: transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;
-}
+/* Tiles */
+.wd-cell{ width:var(--cell); height:var(--cell); display:grid; place-items:center;
+  border:2px solid #343644; border-radius:8px; font-weight:800; font-size:20px; text-transform:uppercase;
+  background:#16171d; color:#e6e6eb; transition:transform .08s ease, background .2s ease, border-color .2s ease, color .2s ease;}
 .wd-cell.active{ border-color:#6b7280; }
 .wd-cell.tiny{ width:22px; height:22px; font-size:12px; border-radius:6px; border-width:2px; }
 .wd-cell.correct{ background:#16a34a; border-color:#16a34a; color:#0b0c0f; }
@@ -491,22 +496,14 @@ function triggerRowShake(r){ shakingRows.add(r); setTimeout(()=>shakingRows.dele
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== Mobile: hide the desktop sidebar completely; remove left padding ===== */
+/* ===== MOBILE ===== */
 .wd-mobile-panels{ display:none; }
 @media (max-width: 980px){
-  .wd-instructions-desktop{ display:none; }
-  .wd-playzone{ padding-left: 0; }       /* no reserved space on mobile */
+  .wd-stage{ display:block; }           /* stack everything */
+  .wd-left-stack, .wd-right-ghost{ display:none; }
   .wd-mobile-panels{ display:block; margin-top:12px; }
   .wordly{ --cell: 46px; }
   .wd-right .wd-hint{ max-width:80vw; }
   .wd-key{ padding:8px 10px; }
 }
-
-/* Mobile <details> styling (kept the same) */
-.wd-coll{ background:#10121a; border:1px solid #343644; padding:8px 12px; border-radius:12px; color:#cfd2dd; }
-.wd-coll > summary{ cursor:pointer; font-weight:800; color:#e8e9f3; list-style:none; display:flex; align-items:center; gap:8px; }
-.wd-coll > summary::-webkit-details-marker{ display:none; }
-.wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
-.wd-coll[open] > summary::before{ content:'▾'; }
-.wd-coll > *:not(summary){ margin-top:8px; }
 </style>
