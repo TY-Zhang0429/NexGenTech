@@ -671,7 +671,12 @@ function triggerRowShake(r) {
 .wd-mobile-panels { display: none; }
 
 @media (max-width: 980px) {
-  .wd-playzone { grid-template-columns: 1fr; }
+  .wd-playzone {
+  display: grid;
+  grid-template-columns: 300px 1fr auto;  /* 3 columns */
+  gap: 20px;
+  align-items: start;
+}
   .wd-aside.left { display: none; }
   .wd-mobile-panels {
     display: block;
@@ -708,8 +713,8 @@ function triggerRowShake(r) {
 
 /* Force both left asides into column 1; board in column 2 */
 .wd-aside.left { grid-column: 1; }   /* two instruction panels stack vertically in column 1 */
-.wd-board-col  { grid-column: 2; }   /* game board is fixed in column 2 */
-.wd-aside.right{ display: none; }    /* right old panel is completely hidden (insurance) */
+.wd-board-col { grid-column: 2; display:flex; justify-content:center; }
+.wd-aside.right { grid-column: 3; } /* right hint/avatar */
 
 /* vertical spacing between the two left panels */
 .wd-aside.left + .wd-aside.left { margin-top: 12px; }
