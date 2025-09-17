@@ -1,47 +1,18 @@
 <template>
-  <div class="game-page">
-    <h1 class="title">Healthy Match-3</h1>
+  <div class="game-wrapper">
+    <h1>Healthy Match-3</h1>
 
-    <!-- HUD -->
-    <section class="hud-card">
-      <div class="hud-row">
-        <div class="hud-item">
-          <span class="hud-label">Level</span>
-          <span class="hud-value badge">{{ level }}</span>
-        </div>
-        <div class="hud-item">
-          <span class="hud-label">Score</span>
-          <span class="hud-value">{{ score }}</span>
-        </div>
-        <div class="hud-item">
-          <span class="hud-label">Moves</span>
-          <span class="hud-value">{{ moves }}</span>
-        </div>
-        <div class="hud-item">
-          <span class="hud-label">Goal</span>
-          <span class="hud-value">{{ levelGoals[level-1] }}</span>
-        </div>
-        <button class="btn ghost" @click="init">↻ Restart</button>
-      </div>
+    <div class="hud">
+      <div>Level：{{ level }}</div>
+      <div>Score：{{ score }}</div>
+      <div>Moves：{{ moves }}</div>
+      <div>Goal：{{ levelGoals[level - 1] }}</div>
+      <div>Reminder：{{ tip }}</div>
+      <button @click="init">Restart</button>
+    </div>
 
-      <div class="goalbar">
-        <div class="goalbar-fill"
-             :style="{ width: Math.min(100, Math.floor(score/levelGoals[level-1]*100)) + '%'}"></div>
-        <span class="goalbar-text">
-          {{ Math.min(score, levelGoals[level-1]) }} / {{ levelGoals[level-1] }}
-        </span>
-      </div>
-
-      <div class="tip">
-        <span class="tip-icon">💡</span>
-        <span class="tip-text">{{ tip }}</span>
-      </div>
-    </section>
-
-    <!-- Board -->
     <div ref="board" class="board" aria-label="game board"></div>
 
-    <!-- Legend -->
     <div class="legend">
       <h3>Special Blocks</h3>
       <ul>
@@ -49,14 +20,6 @@
         <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
       </ul>
     </div>
-
-    <!-- Toast -->
-    <div class="toast-wrap">
-      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">{{ t.text }}</div>
-    </div>
-
-    <!-- Confetti canvas -->
-    <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
 
@@ -70,7 +33,6 @@ export default {
       SIZE: 10,
       TYPES: ["🍎","🥦","🥕","🥛","🍞","🧃","🍌","🍇"],
       CELL: 48,
-
       grid: [],
       score: 0,
       moves: 15,
@@ -79,530 +41,368 @@ export default {
       tip: "——",
       selected: null,
       animating: false,
-
-      tileEls: [],
-      toasts: [],
-      toastId: 1,
-      cf: null,
     };
   },
   mounted() {
-    const cvs = this.$refs.confettiCanvas;
-    this.cf = confetti.create(cvs, { resize: true, useWorker: true });
     this.init();
   },
   methods: {
-    // utils
-    rnd(n){ return Math.floor(Math.random()*n); },
-    randomType(){ return this.TYPES[this.rnd(this.TYPES.length)]; },
-    idx(r,c){ return r*this.SIZE + c; },
-    rc(i){ return [Math.floor(i/this.SIZE), i%this.SIZE]; },
-    sleep(ms){ return new Promise(r=>setTimeout(r, ms)); },
-    toast(text, type='info', ms=1400){
-      const id = this.toastId++; this.toasts.push({ id, text, type });
-      setTimeout(()=>{ this.toasts = this.toasts.filter(x=>x.id!==id) }, ms);
-    },
-    burst(opts){ if (this.cf) this.cf(opts); else confetti(opts); },
+    // --- 工具 ---
+    rnd(n) { return Math.floor(Math.random() * n); },
+    randomType() { return this.TYPES[this.rnd(this.TYPES.length)]; },
+    idx(r, c) { return r * this.SIZE + c; },
+    rc(i) { return [Math.floor(i / this.SIZE), i % this.SIZE]; },
+    sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
 
-    neighbors(i){
-      const [r,c] = this.rc(i); const ns=[];
-      if (r>0) ns.push(this.idx(r-1,c));
-      if (r<this.SIZE-1) ns.push(this.idx(r+1,c));
-      if (c>0) ns.push(this.idx(r,c-1));
-      if (c<this.SIZE-1) ns.push(this.idx(r,c+1));
-      return ns;
-    },
-    showAdjacents(i){
-      this.clearAdjacents();
-      for (const n of this.neighbors(i)) {
-        const el = this.tileEls[n]; if (el) el.classList.add('adjacent-hint');
-      }
-    },
-    clearAdjacents(){
-      this.tileEls.forEach(el => el && el.classList.remove('adjacent-hint','hover-swap'));
-    },
-
-    // init
-    init(){
-      this.grid = Array(this.SIZE*this.SIZE).fill(null).map(()=>this.randomType());
-      this.score = 0; this.moves = 15; this.level = 1;
-      this.tip = "——"; this.selected = null; this.animating = false;
-
-      const board = this.$refs.board;
-      board.style.width = (this.SIZE*this.CELL) + "px";
-      board.style.height = (this.SIZE*this.CELL) + "px";
-      board.innerHTML = "";
-      this.tileEls = [];
-
-      for (let i=0;i<this.grid.length;i++){
-        const el = document.createElement('div');
-        el.className = 'tile';
-        el.style.width = el.style.height = this.CELL + 'px';
-        el.style.position = 'absolute';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.style.fontSize = '22px';
-        el.style.transition = 'transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s';
-        el.style.willChange = 'transform, opacity';
-        el.onclick = () => this.onTileClick(i, el);
-        el.onmouseenter = () => this.onTileEnter(i);
-        el.onmouseleave = () => this.onTileLeave(i);
-        board.appendChild(el);
-        this.tileEls.push(el);
-      }
+    // --- 初始化 ---
+    init() {
+      this.grid = Array(this.SIZE * this.SIZE).fill(null).map(() => this.randomType());
+      this.score = 0;
+      this.moves = 15;
+      this.level = 1;
+      this.tip = "——";
+      this.selected = null;
       this.render();
     },
 
-    // render (persistent nodes + transform transition)
-    render(){
-      for (let i=0;i<this.grid.length;i++){
-        const el = this.tileEls[i];
-        const tile = this.grid[i];
-        const [r,c] = this.rc(i);
-        el.textContent = tile ?? "";
-        el.style.transform = `translate(${c*this.CELL}px, ${r*this.CELL}px)`;
-        el.style.opacity = tile ? '1' : '0';
-        el.style.cursor = 'pointer';
-      }
-    },
-
-    // interactions
-    onTileClick(i, el){
-      if (this.animating) return;
-
-      // instant feedback
-      this.tapPulse(i);
-      this.pressBounce(el);
-
-      // specials
-      if (this.grid[i] === "💥") { this.animateSpecial(el).then(()=>this.triggerBomb(i)); return; }
-      if (this.grid[i] === "🌈") { this.animateSpecial(el).then(()=>this.triggerRainbow(i)); return; }
-
-      // selection & swap
-      if (this.selected === null){
-        this.selected = i; this.highlight(i); this.showAdjacents(i); return;
-      }
-      if (i === this.selected){
-        this.unhighlight(); this.clearAdjacents(); this.selected = null; return;
-      }
-      if (!this.adjacent(i, this.selected)){
-        this.unhighlight(); this.clearAdjacents();
-        this.selected = i; this.highlight(i); this.showAdjacents(i); return;
-      }
-
-      // adjacent → swap (spend move)
-      if (this.moves > 0) this.moves--;
-      this.clearAdjacents();
-      this.swapWithAnimation(i, this.selected).then(()=>{
-        const m = this.findMatches();
-        if (m.size === 0){
-          this.wiggleTiles(i, this.selected);
-          this.swapWithAnimation(i, this.selected).then(()=>this.checkWinLose()); // swap back
-        } else {
-          this.cascade(m).then(this.checkWinLose);
-        }
-        this.unhighlight(); this.selected = null;
+    // --- 渲染 ---
+    render() {
+      const boardEl = this.$refs.board;
+      boardEl.style.width = `${this.SIZE * this.CELL}px`;
+      boardEl.style.height = `${this.SIZE * this.CELL}px`;
+      boardEl.innerHTML = "";
+      this.grid.forEach((tile, i) => {
+        const [r, c] = this.rc(i);
+        const div = document.createElement("div");
+        div.className = "tile";
+        div.textContent = tile ?? "";
+        div.style.position = "absolute";
+        div.style.width = div.style.height = this.CELL + "px";
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontSize = "22px";
+        div.style.transition = "transform 0.25s ease";
+        div.style.transform = `translate(${c * this.CELL}px,${r * this.CELL}px) scale(1)`;
+        div.onclick = () => this.onTileClick(i, div);
+        boardEl.appendChild(div);
+        div.style.cursor = "pointer";
       });
     },
 
-    onTileEnter(i){
-      if (this.selected !== null && this.adjacent(i, this.selected)) {
-        const a = this.tileEls[this.selected];
-        const b = this.tileEls[i];
-        a && a.classList.add('hover-swap');
-        b && b.classList.add('hover-swap');
+    // --- 点击逻辑 ---
+    onTileClick(i, el) {
+        if (this.animating) return;
+
+        // 特殊块：💥 和 🌈
+        if (this.grid[i] === "💥") {
+            this.animateSpecial(el).then(() => this.triggerBomb(i));
+            return;
+        }
+        if (this.grid[i] === "🌈") {
+            this.animateSpecial(el).then(() => this.triggerRainbow(i));
+            return;
+        }
+
+        // 普通点击逻辑
+        if (this.selected === null) { 
+            this.selected = i; 
+            this.highlight(i); 
+            return; 
+        }
+        if (i === this.selected) { 
+            this.unhighlight(); 
+            this.selected = null; 
+            return; 
+        }
+        if (!this.adjacent(i, this.selected)) {
+            this.unhighlight();
+            this.selected = i;
+            this.highlight(i);
+            return;
+        }
+
+        // 尝试交换
+        this.swapWithAnimation(i, this.selected).then(() => {
+            const m = this.findMatches();
+
+            // 如果步数已经为 0，直接判负
+            if (this.moves <= 0) {
+            this.checkWinLose();
+            return;
+            }
+
+            // 每次交换都要扣步
+            this.moves--;
+
+            if (m.size === 0) {
+            // 没有匹配 → 交换回去
+            this.swapWithAnimation(i, this.selected, true);
+            } else {
+            // 有匹配 → 消除并检查胜负
+            this.cascade(m).then(this.checkWinLose);
+            }
+
+            this.unhighlight();
+            this.selected = null;
+        });
+    },
+
+
+    highlight(i) {
+      const el = this.$refs.board.children[i];
+      if (el) {
+        el.style.outline = "3px solid #4f46e5";
+        el.style.zIndex = "10";
       }
     },
-    onTileLeave(){ this.tileEls.forEach(el => el && el.classList.remove('hover-swap')); },
-
-    tapPulse(i){
-      const board = this.$refs.board;
-      const [r,c] = this.rc(i);
-      const x = c*this.CELL + this.CELL/2;
-      const y = r*this.CELL + this.CELL/2;
-      const ring = document.createElement('div');
-      ring.className = 'click-ripple';
-      ring.style.left = x + 'px';
-      ring.style.top  = y + 'px';
-      board.appendChild(ring);
-      setTimeout(()=> ring.remove(), 500);
+    unhighlight() {
+      [...this.$refs.board.children].forEach(el => {
+        el.style.outline = "";
+        el.style.zIndex = "1";
+      });
     },
-    pressBounce(el){
-      const old = el.style.transform;
-      el.style.transform = old + " scale(0.94)";
-      setTimeout(()=>{ el.style.transform = old; }, 120);
-    },
-
-    highlight(i){ const el = this.tileEls[i]; if (el){ el.classList.add('selected'); el.style.zIndex='10'; } },
-    unhighlight(){ this.tileEls.forEach(el=>{ el.classList.remove('selected'); el.style.zIndex='1'; }); },
-    adjacent(a,b){ const [ar,ac]=this.rc(a), [br,bc]=this.rc(b); return Math.abs(ar-br)+Math.abs(ac-bc)===1; },
-
-    // FIXED: no "flash back" after swap
-    swapWithAnimation(a, b) {
-      this.animating = true;
-
-      const elA = this.tileEls[a], elB = this.tileEls[b];
+    adjacent(a, b) {
       const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
+      return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
+    },
 
-      // animate movement only (no data swap yet)
-      if (elA && elB) {
+    // --- 动画交换 ---
+    swapWithAnimation(a, b, reverse = false) {
+        this.animating = true;
+        const elA = this.$refs.board.children[a], elB = this.$refs.board.children[b];
+        const [ar, ac] = this.rc(a), [br, bc] = this.rc(b);
+
+        // 根据 reverse 决定交换方向
+        if (!reverse) {
+            [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
+        } else {
+            [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
+        }
+
         elA.style.transform = `translate(${bc * this.CELL}px,${br * this.CELL}px)`;
         elB.style.transform = `translate(${ac * this.CELL}px,${ar * this.CELL}px)`;
-      }
 
-      return new Promise(res => {
-        setTimeout(() => {
-          // 1) now swap data
-          [this.grid[a], this.grid[b]] = [this.grid[b], this.grid[a]];
-
-          // 2) temporarily disable transition to avoid second animation ("flash back")
-          const tA = elA ? elA.style.transition : "";
-          const tB = elB ? elB.style.transition : "";
-          if (elA) elA.style.transition = "none";
-          if (elB) elB.style.transition = "none";
-
-          this.render();   // align DOM to new grid instantly
-
-          // 3) force reflow
-          if (elA) void elA.offsetHeight;
-          if (elB) void elB.offsetHeight;
-
-          // 4) restore transition
-          if (elA) elA.style.transition = tA || "";
-          if (elB) elB.style.transition = tB || "";
-
-          this.animating = false;
-          res();
-        }, 280); // must match CSS transition duration
-      });
+        return new Promise(res => {
+            setTimeout(() => { this.render(); this.animating = false; res(); }, 250);
+        });
     },
 
-    wiggleTiles(a,b){
-      [this.tileEls[a], this.tileEls[b]].forEach(el=>{
-        if (!el) return;
-        el.classList.add('wiggle','flash');
-        setTimeout(()=>el.classList.remove('wiggle','flash'), 280);
-      });
-      this.toast("No match!", "warn", 900);
-    },
-
-    // matching
-    findMatches(){
+    // --- 匹配 ---
+    findMatches() {
       const matched = new Set();
-      // rows
-      for (let r=0;r<this.SIZE;r++){
-        let run=1;
-        for (let c=1;c<=this.SIZE;c++){
-          const cur = c<this.SIZE ? this.grid[this.idx(r,c)] : null;
-          const prev = this.grid[this.idx(r,c-1)];
-          if (cur && prev && cur===prev) run++;
+      // 行
+      for (let r = 0; r < this.SIZE; r++) {
+        let run = 1;
+        for (let c = 1; c <= this.SIZE; c++) {
+          const cur = c < this.SIZE ? this.grid[this.idx(r, c)] : null;
+          const prev = this.grid[this.idx(r, c - 1)];
+          if (cur && prev && cur === prev) run++;
           else {
-            if (run>=3){
-              for (let k=1;k<=run;k++) matched.add(this.idx(r,c-k));
-              if (run===4) this.grid[this.idx(r,c-2)] = "💥";
-              if (run>=5) this.grid[this.idx(r,c-3)] = "🌈";
+            if (run >= 3) {
+              for (let k = 1; k <= run; k++) matched.add(this.idx(r, c - k));
+              if (run === 4) this.grid[this.idx(r, c - 2)] = "💥";
+              if (run >= 5) this.grid[this.idx(r, c - 3)] = "🌈";
             }
-            run=1;
+            run = 1;
           }
         }
       }
-      // cols
-      for (let c=0;c<this.SIZE;c++){
-        let run=1;
-        for (let r=1;r<=this.SIZE;r++){
-          const cur = r<this.SIZE ? this.grid[this.idx(r,c)] : null;
-          const prev = this.grid[this.idx(r-1,c)];
-          if (cur && prev && cur===prev) run++;
+      // 列
+      for (let c = 0; c < this.SIZE; c++) {
+        let run = 1;
+        for (let r = 1; r <= this.SIZE; r++) {
+          const cur = r < this.SIZE ? this.grid[this.idx(r, c)] : null;
+          const prev = this.grid[this.idx(r - 1, c)];
+          if (cur && prev && cur === prev) run++;
           else {
-            if (run>=3){
-              for (let k=1;k<=run;k++) matched.add(this.idx(r-k,c));
-              if (run===4) this.grid[this.idx(r-2,c)] = "💥";
-              if (run>=5) this.grid[this.idx(r-3,c)] = "🌈";
+            if (run >= 3) {
+              for (let k = 1; k <= run; k++) matched.add(this.idx(r - k, c));
+              if (run === 4) this.grid[this.idx(r - 2, c)] = "💥";
+              if (run >= 5) this.grid[this.idx(r - 3, c)] = "🌈";
             }
-            run=1;
+            run = 1;
           }
         }
       }
       return matched;
     },
 
-    // cascade
-    async cascade(first){
+    // --- 消除 / 下落 ---
+    async cascade(first) {
       this.animating = true;
       await this.removeMatches(first);
-      while(true){
-        this.applyGravity();
-        this.fillNew();
-        this.render();
-        await this.sleep(280);
+      while (true) {
+        this.applyGravity(); this.fillNew(); this.render();
+        await this.sleep(250);
         const m = this.findMatches();
-        if (m.size===0) break;
+        if (m.size === 0) break;
         await this.removeMatches(m);
       }
       this.animating = false;
     },
-
-    removeMatches(matches){
+    removeMatches(matches) {
       this.score += matches.size * 10;
-      this.tip = [
-        "Drink more water and less sugary drinks~",
-        "Vegetables and fruits provide dietary fiber!",
-        "Whole grains are more filling.",
-        "Replace beverages with water and you can reduce a lot of sugar in a week!",
-        "Protein should be balanced: beans, eggs, milk",
-        "Check nutrition labels: less sugar, less salt, less saturated fat!"
-      ][this.rnd(6)];
-
-      return new Promise(res=>{
-        for (const i of matches){
-          const el = this.tileEls[i];
-          if (el){
-            el.style.transition = "transform .28s ease, opacity .28s ease";
-            el.style.transform += " scale(1.35)";
-            el.style.opacity = ".1";
+      this.tip = ["Drink more water and less sugary drinks~","Vegetables and fruits provide dietary fiber!","Whole grains are more filling.","Replace beverages with water and you can reduce a lot of sugar in a week!","Protein should be balanced: beans, eggs, milk","Look at the nutrition label: less sugar, less salt, less saturated fat!"][this.rnd(6)];
+      return new Promise(res => {
+        for (const i of matches) {
+          const el = this.$refs.board.children[i];
+          if (el) {
+            el.style.transition = "transform 0.3s ease, opacity 0.3s ease";
+            el.style.transform += " scale(1.5)";
+            el.style.opacity = "0.2";
           }
-          this.spawnFloatingScore(i, 10);
         }
-        setTimeout(()=>{
-          for (const i of matches){
-            if (this.grid[i] !== "💥" && this.grid[i] !== "🌈") this.grid[i] = null;
-          }
-          this.render();
-          res();
-        }, 280);
+        setTimeout(() => {
+          for (const i of matches) if (this.grid[i] !== "💥" && this.grid[i] !== "🌈") this.grid[i] = null;
+          this.render(); res();
+        }, 300);
       });
     },
-
-    applyGravity(){
-      for (let c=0;c<this.SIZE;c++){
-        let write = this.SIZE-1;
-        for (let r=this.SIZE-1;r>=0;r--){
-          const i = this.idx(r,c);
-          if (this.grid[i] !== null){
-            const w = this.idx(write,c);
-            if (i!==w){ this.grid[w] = this.grid[i]; this.grid[i] = null; }
+    applyGravity() {
+      for (let c = 0; c < this.SIZE; c++) {
+        let write = this.SIZE - 1;
+        for (let r = this.SIZE - 1; r >= 0; r--) {
+          const i = this.idx(r, c);
+          if (this.grid[i] !== null) {
+            const w = this.idx(write, c);
+            if (i !== w) { this.grid[w] = this.grid[i]; this.grid[i] = null; }
             write--;
           }
         }
       }
     },
-    fillNew(){
-      for (let i=0;i<this.grid.length;i++){
+    fillNew() {
+      for (let i = 0; i < this.grid.length; i++) {
         if (this.grid[i] === null) this.grid[i] = this.randomType();
       }
     },
 
-    // floating score
-    spawnFloatingScore(i, points=10){
-      const board = this.$refs.board;
-      const [r,c] = this.rc(i);
-      const x = c*this.CELL + this.CELL/2;
-      const y = r*this.CELL + this.CELL/2;
-      const el = document.createElement('div');
-      el.className = 'floating-score';
-      el.textContent = `+${points}`;
-      el.style.left = x+'px';
-      el.style.top  = y+'px';
-      el.style.position = 'absolute';
-      board.appendChild(el);
-      setTimeout(()=>el.remove(), 650);
-    },
-
-    // specials
-    triggerBomb(index){
+    // --- 特殊块 ---
+    triggerBomb(index) {
       const [r] = this.rc(index);
-      const board = this.$refs.board;
-
-      const sweep = document.createElement('div');
-      sweep.className = 'row-sweep';
-      sweep.style.top = (r*this.CELL)+'px';
-      sweep.style.width = (this.SIZE*this.CELL)+'px';
-      sweep.style.height = this.CELL+'px';
-      board.appendChild(sweep);
-      setTimeout(()=>sweep.remove(), 360);
-
-      board.style.transition = "transform .08s";
-      board.style.transform = "translateY(2px)";
-      setTimeout(()=>board.style.transform="translateY(0)", 90);
-
-      setTimeout(()=>{
-        for (let c=0;c<this.SIZE;c++) this.grid[this.idx(r,c)] = null;
-        this.render();
-        this.cascade(this.findMatches()).then(this.checkWinLose);
-      }, 160);
+      for (let c = 0; c < this.SIZE; c++) this.grid[this.idx(r, c)] = null;
+      this.render();
+      this.cascade(this.findMatches()).then(this.checkWinLose);
     },
-    triggerRainbow(){
+    triggerRainbow(index) {
       const type = this.TYPES[this.rnd(this.TYPES.length)];
-      for (let j=0;j<this.grid.length;j++){
+      for (let j = 0; j < this.grid.length; j++) {
         if (this.grid[j] === type) this.grid[j] = null;
       }
       this.render();
       this.cascade(this.findMatches()).then(this.checkWinLose);
     },
-    animateSpecial(el){
-      return new Promise(res=>{
-        el.style.transition = "transform .28s ease, opacity .28s ease";
-        el.style.transform += " scale(1.4)";
-        el.style.opacity = ".35";
-        setTimeout(res, 280);
+    animateSpecial(el) {
+      return new Promise(res => {
+        el.style.transition = "transform 0.3s ease, opacity 0.3s ease";
+        el.style.transform += " scale(1.5)";
+        el.style.opacity = "0.3";
+        setTimeout(res, 300);
       });
     },
 
-    // win/lose
-    checkWinLose(){
-      if (this.score >= this.levelGoals[this.level-1]){
-        this.burst({ particleCount: 220, spread: 120, origin:{ y:.6 } });
-        this.toast(`🎉 Level ${this.level} Clear!`, "ok", 1400);
-        setTimeout(()=>{
-          this.level++;
-          if (this.level > this.levelGoals.length){
-            this.burst({ particleCount: 320, spread: 160, origin:{ y:.5 } });
-            this.toast("🏆 All Levels Complete!", "ok", 1600);
-            setTimeout(()=>this.init(), 900);
-          } else {
-            this.moves = 15;
-            this.render();
-          }
-        }, 500);
-      } else if (this.moves <= 0){
-        this.burst({ particleCount: 180, spread: 100, origin:{ y:.6 }, colors:['#555','#888','#aaa'] });
-        const board = this.$refs.board;
-        board.style.transition = "background .5s";
-        board.style.background = "#662222";
-        setTimeout(()=>board.style.background="#2c2f48", 600);
-        this.toast(`❌ Game Over • Final: ${this.score}`, "err", 1600);
-        setTimeout(()=>this.init(), 900);
-      }
-    },
+    // --- 胜负判定 ---
+    checkWinLose() {
+        if (this.score >= this.levelGoals[this.level - 1]) {
+            // 胜利礼花
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+            setTimeout(() => {
+            alert("🎉 Level " + this.level + " Clear!");
+            this.level++;
+            if (this.level > this.levelGoals.length) {
+                alert("🏆 All Levels Complete!");
+                this.init();
+            } else {
+                this.moves = 15;
+                this.render();
+            }
+            }, 500);
+        } 
+        else if (this.moves <= 0) {
+            // 失败效果：灰色礼花 + 棋盘闪红
+            confetti({ 
+            particleCount: 150, 
+            spread: 100, 
+            origin: { y: 0.6 },
+            colors: ['#555', '#888', '#aaa'] // 灰色调
+            });
+
+            const board = this.$refs.board;
+            board.style.transition = "background 0.5s";
+            board.style.background = "#662222"; // 闪红
+            setTimeout(() => board.style.background = "#2c2f48", 600);
+
+            setTimeout(() => {
+            alert("❌ Game Over. Final Score: " + this.score);
+            this.init();
+            }, 800);
+        }
+    }
   }
 };
 </script>
 
 <style scoped>
-/* ===== 背景 / 标题 ===== */
-.game-page{
-  min-height: 100vh; display: grid; justify-items: center; gap: 14px;
-  padding: 24px 16px 60px;
-  background: radial-gradient(1200px 700px at 50% -200px, #1f2941, #0f172a);
-}
-.title{ margin: 0; color:#eef2ff; letter-spacing:.5px; font-weight:800; text-shadow:0 6px 24px #0006; }
-
-/* ===== HUD ===== */
-.hud-card{
-  width: min(880px, 92vw); padding: 14px 16px 12px;
-  background: rgba(20,25,45,.72); border: 1px solid #334155; border-radius: 14px;
-  backdrop-filter: blur(6px); box-shadow: 0 12px 30px #0005;
-}
-.hud-row{ display:grid; grid-template-columns: repeat(4,1fr) auto; align-items:center; gap:12px; }
-.hud-item{ display:flex; flex-direction:column; gap:4px; }
-.hud-label{ font-size:12px; color:#93c5fd; opacity:.9; }
-.hud-value{ font-weight:700; color:#e5e7eb; }
-.badge{ background:#0ea5e9; color:#04223a; border-radius:999px; padding:2px 10px; display:inline-block; }
-.btn{ height:32px; padding:0 12px; border-radius:10px; border:1px solid #3b425a; color:#e5e7eb; background:#1f2438; }
-.btn.ghost:hover{ background:#2a3150; }
-
-.goalbar{ position:relative; margin:10px 4px 6px; width:100%; height:12px; background:#12172a; border:1px solid #2a3351; border-radius:999px; overflow:hidden; }
-.goalbar-fill{ height:100%; background:linear-gradient(90deg, #34d399, #22d3ee); transition: width .35s ease; }
-.goalbar-text{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#dbeafe; font-size:12px; text-shadow:0 1px 2px #0008; pointer-events:none; }
-
-.tip{ margin-top:8px; display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:14px; }
-.tip-icon{ filter: drop-shadow(0 2px 6px #0007); }
-.tip-text{ opacity:.95; }
-
-/* ===== Board / Tiles ===== */
-.board{
-  position: relative; margin:16px auto; background:#2c2f48;
-  border:2px solid #444; border-radius:14px; box-shadow: 0 12px 40px rgba(0,0,0,.45);
-}
-.tile{
-  border-radius:8px; background:#3a3d5c; color:#fff; box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
-  display:flex; align-items:center; justify-content:center; user-select:none; cursor:pointer; font-size:22px;
-  transition: transform .28s cubic-bezier(.2,.8,.2,1), background .28s, opacity .28s; will-change: transform, opacity;
-}
-.tile:hover{ background:#50557c; transform: scale(1.05); }
-
-/* 选中：青色粗框 */
-.tile.selected{ position: relative; }
-.tile.selected::after{
-  content:''; position:absolute; inset:3px;
-  border:3px solid #22d3ee; border-radius:10px;
-  box-shadow: 0 0 12px #22d3eeaa, inset 0 0 8px #22d3ee66;
-  pointer-events:none; animation: selPulse 1s ease-in-out infinite;
-}
-@keyframes selPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.55 } }
-
-/* 可交换邻格：紫色框 */
-.tile.adjacent-hint{ position:relative; }
-.tile.adjacent-hint::after{
-  content:''; position:absolute; inset:7px;
-  border:2px solid #a78bfa; border-radius:10px; opacity:.95;
-  box-shadow: 0 0 8px #a78bfa66; pointer-events:none;
+/* 让游戏整体居中 */
+.game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 准备交换：黄色强调框（两格同时出现） */
-.tile.hover-swap{ position:relative; }
-.tile.hover-swap::before{
-  content:''; position:absolute; inset:0;
-  border:3px solid #facc15; border-radius:12px;
-  box-shadow: 0 0 10px #facc1566; pointer-events:none; animation: swapBlink .6s ease-in-out infinite;
+/* 棋盘容器居中 + 柔和背景 */
+.board {
+  position: relative;
+  margin: 20px auto;
+  background: #2c2f48; /* 深色背景，更融入整体 */
+  border: 2px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-@keyframes swapBlink{ 0%,100%{ opacity:1 } 50%{ opacity:.6 } }
 
-/* 无效交换反馈 */
-@keyframes wiggle { 0%,100%{ transform: translateX(0)} 25%{ transform: translateX(-6px)} 75%{ transform: translateX(6px)} }
-.tile.wiggle{ animation: wiggle .28s ease; }
-@keyframes flash { from{ background:#8b3a3a } to{ background:#3a3d5c } }
-.tile.flash{ animation: flash .28s ease; }
-
-/* 点击涟漪 */
-.click-ripple{
-  position:absolute; width:10px; height:10px; left:0; top:0; transform: translate(-50%,-50%); pointer-events:none;
-  border:2px solid rgba(173,216,255,.95); border-radius:999px;
-  box-shadow: 0 0 12px rgba(173,216,255,.9), 0 0 24px rgba(173,216,255,.4);
-  animation: ripple .45s ease-out forwards;
+/* 每个格子样式，改掉白底 */
+.tile {
+  border-radius: 6px;
+  background: #3a3d5c; /* 深灰蓝背景 */
+  color: #fff;         /* 让 emoji 更清晰 */
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: transform 0.25s ease, background 0.3s ease;
 }
-@keyframes ripple{ from{ opacity:.9; transform: translate(-50%,-50%) scale(.6) } to{ opacity:0; transform: translate(-50%,-50%) scale(2.2) } }
-
-/* 飘分 */
-.floating-score{
-  position:absolute; color:#ffec99; font-weight:800; text-shadow:0 2px 6px #0009; transform:translate(-50%,-50%);
-  pointer-events:none; opacity:0; animation: floatUp .6s ease forwards;
+.tile:hover {
+  background: #50557c;
+  transform: scale(1.05);
 }
-@keyframes floatUp{ from{ transform:translate(-50%,-20%); opacity:.1 } to{ transform:translate(-50%,-80%); opacity:1 } }
 
-/* 行扫光（💥） */
-.row-sweep{
-  position:absolute; left:0;
-  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.35), rgba(255,255,255,0));
-  filter:blur(2px); border-radius:8px; pointer-events:none; opacity:.9; animation: sweep .35s ease forwards;
+/* 底部提示卡片 */
+.legend {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #666;
+  border-radius: 8px;
+  background: #1f2235;  /* 深色背景 */
+  max-width: 360px;
+  color: #f0f0f0;       /* 文字变亮 */
 }
-@keyframes sweep{ from{ transform:translateX(-20%); opacity:.6 } to{ transform:translateX(100%); opacity:0 } }
-
-/* Legend */
-.legend{
-  width:min(880px, 92vw); margin-top:6px; padding:12px; border:1px solid #3a405c; border-radius:12px; background:#1b2037; color:#f0f0f0;
+.legend h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #ffd369;       /* 标题改成亮黄色 */
 }
-.legend h3{ margin:0 0 6px; color:#ffd369; }
-.legend ul{ margin:0; padding-left:18px; }
-
-/* Toast */
-.toast-wrap{
-  position: fixed; top: 14px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; z-index: 10010;
+.legend ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
 }
-.toast{
-  padding: 8px 12px; border-radius: 10px; color:#eaf2ff; background:#1f2a44cc; border:1px solid #3a4a72; box-shadow:0 6px 20px #0006; backdrop-filter: blur(6px);
-  animation: toastIn .2s ease, toastOut .2s ease 1.2s forwards;
+.legend li {
+  margin-bottom: 6px;
 }
-.toast.ok{ background:#0e4b2dcc; border-color:#1d774c; }
-.toast.err{ background:#4b1b1bcc; border-color:#7a2d2d; }
-.toast.warn{ background:#4b3b1bcc; border-color:#7a5f2d; }
-@keyframes toastIn{ from{ transform: translate(-50%, -8px); opacity:0 } to{ transform: translate(-50%, 0); opacity:1 } }
-@keyframes toastOut{ to{ transform: translate(-50%, -8px); opacity:0 } }
 
-/* Confetti canvas */
-.confetti-canvas{ position: fixed; inset: 0; pointer-events: none; z-index: 10020; }
-
-/* Responsive */
-@media (max-width: 720px){ .hud-row{ grid-template-columns: repeat(2,1fr) auto; } }
 </style>
