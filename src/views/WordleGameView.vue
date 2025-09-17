@@ -585,13 +585,44 @@ function triggerRowShake(r) {
 }
 
 /* ===== MOBILE ===== */
-.wd-mobile-panels{ display:none; }
-@media (max-width: 980px){
-  .wd-stage{ display:block; }           /* stack everything */
-  .wd-left-stack, .wd-right-ghost{ display:none; }
-  .wd-mobile-panels{ display:block; margin-top:12px; }
-  .wordly{ --cell: 46px; }
-  .wd-right .wd-hint{ max-width:80vw; }
-  .wd-key{ padding:8px 10px; }
+/* ---------- Mobile tweaks ---------- */
+@media (max-width: 980px) {
+  /* make layout adjustments for mobile */
+  .wd-center { display: flex; flex-direction: column; }
+  .wd-board-col   { order: 1; }
+  .wd-kbd         { order: 2; margin-top: 12px; }   /* move keyboard up */
+  .wd-mobile-panels { order: 3; margin-top: 12px; }
+
+  /* give mobile hints a clearer border and card feel */
+  .wd-coll{
+    display: block;
+    background: #10121a;
+    border: 1.5px solid #50536b;     /* clearer border */
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 0 0 1px rgba(80,83,107,.08) inset;
+  }
+  .wd-coll + .wd-coll{ margin-top: 10px; }
+
+  .wd-coll > summary{
+    cursor: pointer;
+    font-weight: 800;
+    color: #e8e9f3;
+    list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    /* let summary take full width for larger click area */
+    margin: -6px -6px 0 -6px;        /* slightly "pull" card padding */
+    padding: 6px;
+    border-radius: 10px;
+  }
+  .wd-coll > summary::-webkit-details-marker{ display:none; }
+  .wd-coll > summary::before{
+    content: '▸';
+    display:inline-block; transform: translateY(1px);
+    opacity:.9;
+  }
+  .wd-coll[open] > summary::before{ content: '▾'; }
+  .wd-coll > *:not(summary){ margin-top:8px; }
 }
+
 </style>
