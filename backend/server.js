@@ -18,27 +18,6 @@ const __dirname = path.dirname(__filename);
 // serve your images: http://host:port/food_icons/<Name>.png
 app.use("/food_icons", express.static(path.join(__dirname, "food_icons")));
 
-// serve static files from the dist directory (built frontend)
-app.use(express.static(path.join(__dirname, "../dist")));
-
-// serve the main index.html for all routes (SPA routing)
-app.get("*", (req, res) => {
-  const indexPath = path.join(__dirname, "../dist/index.html");
-  console.log("Looking for index.html at:", indexPath);
-  
-  // Check if file exists
-  if (require('fs').existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    console.error("index.html not found at:", indexPath);
-    res.status(404).send(`
-      <h1>Frontend not built</h1>
-      <p>The frontend dist folder is missing. Please ensure the build process completed successfully.</p>
-      <p>Expected path: ${indexPath}</p>
-    `);
-  }
-});
-
 // ---------- DB POOL ----------
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
