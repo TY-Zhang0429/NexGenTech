@@ -23,7 +23,20 @@ app.use(express.static(path.join(__dirname, "../dist")));
 
 // serve the main index.html for all routes (SPA routing)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  const indexPath = path.join(__dirname, "../dist/index.html");
+  console.log("Looking for index.html at:", indexPath);
+  
+  // Check if file exists
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error("index.html not found at:", indexPath);
+    res.status(404).send(`
+      <h1>Frontend not built</h1>
+      <p>The frontend dist folder is missing. Please ensure the build process completed successfully.</p>
+      <p>Expected path: ${indexPath}</p>
+    `);
+  }
 });
 
 // ---------- DB POOL ----------
