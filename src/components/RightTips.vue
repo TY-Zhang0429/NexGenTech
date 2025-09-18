@@ -1,152 +1,65 @@
 <template>
-  <!-- ===== Desktop panel ===== -->
-  <aside class="tips-panel" aria-label="Health Tips (desktop)">
+  <!-- ========= DESKTOP PANEL ========= -->
+  <aside v-if="mode === 'desktop'" class="tips-panel" aria-label="Health Tips (desktop)">
     <header class="tips-h">
       <strong>Health Tips</strong>
       <div class="spacer"></div>
       <button class="icon" @click="prevTip" aria-label="Prev">‹</button>
       <button class="icon" @click="nextTip" aria-label="Next">›</button>
-      <button class="icon close" @click="collapse" aria-label="Collapse">×</button>
     </header>
-
-    <section class="tips-body">
-      <article class="tip-card">
-        <div class="tip-tag">{{ currentTip.tag }}</div>
-        <h4 class="tip-title">{{ currentTip.title }}</h4>
-        <p class="tip-text">{{ currentTip.text }}</p>
-        <ul v-if="currentTip.bullets?.length" class="tip-bullets">
-          <li v-for="(b,i) in currentTip.bullets" :key="i">{{ b }}</li>
-        </ul>
-
-        <div class="tip-actions">
-          <button class="btn" @click="markDone">I’ll try it</button>
-          <button class="btn ghost" @click="shuffleTip">Shuffle</button>
-          <button
-            class="heart"
-            :class="{ active: liked[currentTip.id] }"
-            @click="toggleLike(currentTip.id)"
-            :aria-pressed="!!liked[currentTip.id]"
-          >♥</button>
-        </div>
-
-        <div v-if="tipToast" class="tip-toast">{{ tipToast }}</div>
-      </article>
-
-      <!-- Mini challenges -->
-      <article class="box">
-        <h5 class="box-title">Mini Challenges</h5>
-        <div class="chips">
-          <button class="chip" @click="toast('Deep breath ✨')">30s Breathing</button>
-          <button class="chip" @click="toast('Stretch done ✅')">30s Stretch</button>
-        </div>
-      </article>
-
-      <!-- Weekly theme -->
-      <article class="box">
-        <h5 class="box-title">Weekly Theme: Colorful Week</h5>
-        <div class="row">
-          <button class="chip" @click="toast('Logged ✔')">Log 1 serving</button>
-          <span class="muted">5/5</span>
-        </div>
-        <div class="bar"><div class="bar-fill"></div></div>
-        <div class="muted done">🏅 Completed!</div>
-      </article>
-
-      <!-- Water tracker -->
-      <article class="box">
-        <h5 class="box-title">Water today</h5>
-        <div class="dots">
-          <button
-            v-for="i in 8"
-            :key="i"
-            class="dot"
-            :class="{ on: i <= waterGlasses }"
-            @click="setWater(i)"
-            :aria-label="`Glasses ${i}`"
-          />
-          <button class="chip ghost" @click="setWater(0)" aria-label="Reset">↺</button>
-        </div>
-      </article>
-    </section>
+    <TipsBody
+      :current-tip="currentTip"
+      :liked="liked"
+      :streak="streak"
+      :best-streak="bestStreak"
+      :week-count="weekCount"
+      :week-goal="WEEK_GOAL"
+      :countdown="countdownText"
+      :water-glasses="waterGlasses"
+      @toggle-like="toggleLike"
+      @shuffle="shuffleTip"
+      @done="markDone"
+      @check-in="checkIn"
+      @set-water="setWater"
+      @reset-water="() => setWater(0)"
+    />
   </aside>
 
-  <!-- ===== Mobile drawer (bottom sheet) ===== -->
-  <div class="tips-drawer" :class="{ open: mobileOpen }" role="dialog" aria-label="Health Tips (mobile)">
-    <header class="drawer-h">
-      <span class="drawer-title">Health Tips</span>
-      <button class="x" @click="closeDrawer" aria-label="Close">×</button>
-    </header>
-
-    <!-- IMPORTANT: body is scrollable and always visible when open -->
-    <div class="drawer-body">
-      <!-- 同一份内容（为保证移动端不空白，直接复用） -->
-      <article class="tip-card">
-        <div class="tip-tag">{{ currentTip.tag }}</div>
-        <h4 class="tip-title">{{ currentTip.title }}</h4>
-        <p class="tip-text">{{ currentTip.text }}</p>
-        <ul v-if="currentTip.bullets?.length" class="tip-bullets">
-          <li v-for="(b,i) in currentTip.bullets" :key="i">{{ b }}</li>
-        </ul>
-
-        <div class="tip-actions">
-          <button class="btn" @click="markDone">I’ll try it</button>
-          <button class="btn ghost" @click="shuffleTip">Shuffle</button>
-          <button
-            class="heart"
-            :class="{ active: liked[currentTip.id] }"
-            @click="toggleLike(currentTip.id)"
-          >♥</button>
-        </div>
-
-        <div v-if="tipToast" class="tip-toast">{{ tipToast }}</div>
-      </article>
-
-      <article class="box">
-        <h5 class="box-title">Mini Challenges</h5>
-        <div class="chips">
-          <button class="chip" @click="toast('Deep breath ✨')">30s Breathing</button>
-          <button class="chip" @click="toast('Stretch done ✅')">30s Stretch</button>
-        </div>
-      </article>
-
-      <article class="box">
-        <h5 class="box-title">Weekly Theme: Colorful Week</h5>
-        <div class="row">
-          <button class="chip" @click="toast('Logged ✔')">Log 1 serving</button>
-          <span class="muted">5/5</span>
-        </div>
-        <div class="bar"><div class="bar-fill"></div></div>
-        <div class="muted done">🏅 Completed!</div>
-      </article>
-
-      <article class="box">
-        <h5 class="box-title">Water today</h5>
-        <div class="dots">
-          <button
-            v-for="i in 8"
-            :key="i"
-            class="dot"
-            :class="{ on: i <= waterGlasses }"
-            @click="setWater(i)"
-          />
-          <button class="chip ghost" @click="setWater(0)">↺</button>
-        </div>
-      </article>
-    </div>
+  <!-- ========= MOBILE BODY（给底部抽屉用） ========= -->
+  <div v-else class="tips-mobile">
+    <TipsBody
+      :current-tip="currentTip"
+      :liked="liked"
+      :streak="streak"
+      :best-streak="bestStreak"
+      :week-count="weekCount"
+      :week-goal="WEEK_GOAL"
+      :countdown="countdownText"
+      :water-glasses="waterGlasses"
+      @toggle-like="toggleLike"
+      @shuffle="shuffleTip"
+      @done="markDone"
+      @check-in="checkIn"
+      @set-water="setWater"
+      @reset-water="() => setWater(0)"
+    />
   </div>
 </template>
 
 <script setup>
-/* English comments to help future you 🙂 */
-import { ref, reactive, computed, onMounted, defineExpose } from 'vue';
+/**
+ * RightTips
+ * - desktop: 固定右栏，内部滚动
+ * - mobile: 仅渲染“内容体”（由页面的底部抽屉包裹）
+ * - 含：随机小贴士、打卡+连续天数（streak）、周目标进度、喝水计数、每日重置倒计时
+ */
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue';
 
-defineProps({
-  hint: String,
-  difficulty: String,
-  targetLen: [Number, String],
+const props = defineProps({
+  mode: { type: String, default: 'desktop' } // 'desktop' | 'mobile'
 });
 
-/* Tips data */
+/* ------- Tips data ------- */
 const tipsList = ref([
   { id: 'hydration', tag: 'Hydration', title: 'Drink a glass of water',
     text: 'Dehydration can feel like hunger. Sip water before your next snack.',
@@ -161,64 +74,197 @@ const tipsList = ref([
   { id: 'swap', tag: 'Smart swap', title: 'Soda → sparkling water',
     text: 'Cut ~140 kcal. Add citrus or mint for flavor without sugar.' },
 ]);
-
 const tipIndex = ref(0);
 const currentTip = computed(() => tipsList.value[tipIndex.value]);
-
 function nextTip(){ tipIndex.value = (tipIndex.value + 1) % tipsList.value.length; }
 function prevTip(){ tipIndex.value = (tipIndex.value - 1 + tipsList.value.length) % tipsList.value.length; }
 function shuffleTip(){ tipIndex.value = Math.floor(Math.random() * tipsList.value.length); }
 
-const liked = reactive(JSON.parse(localStorage.getItem('tips_liked') || '{}'));
-const doneTips = reactive(JSON.parse(localStorage.getItem('tips_done') || '{}'));
-function saveLikes(){ localStorage.setItem('tips_liked', JSON.stringify(liked)); }
-function saveDone(){ localStorage.setItem('tips_done', JSON.stringify(doneTips)); }
+/* ------- Persistence helpers ------- */
+const liked = reactive(JSON.parse(localStorage.getItem('ht_liked') || '{}'));
+function toggleLike(id){ liked[id] = !liked[id]; localStorage.setItem('ht_liked', JSON.stringify(liked)); }
 
-const tipToast = ref('');
-function toast(msg){ tipToast.value = msg; setTimeout(() => tipToast.value = '', 1200); }
-function toggleLike(id){ liked[id] = !liked[id]; saveLikes(); toast(liked[id] ? 'Saved ❤️' : 'Unsaved'); }
-function markDone(){ doneTips[currentTip.value.id] = true; saveDone(); toast('Nice! 🙌'); }
+/* ------- Streak + Weekly goal ------- */
+const WEEK_GOAL = 5; // 当周目标 5 次
+const streak = ref(parseInt(localStorage.getItem('ht_streak') || '0', 10));
+const bestStreak = ref(parseInt(localStorage.getItem('ht_best') || '0', 10));
+const lastCheckDate = ref(localStorage.getItem('ht_last') || ''); // YYYY-MM-DD
 
-/* Water tracker (daily reset) */
-const waterGlasses = ref(0);
-function setWater(n){ waterGlasses.value = n; localStorage.setItem('water_glasses', String(n)); }
+const weekKey = computed(() => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const w = isoWeek(d);
+  return `ht_week_${y}-${String(w).padStart(2,'0')}`;
+});
+const weekCount = ref(parseInt(localStorage.getItem(weekKey.value) || '0', 10));
+watchEffect(() => {
+  // 当周切换（跨周）自动取新 key
+  const n = parseInt(localStorage.getItem(weekKey.value) || '0', 10);
+  weekCount.value = n;
+});
 
-/* Desktop collapse (optional – keeps the box height sane when user wants) */
-function collapse(){ /* noop, but kept for header "×" consistency */ }
+function checkIn(){
+  const today = new Date().toISOString().slice(0,10);
+  if (lastCheckDate.value === today) return; // 当天已打卡
 
-/* Mobile drawer state */
-const mobileOpen = ref(false);
-function openDrawer(){ mobileOpen.value = true; document.body.style.overflow = 'hidden'; }
-function closeDrawer(){ mobileOpen.value = false; document.body.style.overflow = ''; }
-defineExpose({ openDrawer, closeDrawer });
-
-onMounted(() => {
-  // restore water tracker (daily)
-  const today = new Date().toISOString().slice(0, 10);
-  const saved = localStorage.getItem('water_day');
-  if (saved !== today){
-    localStorage.setItem('water_day', today);
-    localStorage.setItem('water_glasses', '0');
+  // streak 逻辑
+  if (lastCheckDate.value){
+    const diff = daysBetween(lastCheckDate.value, today);
+    streak.value = (diff === 1) ? streak.value + 1 : 1;
+  }else{
+    streak.value = 1;
   }
-  waterGlasses.value = parseInt(localStorage.getItem('water_glasses') || '0', 10);
+  lastCheckDate.value = today;
+  bestStreak.value = Math.max(bestStreak.value, streak.value);
+
+  // 周累计
+  const nowCount = parseInt(localStorage.getItem(weekKey.value) || '0', 10) + 1;
+  localStorage.setItem(weekKey.value, String(nowCount));
+  weekCount.value = nowCount;
+
+  // 持久化
+  localStorage.setItem('ht_streak', String(streak.value));
+  localStorage.setItem('ht_best', String(bestStreak.value));
+  localStorage.setItem('ht_last', lastCheckDate.value);
+}
+
+function daysBetween(isoA, isoB){
+  const a = new Date(isoA + 'T00:00:00'); const b = new Date(isoB + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+function isoWeek(d){
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+}
+
+/* ------- Water tracker + countdown ------- */
+const waterGlasses = ref(parseInt(localStorage.getItem('ht_water') || '0', 10));
+function setWater(n){ waterGlasses.value = n; localStorage.setItem('ht_water', String(n)); }
+
+const countdownText = ref('');
+let timer = null;
+function updateCountdown(){
+  const now = new Date();
+  const midnight = new Date(now); midnight.setHours(24,0,0,0);
+  const ms = midnight - now;
+  const hh = String(Math.floor(ms/3600000)).padStart(2,'0');
+  const mm = String(Math.floor((ms%3600000)/60000)).padStart(2,'0');
+  const ss = String(Math.floor((ms%60000)/1000)).padStart(2,'0');
+  countdownText.value = `${hh}:${mm}:${ss}`;
+}
+onMounted(() => {
+  // 每日重置：提供 day key；重置只影响 water 计数和“当天已打卡”状态（不清 streak）
+  const today = new Date().toISOString().slice(0,10);
+  const savedDay = localStorage.getItem('ht_day');
+  if (savedDay !== today){
+    localStorage.setItem('ht_day', today);
+    localStorage.setItem('ht_water', '0');
+    waterGlasses.value = 0;
+    // 当跨天但没打卡，不重置 streak；streak 的滚动由用户是否打卡决定
+  }
+  updateCountdown();
+  timer = setInterval(updateCountdown, 1000);
+});
+onBeforeUnmount(() => { if (timer) clearInterval(timer); });
+
+/* ------- Expose minimal API for parent (可选) ------- */
+// 不需要方法暴露了；抽屉在父组件控制开关。
+</script>
+
+<!-- 共用内容体组件（避免重复模板） -->
+<script setup name="TipsBody">
+const emits = defineEmits(['toggle-like','shuffle','done','check-in','set-water','reset-water']);
+const bodyProps = defineProps({
+  currentTip: { type: Object, required: true },
+  liked: { type: Object, required: true },
+  streak: { type: Number, required: true },
+  bestStreak: { type: Number, required: true },
+  weekCount: { type: Number, required: true },
+  weekGoal: { type: Number, required: true },
+  countdown: { type: String, required: true },
+  waterGlasses: { type: Number, required: true },
 });
 </script>
 
+<template #default>
+  <section class="tips-body">
+    <!-- Tip -->
+    <article class="tip-card">
+      <div class="tip-tag">{{ bodyProps.currentTip.tag }}</div>
+      <h4 class="tip-title">{{ bodyProps.currentTip.title }}</h4>
+      <p class="tip-text">{{ bodyProps.currentTip.text }}</p>
+      <ul v-if="bodyProps.currentTip.bullets?.length" class="tip-bullets">
+        <li v-for="(b,i) in bodyProps.currentTip.bullets" :key="i">{{ b }}</li>
+      </ul>
+
+      <div class="tip-actions">
+        <button class="btn" @click="$emit('done'); $emit('check-in')">I’ll try it</button>
+        <button class="btn ghost" @click="$emit('shuffle')">Shuffle</button>
+        <button
+          class="heart"
+          :class="{ active: bodyProps.liked[bodyProps.currentTip.id] }"
+          @click="$emit('toggle-like', bodyProps.currentTip.id)"
+          :aria-pressed="!!bodyProps.liked[bodyProps.currentTip.id]"
+        >♥</button>
+      </div>
+    </article>
+
+    <!-- Mini Challenges -->
+    <article class="box">
+      <h5 class="box-title">Mini Challenges</h5>
+      <div class="chips">
+        <button class="chip" @click="$emit('check-in')">30s Breathing</button>
+        <button class="chip" @click="$emit('check-in')">30s Stretch</button>
+      </div>
+    </article>
+
+    <!-- Weekly theme + streak -->
+    <article class="box">
+      <div class="row between">
+        <h5 class="box-title">Weekly Theme: Colorful Week</h5>
+        <div class="muted">Resets in {{ bodyProps.countdown }}</div>
+      </div>
+
+      <div class="row wrap gap">
+        <button class="chip" @click="$emit('check-in')">Log 1 serving</button>
+        <span class="muted"> {{ Math.min(bodyProps.weekCount, bodyProps.weekGoal) }}/{{ bodyProps.weekGoal }}</span>
+        <span class="muted"> • Streak: <b>{{ bodyProps.streak }}</b> 🔥 (Best {{ bodyProps.bestStreak }})</span>
+      </div>
+
+      <div class="bar">
+        <div class="bar-fill" :style="{ width: (Math.min(bodyProps.weekCount, bodyProps.weekGoal)/bodyProps.weekGoal*100)+'%' }"></div>
+      </div>
+    </article>
+
+    <!-- Water tracker -->
+    <article class="box">
+      <div class="row between">
+        <h5 class="box-title">Water today</h5>
+        <button class="chip ghost" @click="$emit('reset-water')" aria-label="Reset">↺</button>
+      </div>
+      <div class="dots">
+        <button v-for="i in 8" :key="i" class="dot" :class="{ on: i <= bodyProps.waterGlasses }" @click="$emit('set-water', i)"></button>
+      </div>
+    </article>
+  </section>
+</template>
+
 <style scoped>
-/* ===== Desktop panel ===== */
+/* Desktop panel wrapper */
 .tips-panel{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
-  padding:10px 12px;
-  position: sticky; top: 84px;
-  max-height: calc(100vh - 120px);      /* 固定自身高度，内部滚动，不挤压棋盘/键盘 */
-  overflow: auto;
+  padding:10px 12px; position: sticky; top:84px;
+  max-height: calc(100vh - 120px); overflow:auto;
 }
 .tips-h{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .tips-h .spacer{ flex:1; }
 .icon{ background:#1f2230; border:1px solid #343a55; color:#e7e9f0; width:28px; height:28px; border-radius:8px; cursor:pointer; }
-.icon.close{ width:28px; }
 
 /* Shared content */
+.tips-body{ display:block; }
 .tip-card{ background:#0f1118; border:1px solid #2b2d3b; border-radius:10px; padding:12px; }
 .tip-tag{ font-size:12px; opacity:.8; margin-bottom:4px; }
 .tip-title{ margin:2px 0 6px; font-size:16px; font-weight:800; color:#e8e9f3; }
@@ -229,48 +275,23 @@ onMounted(() => {
 .btn.ghost{ background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; }
 .heart{ background:#1f2230; border:1px solid #343a55; color:#e7e9f0; padding:6px 10px; border-radius:8px; font-weight:800; cursor:pointer; }
 .heart.active{ background:#e11d48; border-color:#e11d48; color:#0b0c0f; }
-.tip-toast{ margin-top:8px; font-size:12px; color:#bfe6c2; }
 
-/* other cards */
 .box{ background:#0f1118; border:1px solid #2b2d3b; border-radius:10px; padding:12px; margin-top:12px; }
 .box-title{ margin:0 0 8px; font-weight:800; color:#e8e9f3; }
+.row{ display:flex; align-items:center; gap:10px; }
+.row.between{ justify-content:space-between; }
+.row.wrap{ flex-wrap:wrap; }
+.row.gap{ gap:10px; }
 .chips{ display:flex; gap:10px; flex-wrap:wrap; }
 .chip{ background:#2a2f45; color:#e6e9f7; border:1px solid #3c415f; border-radius:10px; padding:6px 10px; cursor:pointer; }
 .chip.ghost{ background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; }
-.row{ display:flex; align-items:center; gap:10px; }
 .muted{ opacity:.8; font-size:13px; }
-.done{ margin-top:6px; }
 .bar{ height:8px; background:#1c2030; border-radius:999px; overflow:hidden; }
-.bar-fill{ width:100%; height:100%; background:#22c55e; }
-
-/* water */
+.bar-fill{ width:0; height:100%; background:#22c55e; transition:width .25s ease; }
 .dots{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .dot{ width:16px; height:16px; border-radius:50%; border:1px solid #4a4e69; background:#161923; cursor:pointer; }
 .dot.on{ background:#22c55e; border-color:#22c55e; }
 
-/* ===== Mobile drawer ===== */
-.tips-drawer{
-  position: fixed; left:0; right:0; bottom:0;
-  background:#0b0d14; border-top:1px solid #2b2d3b; color:#e6e6eb;
-  transform: translateY(100%); transition: transform .28s ease;
-  z-index: 10000;  /* above keyboard area */
-  max-height: 90dvh; border-top-left-radius:16px; border-top-right-radius:16px;
-}
-.tips-drawer.open{ transform: translateY(0); }
-.drawer-h{ display:flex; align-items:center; justify-content:center; padding:10px 12px; position:relative; }
-.drawer-title{ font-weight:800; }
-.drawer-h .x{
-  position:absolute; right:10px; top:6px;
-  width:30px; height:30px; border-radius:8px; border:1px solid #37415b; background:#1a2032; color:#e6e6eb;
-}
-.drawer-body{
-  padding:12px;
-  overflow:auto;                /* << 内容可滚动，绝不会“空白” */
-  max-height: calc(90dvh - 54px);
-}
-
-/* Responsive: hide drawer on desktop */
-@media (min-width: 981px){
-  .tips-drawer{ display:none; }
-}
+/* Mobile body wrapper（仅内容，不带抽屉皮肤） */
+.tips-mobile{ padding:0; }
 </style>
