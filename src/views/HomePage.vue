@@ -7,7 +7,7 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-avatar">
-        <img src="../assets/homeavatar.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="/assets/back2.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-content">
