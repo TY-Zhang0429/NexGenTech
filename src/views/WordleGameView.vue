@@ -579,13 +579,11 @@ function triggerRowShake(r) {
     max-height: calc(100vh - 84px - var(--kbd-safe));
     overflow: auto;                     /* 自身滚动，避免覆盖底部键盘 */
     z-index: 1;                         /* 明确比键盘低 */
-    margin-left: 10px;                  /* 稍微再往右挪一点点，舒适一些 */
+    margin-left: 20px;                  /* 稍微再往右挪一点点，舒适一些 */
   }
 }
 
-@media (min-width: 981px) and (max-height: 760px){
-  .wordly{ --kbd-safe: 140px; }
-}
+
 
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
