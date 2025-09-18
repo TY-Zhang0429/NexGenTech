@@ -34,7 +34,7 @@
 
     <!-- ===== Desktop stage: LEFT | CENTER | RIGHT ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: two independent collapsible cards -->
+      <!-- LEFT: collapsible instruction cards (independent, sticky) -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
         <!-- Card 1 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
@@ -46,7 +46,10 @@
             <h3 class="wd-aside-title">How to Play</h3>
             <ol class="wd-steps">
               <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
-              <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
+              <li>
+                Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word.
+                Press <kbd>Enter</kbd> to submit.
+              </li>
               <li>The tile colors show how close your guess was:</li>
             </ol>
             <div class="wd-legend">
@@ -105,7 +108,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions -->
+        <!-- Mobile-only accordions (are hidden on desktop) -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -133,7 +136,7 @@
           </details>
         </div>
 
-        <!-- On-screen keyboard INSIDE center column -->
+        <!-- On-screen keyboard INSIDE center column (sticky on desktop) -->
         <div class="wd-kbd">
           <div class="wd-row">
             <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
@@ -149,40 +152,37 @@
         </div>
       </main>
 
-      <!-- RIGHT: health tips (desktop only) -->
-      <div class="wd-right-col">
+      <!-- RIGHT: fixed-width column (desktop only) to keep board centered -->
+      <div class="wd-right-col" aria-label="Health Tips (desktop)">
         <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
       </div>
     </div>
 
-    <!-- ===== Mobile FAB + Bottom Sheet for Tips ===== -->
+    <!-- ===== Mobile FAB to open tips ===== -->
     <button
       class="mobile-tips-fab"
-      v-if="!loading && !error"
       @click="openTipsSheet"
-      aria-label="Open health tips"
+      aria-label="Open Health Tips"
     >
       Health Tips
     </button>
 
-    <transition name="tips-sheet-fade">
-      <div v-if="tipsSheetOpen" class="tips-sheet" role="dialog" aria-modal="true" aria-label="Health Tips">
-        <div class="tips-sheet-backdrop" @click="closeTipsSheet" />
-        <transition name="tips-sheet-slide">
-          <div class="tips-sheet-panel">
-            <div class="grabber" />
-            <div class="tips-sheet-header">
-              <strong>Health Tips</strong>
-              <button class="sheet-close" @click="closeTipsSheet" aria-label="Close tips">×</button>
-            </div>
-            <div class="tips-sheet-body">
-              <!-- 复用同一组件；无需改 RightTips -->
-              <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
-            </div>
+    <!-- ===== Mobile Bottom-Sheet (teleport to body) ===== -->
+    <teleport to="body">
+      <div v-if="tipsSheetOpen" class="tips-sheet" @click.self="closeTipsSheet">
+        <div class="tips-sheet-panel" role="dialog" aria-modal="true" aria-label="Health Tips">
+          <div class="tips-sheet-header">
+            <div class="bar"></div>
+            <strong>Health Tips</strong>
+            <button class="close" @click="closeTipsSheet" aria-label="Close">×</button>
           </div>
-        </transition>
+          <div class="tips-sheet-body">
+            <!-- Reuse RightTips inside the bottom-sheet -->
+            <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+          </div>
+        </div>
       </div>
-    </transition>
+    </teleport>
 
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
@@ -250,18 +250,6 @@ const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* ===== Mobile Tips Sheet ===== */
-const tipsSheetOpen = ref(false);
-function openTipsSheet(){
-  tipsSheetOpen.value = true;
-  // 锁定背景滚动
-  document.documentElement.style.overflow = 'hidden';
-}
-function closeTipsSheet(){
-  tipsSheetOpen.value = false;
-  document.documentElement.style.overflow = '';
-}
-
 /* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
@@ -279,7 +267,6 @@ onBeforeUnmount(() => {
   if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
   stopConfetti();
-  document.documentElement.style.overflow = '';
 });
 
 /* ===== API ===== */
@@ -472,21 +459,25 @@ function triggerRowShake(r) {
   shakingRows.add(r);
   setTimeout(() => shakingRows.delete(r), 600);
 }
-</script>
 
-<!-- global: styles for scrollbar stability -->
-<style>
-html{ scrollbar-gutter: stable both-edges; }
-@supports not (scrollbar-gutter: stable){
-  html{ overflow-y: scroll; }
+/* ===== Mobile tips bottom-sheet state ===== */
+const tipsSheetOpen = ref(false);
+function openTipsSheet() {
+  tipsSheetOpen.value = true;
+  // lock background scroll while the sheet is open
+  document.documentElement.style.overflow = 'hidden';
 }
-</style>
+function closeTipsSheet() {
+  tipsSheetOpen.value = false;
+  document.documentElement.style.overflow = '';
+}
+</script>
 
 <style scoped>
 /* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1280px; 
+  max-width: 1100px;
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -508,24 +499,32 @@ html{ scrollbar-gutter: stable both-edges; }
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT: three-column Grid（fixed layout，not affected by right column） ===== */
+/* ===== DESKTOP LAYOUT ===== */
 .wd-stage{
-  display: grid;
-  grid-template-columns: 300px minmax(520px, 1fr) 300px;
-  column-gap: clamp(32px, 5vw, 80px);
-  align-items: start;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;  /* center the middle column geometrically */
+  gap: 28px;
 }
 
-/* LEFT */
-.wd-left-stack{ position: sticky; top: 84px; }
+/* LEFT column (sticky) */
+.wd-left-stack{
+  flex: 0 0 300px;
+  position: sticky;
+  top: 84px;
+}
 .wd-left-stack .wd-aside + .wd-aside{ margin-top:14px; }
 
-/* CENTER */
-.wd-center{ min-width: 520px; display:flex; flex-direction:column; }
+/* CENTER column */
+.wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* Collapsible cards */
+/* RIGHT column keeps fixed width so board never shifts */
+.wd-right-col{ flex: 0 0 300px; }
+@media (max-width:980px){ .wd-right-col{ display:none !important; } }
+
+/* Collapsible cards (smooth) */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
@@ -594,11 +593,13 @@ html{ scrollbar-gutter: stable both-edges; }
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== MOBILE (<=980px): single column + mobile tips support ===== */
+/* ===== Visibility reset: hide mobile panels on desktop ===== */
+.wd-mobile-panels { display: none !important; }
+
+/* ===== MOBILE (<=980px): board -> keyboard -> panels ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
-  .wd-right-col{ display:none !important; } /* desktop right column hidden */
 
   .wd-center{ display:flex; flex-direction:column; }
   .wd-board-col{ order:1; }
@@ -608,7 +609,7 @@ html{ scrollbar-gutter: stable both-edges; }
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
 
-  /* <details> card with border */
+  /* Card look for <details> */
   .wd-coll{
     display:block;
     background:#10121a;
@@ -627,75 +628,71 @@ html{ scrollbar-gutter: stable both-edges; }
   .wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
   .wd-coll[open] > summary::before{ content:'▾'; }
   .wd-coll > *:not(summary){ margin-top:8px; }
+}
 
-  /* —— floating action button —— */
+/* ===== Mobile tips FAB & Bottom-sheet ===== */
+
+/* Desktop: FAB is hidden by default */
+.mobile-tips-fab{ display:none !important; }
+
+/* Bottom-sheet overlay and panel (common base) */
+.tips-sheet{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 2000;
+  display: flex; justify-content: center; align-items: flex-end;
+}
+.tips-sheet-panel{
+  width: 100%;
+  max-height: 80vh;
+  background:#0f1118;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border:1px solid #2b2d3b;
+  box-shadow: 0 -12px 28px rgba(0,0,0,.35);
+  display:flex; flex-direction:column;
+}
+.tips-sheet-header{
+  position: relative;
+  padding: 10px 12px 6px;
+  display:flex; align-items:center; justify-content:center;
+  color:#e8e9f3; font-weight:800;
+}
+.tips-sheet-header .bar{
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  width: 44px; height: 4px; border-radius: 999px;
+  background:#2b2d3b; opacity:.85;
+}
+.tips-sheet-header .close{
+  position:absolute; right:10px; top:6px;
+  width:28px; height:28px; border-radius:8px;
+  background:#1f2230; color:#e7e9f0; border:1px solid #343a55; cursor:pointer;
+}
+.tips-sheet-body{
+  flex: 1 1 auto;
+  overflow:auto;
+  padding: 6px 10px 12px;
+}
+
+/* Ensure RightTips renders inside the sheet even if it had "mobile hidden" rules */
+@media (max-width: 980px){
+  :deep(.tips-root),
+  :deep(.rt-root){
+    display: block !important;
+  }
+}
+
+/* Mobile-only FAB (fixed at bottom-right, above your on-screen keyboard) */
+@media (max-width: 980px){
   .mobile-tips-fab{
     display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    right: 16px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); /* 不挡你自己的屏幕内键盘 */
-    z-index: 1000;
+    align-items:center; justify-content:center;
+    position: fixed; right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    z-index: 2001;
     background:#4f46e5; color:#fff; border:0;
     padding:10px 14px; border-radius:999px; font-weight:800;
     box-shadow: 0 6px 18px rgba(79,70,229,.25);
-  }
-  /* —— Bottom Sheet —— */
-  .tips-sheet{ position:fixed; inset:0; z-index: 1001; }
-  .tips-sheet-backdrop{
-    position:absolute; inset:0; background:rgba(0,0,0,.35);
-  }
-  .tips-sheet-panel{
-    position:absolute; left:0; right:0;
-    bottom:0;
-    max-height: 80vh;
-    background:#10121a; color:#cfd2dd;
-    border:1px solid #343644; border-bottom:none;
-    border-top-left-radius:16px; border-top-right-radius:16px;
-    padding: 6px 0 10px;
-    box-shadow: 0 -12px 30px rgba(0,0,0,.35);
-    display:flex; flex-direction:column;
-  }
-  .grabber{ width:44px; height:4px; border-radius:2px; background:#4b4f66; margin:8px auto 6px; opacity:.9; }
-  .tips-sheet-header{
-    display:flex; align-items:center; padding:0 12px 6px; gap:8px;
-  }
-  .tips-sheet-header strong{ font-weight:800; color:#e8e9f3; }
-  .sheet-close{
-    margin-left:auto; background:transparent; border:1px solid #343a55; color:#e7e9f0;
-    width:28px; height:28px; border-radius:8px; line-height:26px;
-  }
-  .tips-sheet-body{
-    flex: 1 1 auto;
-    overflow:auto; padding:0 10px 6px;
-    /* RightTips in mobile */
-  }
-
-  /* enter/leave animations */
-  .tips-sheet-fade-enter-from, .tips-sheet-fade-leave-to{ opacity:0; }
-  .tips-sheet-fade-enter-active, .tips-sheet-fade-leave-active{ transition: opacity .18s ease; }
-
-  .tips-sheet-slide-enter-from{ transform: translateY(100%); }
-  .tips-sheet-slide-enter-active{ transition: transform .24s ease; }
-  .tips-sheet-slide-leave-to{ transform: translateY(100%); }
-  .tips-sheet-slide-leave-active{ transition: transform .22s ease; }
-}
-
-/* ===== RIGHT column (desktop only) ===== */
-.wd-right-col{
-  position: sticky;
-  top: 84px;
-}
-
-.mobile-tips-fab{ 
-  display: none !important; 
-}
-
-@media (max-width: 980px){
-  :deep(.tips-root), 
-  :deep(.rt-root){
-    display: block !important;
   }
 }
 </style>
