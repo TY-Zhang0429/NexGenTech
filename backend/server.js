@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
@@ -19,11 +20,39 @@ const __dirname = path.dirname(__filename);
 app.use("/food_icons", express.static(path.join(__dirname, "food_icons")));
 
 // serve static files from the dist directory (built frontend)
-app.use(express.static(path.join(__dirname, "../dist")));
+const distPath = path.join(__dirname, "../dist");
+console.log("Serving static files from:", distPath);
+app.use(express.static(distPath));
 
 // serve the main index.html for all routes (SPA routing)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  const indexPath = path.join(__dirname, "../dist/index.html");
+  console.log("Looking for index.html at:", indexPath);
+  
+  // Check if file exists
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error("index.html not found at:", indexPath);
+    console.log("Current working directory:", process.cwd());
+    console.log("__dirname:", __dirname);
+    
+    // List files in parent directory
+    try {
+      const parentDir = path.join(__dirname, "..");
+      const files = fs.readdirSync(parentDir);
+      console.log("Files in parent dir:", files);
+    } catch (e) {
+      console.error("Error reading parent directory:", e.message);
+    }
+    
+    res.status(404).send(`
+      <h1>Frontend not built</h1>
+      <p>Expected path: ${indexPath}</p>
+      <p>Current working directory: ${process.cwd()}</p>
+      <p>__dirname: ${__dirname}</p>
+    `);
+  }
 });
 
 // ---------- DB POOL ----------
