@@ -257,6 +257,16 @@ export default {
 
       const a=i, b=this.selected;
       const isSpecial = v => v==="💥" || v==="🌈";
+
+      // 如果已经没有步数，直接判负
+      if (this.moves <= 0) {
+        this.checkWinLose();
+        return;
+      }
+      
+      // 玩家尝试交换就先扣步
+      this.moves--;
+
       if(!isSpecial(this.grid[a]) && !isSpecial(this.grid[b]) && !this.wouldCreateMatch(a,b)){
         this.invalidWiggle(a,b);
         this.unhighlight(); this.selected=null;
@@ -264,7 +274,6 @@ export default {
       }
 
       await this.swapWithAnimation(a,b);
-      this.moves--;
 
       const m=this.findMatches();
       if(m.size===0){
