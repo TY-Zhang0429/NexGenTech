@@ -117,6 +117,21 @@ export default {
       this.selected=null;
       this.render();
       this.fxEl().innerHTML="";
+      // 检查并修复天然三连
+      let matches = this.findMatches();
+      while (matches.size > 0) {
+        for (const i of matches) {
+          // 随机换一个不同的元素
+          let newType;
+          do {
+            newType = this.randomType();
+          } while (newType === this.grid[i]); 
+          this.grid[i] = newType;
+        }
+        matches = this.findMatches(); // 再检查一遍，直到没有天然匹配
+      }
+
+      this.render();
     },
 
     render(){
