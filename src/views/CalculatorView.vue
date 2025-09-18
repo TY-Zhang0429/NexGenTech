@@ -115,7 +115,7 @@
             >
               <div class="recipe-image-container">
                 <img 
-                  :src="recipe.image_url" 
+                  :src="`/food_icons/${recipe.image_filename}`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
                   @error="handleImageError"
@@ -382,7 +382,7 @@ const getCategoryEmoji = (category) => {
 };
 
 // API calls
-const API_BASE = ''; // Use relative paths for local development (Vite proxy will handle it)
+const API_BASE = 'https://nexgentech-api.onrender.com'; // Use the working API
 
 const fetchRecipes = async () => {
   loading.value = true;
