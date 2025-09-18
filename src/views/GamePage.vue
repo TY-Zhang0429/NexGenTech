@@ -21,7 +21,7 @@
       <!-- center wheel + tips -->
       <div class="center-section">
         <div class="wheel-wrap">
-          <!-- 翅膀：左上两个、右上两个 -->
+          <!-- 翅膀：左上两个、右上两个（桌面端显示，移动端隐藏） -->
           <div class="tip tip-tl-outer">Spin the wheel to pick a game</div>
           <div class="tip tip-tl-inner">Watch Avatar run to reach chosen game</div>
           <div class="tip tip-tr-outer">Click “Spin Now” and press “Begin” to start the game.</div>
@@ -70,12 +70,10 @@
 
     <!-- ===== Game Previews (纯视觉交互) ===== -->
     <section class="previews" aria-label="Game previews (visual only)">
-      <!-- Card 1 -->
-      <article class="preview-card" aria-hidden="false">
+      <article class="preview-card">
         <h3 class="preview-title">Wordle</h3>
         <div class="stage">
           <div class="img-wrap">
-            <!-- 换成你的实际图片 -->
             <img src="@/assets/wordle-preview.png" alt="" />
           </div>
           <div class="hover-text">
@@ -84,12 +82,10 @@
         </div>
       </article>
 
-      <!-- Card 2 -->
-      <article class="preview-card" aria-hidden="false">
+      <article class="preview-card">
         <h3 class="preview-title">Match 3</h3>
         <div class="stage">
           <div class="img-wrap">
-            <!-- 换成你的实际图片 -->
             <img src="@/assets/match3-preview.png" alt="" />
           </div>
           <div class="hover-text">
@@ -152,31 +148,57 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* —— layout —— */
-.home { max-width: 1200px; margin: 0 auto; padding: clamp(16px, 3vw, 24px); position: relative; min-height: 100vh; overflow-x: hidden; }
+.home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 24px);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom)); /* iOS safe area */
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 .home :deep(.breadcrumb) { margin-bottom: 20px; }
 
 /* —— title banner —— */
 .title-banner {
-  width: min(640px, 92%); margin: 8px auto 48px; padding: 16px 16px;
-  text-align: center; color: #00515c; font-family: 'Slackey', cursive; font-size: 2rem;
-  transition: opacity .2s ease; background: none; border: none; line-height: 1.4;
-  display: flex; justify-content: center; align-items: center; position: relative; z-index: 2;
+  width: min(640px, 92%);
+  margin: 8px auto 48px;
+  padding: 16px 16px;
+  text-align: center;
+  color: #00515c;
+  font-family: 'Slackey', cursive;
+  font-size: 2rem;
+  transition: opacity .2s ease;
+  background: none;
+  border: none;
+  line-height: 1.4;
+  display: flex; justify-content: center; align-items: center;
+  position: relative; z-index: 2;
 }
 
 /* —— 3-column content —— */
 .content {
-  display: grid; grid-template-columns: minmax(300px, 1fr) minmax(400px, 480px) minmax(200px, 1fr);
-  gap: clamp(18px, 3vw, 28px); align-items: start; margin-top: 6px;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(400px, 480px) minmax(200px, 1fr);
+  gap: clamp(18px, 3vw, 28px);
+  align-items: start;
+  margin-top: 6px;
 }
 
 /* —— left（avatar+door） —— */
-.left-section { display: flex; flex-direction: column; position: relative; min-height: 520px; z-index: 1; overflow: visible; }
-.scene-container { position: absolute; left: 0; bottom: 0; width: clamp(220px, 26vw, 360px); pointer-events: none; }
+.left-section {
+  display: flex; flex-direction: column; position: relative;
+  min-height: 520px; z-index: 1; overflow: visible;
+}
+.scene-container {
+  position: absolute; left: 0; bottom: 0;
+  width: clamp(220px, 26vw, 360px); pointer-events: none;
+}
 .scene-container > * { pointer-events: auto; }
 .backbottom { position: absolute; left: 50%; bottom: 8.5px; transform: translateX(-50%); width: 100%; height: auto; z-index: -1; pointer-events: none; object-fit: contain; }
 :deep(.scene)  { width: 100%; height: clamp(140px, 24vh, 220px); margin: 0; transform: scale(0.8); transform-origin: bottom left; overflow: hidden; }
 :deep(.avatar) { left: -4% !important; bottom: 22px !important; transform-origin: bottom center; }
-:deep(.door)   { right: 2% !important; bottom: 14px !important; transform-origin: bottom center; }
+:deep(.door)   { right: 2% !important;  bottom: 14px !important; transform-origin: bottom center; }
 
 /* —— center —— */
 .center-section { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 80px; position: relative; z-index: 1; }
@@ -210,8 +232,10 @@ onBeforeUnmount(() => {
 /* —— buttons —— */
 .btn-row{ display:flex; gap:12px; justify-content:center; margin-top:-8px; margin-bottom:20px; }
 .btn{
-  padding:10px 24px; border:none; border-radius:6px; font-weight:600; letter-spacing:.5px; cursor:pointer; transition:all .3s ease;
-  background:#fae7ca; color:#007a3f; box-shadow:0 4px 10px rgba(0,0,0,.1); font-family:'Joti One', cursive;
+  padding:12px 24px; border:none; border-radius:8px; font-weight:700; letter-spacing:.4px;
+  cursor:pointer; transition:all .3s ease; touch-action: manipulation;
+  background:#fae7ca; color:#007a3f; box-shadow:0 4px 10px rgba(0,0,0,.1);
+  font-family:'Joti One', cursive;
 }
 .btn:hover{ transform:scale(1.08) translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.15); filter:brightness(1.05); }
 .btn.btn-ghost{ background:#fae7ca; border:1px solid #007a3f; color:#007a3f; }
@@ -227,7 +251,7 @@ onBeforeUnmount(() => {
 .boss-container:hover .bossguide-preview{ opacity:1; }
 .boss-preview:hover{ transform:scale(1.05); filter:drop-shadow(0 12px 24px rgba(0,0,0,.3)); }
 
-/* ===== Game Preview（图片居中 → hover 后移到左侧 + 文字淡入） ===== */
+/* ===== Game Preview（图片居中 → hover 左移 + 文案淡入；移动端退化） ===== */
 .previews{
   max-width:1100px; margin:18px auto 60px; padding:0 8px;
   display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,28px);
@@ -236,14 +260,8 @@ onBeforeUnmount(() => {
   position:relative; background:#fae7ca; border-radius:16px; padding:18px 22px 22px;
   box-shadow:0 8px 22px rgba(0,0,0,.08); cursor:default; overflow:hidden;
 }
-.preview-title{
-  margin:0 0 10px; font-weight:800; font-size:clamp(22px,2.2vw,32px); color:#007a3f; text-align:left; letter-spacing:.3px;
-}
-
-/* 舞台高度固定，便于做位移动画 */
+.preview-title{ margin:0 0 10px; font-weight:800; font-size:clamp(22px,2.2vw,32px); color:#007a3f; text-align:left; letter-spacing:.3px; }
 .stage{ position:relative; height:160px; }
-
-/* 图片：初始居中；hover 后贴左侧且微放大 */
 .img-wrap{
   position:absolute; top:50%; left:50%;
   width:160px; height:140px; border-radius:10px; overflow:hidden;
@@ -251,10 +269,7 @@ onBeforeUnmount(() => {
   transform: translate(-50%,-50%); transition: left .35s ease, transform .35s ease;
 }
 .img-wrap img{ width:100%; height:100%; object-fit:cover; }
-
 .preview-card:hover .img-wrap{ left:18px; transform: translate(0,-50%) scale(1.02); }
-
-/* 文案：初始隐藏；hover 后在右侧淡入 */
 .hover-text{
   position:absolute; inset:0; display:flex; align-items:center;
   padding-left: calc(18px + 160px + 18px); padding-right:6px;
@@ -263,16 +278,48 @@ onBeforeUnmount(() => {
 }
 .preview-card:hover .hover-text{ opacity:1; transform:translateX(0); }
 
-/* 窄屏 / 触屏（无 hover）：直接用“图片在左 + 文字常显”的静态布局 */
+/* ===================== 移动端适配 ===================== */
+/* 触屏/窄屏：单列、隐藏翅膀提示、调整转盘和 AvatarDoor、Boss 隐藏、GamePreview 单列常显文案 */
 @media (hover:none), (max-width: 900px){
-  .previews{ grid-template-columns:1fr; }
-  .stage{ height:auto; min-height:140px; }
-  .img-wrap{ position:absolute; top:50%; left:18px; transform: translate(0,-50%); }
-  .hover-text{ opacity:1; transform:none; }
+  .content { grid-template-columns: 1fr; gap: 20px; }
+  .left-section { order: 2; min-height: auto; }
+  .center-section { order: 1; margin-top: 24px; }
+  .side-box { display: none; }                 /* 隐藏右侧 Boss */
+  .tip { display: none !important; }           /* 隐藏提示泡泡 */
+
+  /* 让转盘更占宽（覆盖子组件的宽度定义） */
+  .center-section :deep(.wheel-svg-wrap){ width: clamp(240px, 64vw, 340px) !important; }
+
+  /* AvatarDoor 改为流式居中显示 */
+  .scene-container { position: relative; left: auto; bottom: auto; width: clamp(220px, 70vw, 340px); margin: 6px auto 0; }
+  :deep(.scene){ height: clamp(160px, 28vh, 240px); transform: scale(0.9); transform-origin: center; }
+  :deep(.avatar){ left: 0% !important; }
+  :deep(.door){ right: 0% !important; }
+
+  /* 按钮更易点 */
+  .btn-row{ gap: 14px; margin-top: 0; }
+  .btn{ padding: 14px 22px; border-radius: 10px; }
+
+  /* Game Preview 单列 & 文案常显 */
+  .previews{ grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
+  .stage{ height: auto; min-height: 140px; }
+  .img-wrap{ left: 18px; transform: translate(0,-50%); }
+  .hover-text{ opacity: 1; transform: none; }
+}
+
+/* 更小屏：标题字号、边距再收一档 */
+@media (max-width: 600px){
+  .title-banner{ font-size: 1.6rem; margin-bottom: 28px; }
+  .preview-title{ font-size: 22px; }
+}
+
+/* 悬停无效设备不启用 hover 态 */
+@media (hover:none){
+  .btn:hover{ transform: none; box-shadow: 0 4px 10px rgba(0,0,0,.1); filter: none; }
 }
 
 /* —— reduce motion —— */
 @media (prefers-reduced-motion: reduce){
-  .img-wrap, .hover-text{ transition: none !important; }
+  .tip, .boss-preview, .bossguide-preview, .btn, .img-wrap, .hover-text{ animation: none !important; transition: none !important; }
 }
 </style>
