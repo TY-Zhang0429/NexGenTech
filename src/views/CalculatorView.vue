@@ -115,10 +115,9 @@
             >
               <div class="recipe-image-container">
                 <img 
-                  :src="recipe.image_url" 
+                  :src="`/food_icons/unsweet_iced_tea.png`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
-                  @error="handleImageError"
                 />
                 <div class="recipe-overlay">
                   <button class="favorite-btn" @click.stop="toggleFavorite(recipe)">
@@ -364,12 +363,7 @@ const toggleFavorite = (recipe) => {
   console.log('Toggle favorite for:', recipe.recipe_name);
 };
 
-const handleImageError = (event) => {
-  // Prevent infinite loop by checking if we're already showing placeholder
-  if (!event.target.src.includes('placeholder')) {
-    event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
-  }
-};
+// Image error handler removed - using hardcoded image for testing
 
 const getCategoryEmoji = (category) => {
   const emojiMap = {
