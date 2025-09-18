@@ -557,35 +557,7 @@ function triggerRowShake(r) {
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
 /* Sticky keyboard on desktop */
-@media (min-width: 981px){
-  /* 你可以按实际键盘高度微调这个安全高度 */
-  .wordly{ --kbd-safe: 170px; } /* 右栏离视口底部预留的空间 */
-
-  .wd-kbd{
-    position: sticky;
-    bottom: 0;
-    z-index: 40;                        /* 让键盘压在右栏上方 */
-    background: rgba(13,15,22,.75);     /* 半透明底，避免内容“压”在键盘后看不清 */
-    backdrop-filter: blur(3px);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-  }
-
-  .wd-right-col{
-    /* 右栏本身吸顶，并限制最大高度，超出自己内部滚动 */
-    position: sticky;
-    top: 84px;                          /* 和左侧说明一致的吸顶距离 */
-    align-self: flex-start;
-    max-height: calc(100vh - 84px - var(--kbd-safe));
-    overflow: auto;                     /* 自身滚动，避免覆盖底部键盘 */
-    z-index: 1;                         /* 明确比键盘低 */
-    margin-left: 10px;                  /* 稍微再往右挪一点点，舒适一些 */
-  }
-}
-
-@media (min-width: 981px) and (max-height: 760px){
-  .wordly{ --kbd-safe: 140px; }
-}
+@media (min-width: 981px){ .wd-kbd{ position: sticky; bottom: 0; } }
 
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
