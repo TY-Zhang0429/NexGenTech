@@ -630,15 +630,17 @@ html{ scrollbar-gutter: stable both-edges; }
 
   /* —— floating action button —— */
   .mobile-tips-fab{
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
     position: fixed;
     right: 16px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); /* higher than keyboard */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); /* 不挡你自己的屏幕内键盘 */
     z-index: 1000;
     background:#4f46e5; color:#fff; border:0;
     padding:10px 14px; border-radius:999px; font-weight:800;
     box-shadow: 0 6px 18px rgba(79,70,229,.25);
   }
-
   /* —— Bottom Sheet —— */
   .tips-sheet{ position:fixed; inset:0; z-index: 1001; }
   .tips-sheet-backdrop{
@@ -665,6 +667,7 @@ html{ scrollbar-gutter: stable both-edges; }
     width:28px; height:28px; border-radius:8px; line-height:26px;
   }
   .tips-sheet-body{
+    flex: 1 1 auto;
     overflow:auto; padding:0 10px 6px;
     /* RightTips in mobile */
   }
@@ -683,5 +686,16 @@ html{ scrollbar-gutter: stable both-edges; }
 .wd-right-col{
   position: sticky;
   top: 84px;
+}
+
+.mobile-tips-fab{ 
+  display: none !important; 
+}
+
+@media (max-width: 980px){
+  :deep(.tips-root), 
+  :deep(.rt-root){
+    display: block !important;
+  }
 }
 </style>
