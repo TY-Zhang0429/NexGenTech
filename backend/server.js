@@ -18,6 +18,14 @@ const __dirname = path.dirname(__filename);
 // serve your images: http://host:port/food_icons/<Name>.png
 app.use("/food_icons", express.static(path.join(__dirname, "food_icons")));
 
+// serve static files from the dist directory (built frontend)
+app.use(express.static(path.join(__dirname, "../dist")));
+
+// serve the main index.html for all routes (SPA routing)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../dist/index.html"));
+});
+
 // ---------- DB POOL ----------
 const pool = mysql.createPool({
   host: process.env.DB_HOST,

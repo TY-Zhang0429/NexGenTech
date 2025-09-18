@@ -16,4 +16,19 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    hmr: {
+      overlay: false
+    },
+    fs: {
+      strict: false
+    },
+    proxy: {
+      '/api': {
+        target: 'https://nexgentech-api.onrender.com',
+        changeOrigin: true,
+        secure: true
+      }
+    }
+  }
 })
