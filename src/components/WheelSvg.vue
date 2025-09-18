@@ -105,8 +105,11 @@ let spinTimer = null
 const hoverIndex = ref(-1)
 
 const sectorCount = computed(() => props.routes.length || props.titles.length || 8)
-const defaultPalette = ['#FFB74D','#81C784','#64B5F6','#F06292','#FFD54F','#4DB6AC','#BA68C8','#E57373']
+
+/* palette per design; first two are Wordle/Match3 */
+const defaultPalette = ['#045c5c', '#556b2f', '#64B5F6', '#F06292', '#FFD54F', '#4DB6AC', '#BA68C8', '#E57373']
 const palette = computed(() => (props.colors.length ? props.colors : defaultPalette))
+
 const initialOffset = computed(() => (props.startAtTop ? -90 : 0))
 
 function onSpin() {
@@ -221,7 +224,8 @@ defineExpose({ reset, onSpin })
 </script>
 
 <style scoped>
-.wheel-svg-wrap { width: clamp(260px, min(30vw, 85vw), 420px); aspect-ratio: 1/1; margin: 30px auto; }
+/* 更小，贴近设计图 */
+.wheel-svg-wrap { width: clamp(200px, 18vw, 300px); aspect-ratio: 1/1; margin: 30px auto; }
 
 /* wheel zoom */
 .wheel { width: 100%; height: 100%; transition: transform .25s ease; will-change: transform; }
@@ -250,14 +254,15 @@ defineExpose({ reset, onSpin })
 .sector-label {
   font-family: 'Joti One', cursive, system-ui;
   font-size: v-bind('labelSize + "px"');
-  fill: #0b2a2e;
+  /* 设计图白字，配轻微暗描边提升对比度 */
+  fill: #ffffff;
   paint-order: stroke fill;
-  stroke: rgba(255,255,255,.95);
+  stroke: rgba(0,0,0,.28);
   stroke-width: .6px;
   letter-spacing: .4px;
 }
 
-/* center button and pulse ring (fix: scale from center, stroke width remains unchanged) */
+/* center button and pulse ring */
 .center-bg { fill: rgba(255,255,255,.88); stroke: rgba(0,0,0,.12); stroke-width: .6; filter: drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
 .pulse-ring {
   fill: none;
