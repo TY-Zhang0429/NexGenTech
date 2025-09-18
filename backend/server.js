@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
@@ -17,6 +18,8 @@ const __dirname = path.dirname(__filename);
 
 // serve your images: http://host:port/food_icons/<Name>.png
 app.use("/food_icons", express.static(path.join(__dirname, "food_icons")));
+
+// API-only server - no frontend serving
 
 // ---------- DB POOL ----------
 const pool = mysql.createPool({

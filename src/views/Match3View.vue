@@ -24,6 +24,15 @@
         </div>
         <div class="tip">Reminder: {{ tip }}</div>
         <button class="btn" @click="init">Restart</button>
+
+
+
+         <!-- 调试使用，用后删除！！！！！！！！！ -->
+        <!-- 调试用作弊按钮：一键胜利 -->
+        <button class="btn cheat" @click="cheatWin">Cheat: Win Level</button>
+
+
+
       </div>
     </div>
 
@@ -497,7 +506,15 @@ export default {
       });
     },
 
+
     /** Win/Lose check with confetti */
+        //调试使用，用后删除！！！！！！！
+        // 调试用作弊按钮：一键胜利
+    cheatWin() {
+      this.score = this.levelGoals[this.level - 1];
+      this.checkWinLose();
+    },
+
     checkWinLose(){
       if(this.score>=this.levelGoals[this.level-1]){
         confetti({ particleCount:200, spread:120, origin:{ y:.6 } });
