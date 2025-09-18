@@ -382,7 +382,7 @@ const getCategoryEmoji = (category) => {
 };
 
 // API calls
-const API_BASE = ''; // Use relative paths for local development (Vite proxy will handle it)
+const API_BASE = 'https://nexgentech-api.onrender.com'; // Use the working API
 
 const fetchRecipes = async () => {
   loading.value = true;
