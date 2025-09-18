@@ -40,8 +40,8 @@
                 :class="{ active: selectedCategories.includes(category.name) }"
                 @click="toggleCategory(category.name)"
               >
-                <span class="category-emoji">{{ category.emoji }}</span>
-                {{ category.name }}
+                <span class="category-emoji">{{ getCategoryEmoji(category.name) }}</span>
+                {{ capitalizeFirst(category.name) }}
               </button>
             </div>
           </div>
@@ -212,7 +212,7 @@
           <h3 class="section-title">Ingredients</h3>
           <ul class="ingredients-list">
             <li v-for="(ingredient, index) in selectedRecipe.ingredients" :key="index" class="ingredient-item">
-              {{ ingredient.name || ingredient }} {{ ingredient.amount ? `- ${ingredient.amount}` : '' }}
+              {{ capitalizeFirst(ingredient.name || ingredient) }}
             </li>
           </ul>
         </div>
@@ -346,11 +346,14 @@ const filteredRecipes = computed(() => {
       console.log('Parsed ingredients:', ingredientNames);
       console.log('Selected ingredients:', selectedIngredients.value);
       
-      // Check for ingredient matches
+      // Check for ingredient matches - recipe must contain ANY selected ingredient (OR logic)
+      // Use word boundary matching to avoid partial matches (e.g., "ice" matching "lime juice")
       const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
-        ingredientNames.some(recipeIng => 
-          recipeIng.includes(selectedIng.toLowerCase())
-        )
+        ingredientNames.some(recipeIng => {
+          // Create word boundary regex for exact word matching
+          const regex = new RegExp(`\\b${selectedIng.toLowerCase()}\\b`);
+          return regex.test(recipeIng);
+        })
       );
       
       console.log('Has matching ingredient:', hasMatchingIngredient);
