@@ -32,9 +32,12 @@ const currentAvatarSrc = computed(() => {
   storageWatcher.value;
   
   const avatarType = localStorage.getItem('avatarType');
+  const avatarEvolved = localStorage.getItem('avatarEvolved') === 'true';
+  
   switch (avatarType) {
     case 'avatara':
-      return '/assets/avatara.png';
+      // 如果Sol头像已经进化，显示avatara2，否则显示avatara
+      return avatarEvolved ? '/assets/avatara2.png' : '/assets/avatara.png';
     case 'avatarb':
       return '/assets/avatarb.png';
     case 'avatarc':
@@ -88,8 +91,8 @@ function handleStorageChange(event) {
     } catch (e) {
       console.error('Error parsing updated avatar position:', e);
     }
-  } else if (event.key === 'avatarType') {
-    // 当头像类型改变时，触发重新渲染
+  } else if (event.key === 'avatarType' || event.key === 'avatarEvolved') {
+    // 当头像类型或进化状态改变时，触发重新渲染
     storageWatcher.value++;
   }
 }

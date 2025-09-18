@@ -278,6 +278,7 @@ const resetAvatar = () => {
   localStorage.removeItem('avatarSelected');
   localStorage.removeItem('avatarPosition');
   localStorage.removeItem('avatarType');
+  localStorage.removeItem('avatarEvolved');
   
   // 更新当前状态
   isAvatarAlreadySelected.value = false;

@@ -1,6 +1,15 @@
 <template>
   <!-- root carries CSS vars like --topnav-h -->
   <div ref="pageRoot" class="match3 game-wrapper">
+    <!-- 引入可拖动头像组件 -->
+    <DraggableAvatar ref="avatarComponent" />
+    
+    <!-- 游戏完成提示框和模糊遮罩 -->
+    <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
+    <div v-if="showGameCompleteMessage" class="game-complete-message">
+      {{ gameCompleteMessage }}
+    </div>
+    
     <h1>Healthy Match-3</h1>
 
     <!-- HUD -->
@@ -88,10 +97,11 @@
  */
 import confetti from "canvas-confetti";
 import RightTips from "@/components/RightTips.vue";
+import DraggableAvatar from "@/components/DraggableAvatar.vue";
 
 export default {
   name: "Match3View",
-  components: { RightTips },
+  components: { RightTips, DraggableAvatar },
   data() {
     return {
       // Game constants/state
@@ -109,6 +119,10 @@ export default {
 
       // Mobile drawer state
       tipsOpen: false,
+
+      // 游戏完成状态
+      showGameCompleteMessage: false,
+      gameCompleteMessage: '',
 
       // internal observer
       navRO: null,
@@ -521,7 +535,9 @@ export default {
         setTimeout(()=>{
           alert("🎉 Level "+this.level+" Clear!");
           this.level++;
-          if(this.level>this.levelGoals.length){ alert("🏆 All Levels Complete!"); this.init(); }
+          if(this.level>this.levelGoals.length){ 
+            this.handleGameComplete();
+          }
           else{ this.moves=15; this.render(); }
         },500);
       }else if(this.moves<0 || (this.moves===0 && !this.animating)){
@@ -529,6 +545,37 @@ export default {
         const b=this.$refs.board; b.style.transition="background .5s"; b.style.background="#662222";
         setTimeout(()=>b.style.background="",600);
         setTimeout(()=>{ alert("❌ Game Over. Final Score: "+this.score); this.init(); },800);
+      }
+    },
+
+    // 处理游戏完成
+    handleGameComplete() {
+      const avatarType = localStorage.getItem('avatarType');
+      
+      if (avatarType === 'avatara') {
+        // 如果用户选择的是Sol头像，触发进化
+        this.gameCompleteMessage = 'Congratulations! Your avatar has evolved';
+        this.showGameCompleteMessage = true;
+        
+        // 保存进化状态到localStorage
+        localStorage.setItem('avatarEvolved', 'true');
+        
+        // 2秒后隐藏消息并通知头像组件更新
+        setTimeout(() => {
+          this.showGameCompleteMessage = false;
+          
+          // 通知DraggableAvatar组件检查状态
+          if (this.$refs.avatarComponent) {
+            this.$refs.avatarComponent.checkAvatarSelected();
+          }
+          
+          alert("🏆 All Levels Complete!");
+          this.init();
+        }, 2000);
+      } else {
+        // 如果用户选择的是自定义头像，只显示胜利效果
+        alert("🏆 All Levels Complete!");
+        this.init();
       }
     },
   }
@@ -766,5 +813,43 @@ export default {
   .tips-drawer{ display: block; }
   .drawer-mask{ display: block; }
   .match3 .bar{ width:min(260px,56vw); }
+}
+
+/* ===== 游戏完成提示样式 ===== */
+.match3 .overlay-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+}
+
+.match3 .game-complete-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1a5536;
+  font-size: 36px;
+  font-weight: bold;
+  z-index: 1001;
+  text-align: center;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 </style>
