@@ -2,17 +2,25 @@
   <div class="match3 game-wrapper">
     <h1>Healthy Match-3</h1>
 
+    <!-- HUD -->
     <div class="hud">
       <div class="hud-left">
         <div class="pill">Level <strong>{{ level }}</strong></div>
         <div class="pill">Moves <strong>{{ moves }}</strong></div>
         <div class="pill">Score <strong>{{ score }}</strong></div>
       </div>
+
+      <!-- 右侧信息块：棕色圆角底提升对比度 -->
       <div class="hud-right">
         <div class="goal-row">
           <span>Goal {{ levelGoals[level - 1] }}</span>
           <div class="bar">
-            <div class="bar-fill" :style="{ width: Math.min(100, Math.round(score / levelGoals[level-1] * 100)) + '%' }"></div>
+            <div
+              class="bar-fill"
+              :style="{
+                width: Math.min(100, Math.round((score / levelGoals[level-1]) * 100)) + '%'
+              }"
+            ></div>
           </div>
         </div>
         <div class="tip">Reminder：{{ tip }}</div>
@@ -20,26 +28,55 @@
       </div>
     </div>
 
-    <div ref="board" class="board" aria-label="game board">
-      <div ref="tiles" class="tiles-layer"></div>
-      <div ref="fx" class="fx-layer"></div>
+    <!-- 主区域：左侧说明 | 中间棋盘 | 右侧健康提示（桌面） -->
+    <div class="board-row">
+      <!-- 左：说明卡片 -->
+      <div class="legend">
+        <h3>Special Blocks</h3>
+        <ul>
+          <li>💥 (4 in a row) → Clears an entire row (Click to trigger)</li>
+          <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
+        </ul>
+      </div>
+
+      <!-- 中：棋盘 -->
+      <div ref="board" class="board" aria-label="game board">
+        <div ref="tiles" class="tiles-layer"></div>
+        <div ref="fx" class="fx-layer"></div>
+      </div>
+
+      <!-- 右：健康提示（桌面端显示） -->
+      <aside class="side-tips">
+        <RightTips mode="desktop" />
+      </aside>
     </div>
 
-    <div class="legend">
-      <h3>Special Blocks</h3>
-      <ul>
-        <li>💥 (4 in a row) → Clears an entire row (Click to trigger)</li>
-        <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
-      </ul>
+    <!-- 移动端：悬浮按钮 -->
+    <button class="tips-fab" @click="tipsOpen = true" aria-label="Open Health Tips">
+      💡
+    </button>
+
+    <!-- 移动端：右侧抽屉 -->
+    <div class="tips-drawer" :class="{ open: tipsOpen }" aria-hidden="!tipsOpen">
+      <div class="drawer-header">
+        <strong>Health Tips</strong>
+        <button class="close-btn" @click="tipsOpen = false" aria-label="Close">✕</button>
+      </div>
+      <div class="drawer-body">
+        <RightTips mode="mobile" />
+      </div>
     </div>
+    <div class="drawer-mask" :class="{ show: tipsOpen }" @click="tipsOpen = false"></div>
   </div>
 </template>
 
 <script>
 import confetti from "canvas-confetti";
+import RightTips from "@/components/RightTips.vue";
 
 export default {
   name: "Match3View",
+  components: { RightTips },
   data() {
     return {
       SIZE: 10,
@@ -53,6 +90,7 @@ export default {
       tip: "——",
       selected: null,
       animating: false,
+      tipsOpen: false, // 移动端抽屉开关
     };
   },
   mounted(){ this.init(); },
@@ -73,7 +111,6 @@ export default {
     },
 
     render(){
-      // 画布尺寸 = 棋子区域 + 左右/上下 gutter（CSS padding 负责，JS 仍用棋子区域尺寸）
       const board=this.$refs.board;
       board.style.width  = `${this.SIZE*this.CELL}px`;
       board.style.height = `${this.SIZE*this.CELL}px`;
@@ -175,7 +212,6 @@ export default {
       }
     },
 
-    // 预判（不生成特殊块）
     findMatchesPure(g){
       const matched=new Set();
       for(let r=0;r<this.SIZE;r++){
@@ -205,7 +241,6 @@ export default {
       jiggle(A); jiggle(B);
     },
 
-    // 真正匹配（会生成 💥/🌈）
     findMatches(){
       const matched=new Set();
       // 行
@@ -245,7 +280,6 @@ export default {
       return matched;
     },
 
-    // 重力
     computeGravityPlan(){
       const temp=this.grid.slice();
       const moves=[];
@@ -278,7 +312,6 @@ export default {
         steps.push({ el, tx:tc*this.CELL, ty:tr*this.CELL, duration, delay });
       }
       if(!steps.length) return;
-      // 强制重排
       layer.offsetHeight; await new Promise(requestAnimationFrame);
       const promises=[];
       for(const s of steps){
@@ -300,7 +333,6 @@ export default {
         this.grid=nextGrid;
         this.render();
 
-        // 顶部新块滑入
         const born=[];
         for(let i=0;i<this.grid.length;i++){
           if(this.grid[i]===null){ this.grid[i]=this.randomType(); born.push(i); }
@@ -411,51 +443,110 @@ export default {
 };
 </script>
 
-<!-- 注意：不要加 scoped；这里完全取消任何裁剪，仅用更大的 gutter 避免贴边 -->
+<!-- 不要 scoped -->
 <style>
+/* 背景：固定铺满 */
+.match3.game-wrapper{
+  position: relative;
+}
+.match3.game-wrapper::before{
+  content:'';
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background-image: url('/assets/3match_bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .match3.game-wrapper{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .match3 h1{ letter-spacing:.5px; margin:10px 0 6px; text-shadow:0 2px 12px rgba(108,99,255,.25); }
 
 /* HUD */
-.match3 .hud{ display:flex; gap:20px; align-items:center; justify-content:space-between; width:min(900px,92vw); margin:10px auto 6px; }
+.match3 .hud{
+  display:flex; gap:20px; align-items:center; justify-content:space-between;
+  width:min(980px,94vw); margin:10px auto 6px;
+}
 .match3 .hud-left{ display:flex; gap:12px; flex-wrap:wrap; }
-.match3 .pill{ background:#1f2235; padding:8px 12px; border-radius:999px; border:1px solid #2f3350; color:#dfe6ff; font-size:14px; }
+.match3 .pill{
+  background:#1f2235; padding:8px 12px; border-radius:999px; border:1px solid #2f3350; color:#dfe6ff; font-size:14px;
+}
 .match3 .pill strong{ color:#ffd369; margin-left:6px; }
-.match3 .hud-right{ display:grid; gap:8px; align-items:center; }
-.match3 .goal-row{ display:grid; gap:6px; color:#cfd3ff; font-size:14px; }
-.match3 .bar{ width:280px; height:10px; background:#1b1e31; border-radius:999px; overflow:hidden; border:1px solid #2f3350; }
-.match3 .bar-fill{ height:100%; background:linear-gradient(90deg,#6c63ff,#ffd369); transition:width .25s; }
-.match3 .tip{ color:#aab0e8; font-size:13px; }
-.match3 .btn{ padding:8px 14px; border-radius:10px; border:1px solid #2f3350; background:#2b2f49; color:#f2f3ff; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .12s, background .2s; }
-.match3 .btn:hover{ transform:translateY(-1px); background:#343a5a; }
 
-/* === 棋盘：外层负责圆角 + 边框；不裁剪内部；增大安全边距 === */
+/* 右侧信息块（棕色底） */
+.match3 .hud-right{
+  display:grid; gap:8px; align-items:center;
+  background: rgba(60,40,20,.9);
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.35);
+  border: 1px solid rgba(120,85,45,.55);
+  backdrop-filter: blur(1.5px);
+}
+.match3 .goal-row{ display:grid; gap:6px; color:#f3efe9; font-size:14px; }
+.match3 .bar{ width:min(320px,60vw); height:10px; background:#2a1c12; border-radius:999px; overflow:hidden; border:1px solid rgba(120,85,45,.6); }
+.match3 .bar-fill{ height:100%; background:linear-gradient(90deg,#ffd369,#ffb347); transition:width .25s; }
+.match3 .tip{ color:#f0e6d6; opacity:.92; font-size:13px; }
+.match3 .btn{
+  padding:8px 14px; border-radius:10px; border:1px solid rgba(120,85,45,.6);
+  background:#3b2a1b; color:#fff; cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .12s, background .2s;
+}
+.match3 .btn:hover{ transform:translateY(-1px); background:#4a3522; }
+
+/* === 主区域：左说明 | 中棋盘 | 右健康提示 === */
+.match3 .board-row{
+  display:flex; justify-content:center; align-items:flex-start; gap:22px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+/* 左：说明卡片 */
+.match3 .legend{
+  flex:0 0 220px;
+  padding:12px 14px;
+  border:1px solid rgba(120,85,45,.55);
+  border-radius:12px;
+  background:rgba(60,40,20,.92);
+  color:#f7efe4;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+.match3 .legend h3{ margin:0 0 8px; font-size:16px; color:#ffd369; }
+.match3 .legend ul{ margin:0; padding-left:18px; font-size:14px; }
+.match3 .legend li{ margin-bottom:6px; }
+
+/* 中：棋盘 */
 .match3 .board{
-  --bd-r: 16px;
-  --gutter: 10px;   /* ↑ 增大一点安全边距，避免贴边造成视觉“缺角” */
-  --bd-bw: 1px;
-
+  --bd-r: 16px; --gutter: 10px; --bd-bw: 1px;
   position:relative;
-  margin:18px auto;
+  margin:0;
   background:radial-gradient(120% 120% at 50% 0%, #2f3152 0%, #2b2e48 40%, #262943 100%);
   border: var(--bd-bw) solid #3a3e66;
   border-radius: var(--bd-r);
   box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
-  padding: var(--gutter);   /* 只靠外层留白来“增大画布”，不裁剪任何内层 */
-  overflow: visible;        /* ✅ 不裁剪 */
+  padding: var(--gutter);
+  overflow: visible;
 }
-
-/* 两层：只做定位，不再有圆角/裁剪 */
 .match3 .tiles-layer,
 .match3 .fx-layer{
-  position:absolute;
-  inset:0;
-  background: transparent;
-  /* 不要 border-radius / overflow / clip-path */
+  position:absolute; inset:0; background: transparent;
 }
 .match3 .fx-layer{ pointer-events:none; z-index:100; }
 
-/* tile 层级 */
+/* 右：健康提示（桌面端显示） */
+.match3 .side-tips{
+  flex:0 0 260px;
+  position: sticky;
+  top: 92px;                   /* 与 HUD 有个落差，不挡视线 */
+  align-self: flex-start;
+  display: block;
+}
+@media (max-width: 1100px){ .match3 .side-tips{ flex-basis: 220px; } }
+
+/* tile */
 .match3 .tile{
   position:absolute;
   width:48px; height:48px; border-radius:10px; background:#3a3d5c; color:#fff;
@@ -478,7 +569,7 @@ export default {
   100%{ box-shadow:0 0 0 2px #6c63ff, 0 0 8px rgba(108,99,255,.35) }
 }
 
-/* fx 层 */
+/* fx */
 .match3 .click-ripple{
   position:absolute; width:10px; height:10px; border-radius:50%;
   transform:translate(-50%,-50%); opacity:.8;
@@ -520,9 +611,59 @@ export default {
   to  { opacity:0;  transform:translate(-50%,-50%) scale(2.6) }
 }
 
-/* 说明卡片 */
-.match3 .legend{ margin-top:16px; padding:12px; border:1px solid #666; border-radius:8px; background:#1f2235; max-width:360px; color:#f0f0f0; }
-.match3 .legend h3{ margin:0 0 8px; font-size:16px; color:#ffd369; }
-.match3 .legend ul{ margin:0; padding-left:20px; font-size:14px; }
-.match3 .legend li{ margin-bottom:6px; }
+/* 移动端抽屉 & 悬浮按钮（<= 900px 显示） */
+.tips-fab{
+  position: fixed;
+  right: 14px; bottom: 18px;
+  width: 48px; height: 48px; border-radius: 999px;
+  border: 1px solid rgba(120,85,45,.6);
+  background: rgba(60,40,20,.95);
+  color:#ffd369; font-size:20px; font-weight:800;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  cursor: pointer; display: none;
+}
+.tips-drawer{
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(88vw, 360px);
+  background: rgba(24,26,36,.98);
+  border-left: 1px solid rgba(255,255,255,.06);
+  transform: translateX(100%);
+  transition: transform .28s ease;
+  z-index: 500;
+  display: none;
+}
+.tips-drawer.open{ transform: translateX(0); }
+.drawer-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08);
+  color:#fff;
+}
+.close-btn{
+  background: transparent; border:0; color:#fff; font-size:18px; cursor:pointer;
+}
+.drawer-body{ padding: 12px 14px; color:#e8e9f3; }
+.drawer-mask{
+  position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+  z-index: 480; display: none;
+}
+.drawer-mask.show{ opacity: 1; pointer-events: auto; }
+
+/* 响应式：窄屏时 侧栏隐藏，显示抽屉入口；legend 下移 */
+@media (max-width: 900px){
+  .match3 .board-row{
+    flex-direction:column-reverse;
+    align-items:center;
+    gap:14px;
+  }
+  .match3 .legend{
+    width:min(520px,92vw);
+    flex: 0 0 auto;
+  }
+  .match3 .side-tips{ display: none; }
+  .tips-fab{ display: inline-flex; align-items:center; justify-content:center; }
+  .tips-drawer{ display: block; }
+  .drawer-mask{ display: block; }
+  .match3 .bar{ width:min(260px,56vw); }
+}
 </style>

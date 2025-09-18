@@ -1,9 +1,9 @@
 <template>
   <section class="wordly wordly-page">
-    <!-- 可留可去：小乌龟头像 -->
+    <!-- Optional: draggable avatar -->
     <DraggableAvatar />
 
-    <!-- ===== 顶部：Back 按钮 ===== -->
+    <!-- ===== Topbar: Back ===== -->
     <div class="wd-topbar">
       <button class="back-btn" @click="goBack">← Back</button>
     </div>
@@ -32,13 +32,16 @@
       </div>
     </header>
 
+    <!-- ===== Tagline (requested) ===== -->
+    <p class="wd-tagline">Engage in Word play and find the correct word</p>
+
     <!-- Loading / Error -->
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
     <!-- ===== Desktop stage: LEFT | CENTER | RIGHT ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: collapsible cards -->
+      <!-- LEFT: collapsible cards (desktop only) -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
           <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
@@ -78,7 +81,7 @@
         </div>
       </aside>
 
-      <!-- CENTER: board + mobile panels + keyboard -->
+      <!-- CENTER: board + mobile accordions + keyboard -->
       <main class="wd-center" @click="maybeFocusMobile" aria-label="Game board">
         <div class="wd-board-col">
           <div class="wd-board" :style="{ gridTemplateColumns: `repeat(${targetLen}, var(--cell))` }">
@@ -107,7 +110,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions（桌面已强制隐藏） -->
+        <!-- Mobile-only accordions -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -151,7 +154,7 @@
         </div>
       </main>
 
-      <!-- RIGHT: tips（桌面专用） -->
+      <!-- RIGHT: tips (desktop only) -->
       <div class="wd-right-col">
         <RightTips mode="desktop" />
       </div>
@@ -160,7 +163,7 @@
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
-    <!-- ===== MOBILE: 悬浮按钮 + 抽屉（只在 ≤980px 显示） ===== -->
+    <!-- ===== MOBILE: floating button + RIGHT SLIDE-OUT drawer (≤980px) ===== -->
     <button
       v-if="isNarrow"
       class="tips-fab"
@@ -170,37 +173,46 @@
       💡
     </button>
 
-    <div v-if="isNarrow" class="tips-drawer" :class="{ open: tipsOpen }" aria-modal="true" role="dialog">
+    <div
+      v-if="isNarrow"
+      class="tips-drawer"
+      :class="{ open: tipsOpen }"
+      aria-modal="true"
+      role="dialog"
+    >
       <header class="tips-drawer__header">
         <strong>Health Tips</strong>
         <button class="tips-drawer__close" @click="tipsOpen = false" aria-label="Close">✕</button>
       </header>
       <div class="tips-drawer__body">
-        <!-- 在抽屉中渲染移动端的 tips 内容 -->
+        <!-- Render the mobile tips content inside the drawer -->
         <RightTips mode="mobile" />
       </div>
-      <footer class="tips-drawer__footer">
-        <button class="wd-btn ghost" @click="tipsOpen = false">Close</button>
-      </footer>
     </div>
 
-    <!-- 抽屉遮罩 -->
+    <!-- Drawer mask -->
     <div v-if="isNarrow && tipsOpen" class="tips-mask" @click="tipsOpen = false"></div>
   </section>
 </template>
 
 <script setup>
+/* Core Vue & router */
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+
+/* Components */
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 import RightTips from '@/components/RightTips.vue';
 
+/* Router back helper */
 const router = useRouter();
 function goBack() {
+  // If history exists → go back; otherwise go to your games list route
   if (window.history.length > 1) router.back();
   else router.push('/discover-games');
 }
 
+/* ===== API base (adjust if needed) ===== */
 const API_BASE = '';
 
 /* ===== Game state ===== */
@@ -239,7 +251,7 @@ function updateKeyState(letter, newState) {
   keyState[letter] = newState;
 }
 
-/* Confetti */
+/* Confetti canvas */
 const confettiCanvas = ref(null);
 let confettiTimer = null;
 const confettiRunning = ref(false);
@@ -248,7 +260,7 @@ const confettiRunning = ref(false);
 const mobileInput = ref(null);
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* Keyboard rows */
+/* On-screen keyboard rows */
 const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
@@ -267,7 +279,7 @@ onMounted(async () => {
     if (!isMobile) window.addEventListener('keydown', onKeydown, { passive: false });
     window.addEventListener('resize', resizeCanvas);
 
-    // init responsive flag
+    // Init responsive flag & subscribe to changes
     mq = window.matchMedia('(max-width: 980px)');
     isNarrow.value = mq.matches;
     mq.addEventListener('change', handleMQ);
@@ -284,7 +296,7 @@ onBeforeUnmount(() => {
   stopConfetti();
 });
 
-/* ===== API ===== */
+/* ===== Fetch words ===== */
 async function fetchWords() {
   const res = await fetch(`${API_BASE}/api/words`);
   if (!res.ok) throw new Error('fetch words failed');
@@ -292,13 +304,14 @@ async function fetchWords() {
   wordsRaw.value = Array.isArray(data) ? data : [];
 }
 
-/* ===== New game ===== */
+/* ===== Start / reset game ===== */
 function pickAnswerObj() {
   const needLen = targetLen.value;
   const pool = wordsRaw.value.filter(
     (w) => w?.difficulty === difficulty.value && typeof w?.word === 'string' && w.word.length === needLen
   );
   if (!pool.length) {
+    // Fallback: coerce a sample to the right length
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
     const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple', hint: '' };
     return { word: (ch.word || 'apple').toLowerCase().slice(0, needLen).padEnd(needLen, 'a'), hint: ch.hint || '' };
@@ -487,7 +500,7 @@ function triggerRowShake(r) {
   position: relative;
 }
 
-/* 全屏固定背景（与你 avatar 页同款写法） */
+/* Full-screen fixed background */
 .wordly-page::before {
   content: '';
   position: fixed;
@@ -500,6 +513,16 @@ function triggerRowShake(r) {
   z-index: -1;
 }
 
+/* Tagline under toolbar */
+.wd-tagline{
+  text-align:center;
+  margin: 0 0 14px;
+  font-size: 14px;
+  color:#cfd3ff;
+  opacity:.9;
+  font-style: italic;
+}
+
 /* Topbar Back */
 .wd-topbar{ display:flex; align-items:center; margin-bottom:8px; }
 .back-btn{
@@ -508,7 +531,7 @@ function triggerRowShake(r) {
 }
 
 /* Toolbar */
-.wd-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.wd-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
 .wd-left{ display:flex; align-items:center; gap:10px; }
 .wd-right{ margin-left:auto; }
 .wd-label{ opacity:.85; margin-right:4px; }
@@ -523,7 +546,7 @@ function triggerRowShake(r) {
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== LAYOUT ===== */
+/* ===== Layout ===== */
 .wd-stage{
   display:flex;
   align-items:flex-start;
@@ -531,7 +554,7 @@ function triggerRowShake(r) {
   gap:28px;
 }
 
-/* LEFT column */
+/* LEFT column (sticky cards) */
 .wd-left-stack{
   flex: 0 0 300px;
   position: sticky;
@@ -544,11 +567,11 @@ function triggerRowShake(r) {
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* RIGHT placeholder width 等同左侧，避免改变中间列位置 */
+/* RIGHT column placeholder width equals left (desktop) */
 .wd-right-col{ flex: 0 0 300px; }
 @media (max-width:980px){ .wd-right-col{ display:none !important; } }
 
-/* Cards */
+/* Collapsible cards */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
@@ -595,7 +618,7 @@ function triggerRowShake(r) {
 /* Hidden input */
 .wd-hidden-input{ position:absolute; left:-9999px; width:0; height:0; opacity:0; pointer-events:none; }
 
-/* Confetti */
+/* Confetti canvas */
 .wd-confetti{ position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999; }
 
 /* Keyboard */
@@ -634,10 +657,10 @@ function triggerRowShake(r) {
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* —— 默认隐藏移动面板 —— */
+/* Mobile-only accordions default hidden on desktop */
 .wd-mobile-panels{ display:none !important; }
 
-/* ===== MOBILE (<=980px) ===== */
+/* ===== MOBILE (≤980px) ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
@@ -649,13 +672,10 @@ function triggerRowShake(r) {
 
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
+
   .wd-coll{
-    display:block;
-    background:#10121a;
-    border:1.5px solid #50536b;
-    border-radius:12px;
-    padding:10px 12px;
-    box-shadow:0 0 0 1px rgba(80,83,107,.08) inset;
+    display:block; background:#10121a; border:1.5px solid #50536b; border-radius:12px;
+    padding:10px 12px; box-shadow:0 0 0 1px rgba(80,83,107,.08) inset;
   }
   .wd-coll + .wd-coll{ margin-top:10px; }
   .wd-coll > summary{
@@ -669,11 +689,11 @@ function triggerRowShake(r) {
   .wd-coll > *:not(summary){ margin-top:8px; }
 }
 
-/* ======= Mobile: 悬浮按钮 + 抽屉样式 ======= */
+/* ===== Mobile: floating action button + RIGHT slide-out drawer ===== */
 .tips-fab{
   position: fixed;
   right: 14px;
-  bottom: 84px;           /* 避开虚拟键盘与屏幕键盘 */
+  bottom: 84px; /* keep clear of soft keyboards / system bars */
   width: 54px; height: 54px;
   border-radius: 50%;
   border: 0;
@@ -692,20 +712,19 @@ function triggerRowShake(r) {
   z-index: 998;
 }
 
+/* Right slide-out panel */
 .tips-drawer{
   position: fixed;
-  left: 0; right: 0; bottom: -70%;
-  height: 70%;
+  top: 0; bottom: 0; right: -80%;
+  width: min(80vw, 340px);
   background: #0f1117;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  box-shadow: 0 -10px 30px rgba(0,0,0,.35);
-  transition: bottom .28s cubic-bezier(.2,.75,.25,1);
+  border-left: 1px solid #343644;
+  box-shadow: -6px 0 20px rgba(0,0,0,.35);
+  transition: right .28s cubic-bezier(.2,.75,.25,1);
   z-index: 999;
   display: flex; flex-direction: column;
-  border: 1px solid #343644;
 }
-.tips-drawer.open{ bottom: 0; }
+.tips-drawer.open{ right: 0; }
 
 .tips-drawer__header{
   display:flex; align-items:center; justify-content:space-between;
@@ -716,11 +735,7 @@ function triggerRowShake(r) {
 .tips-drawer__close{
   background: transparent; border: 0; color: #cfd3ff; font-size: 20px; cursor: pointer;
 }
-
 .tips-drawer__body{
-  padding: 10px 12px; overflow: auto; flex: 1;
-}
-.tips-drawer__footer{
-  padding: 10px 12px; border-top: 1px solid #2a2c3a;
+  padding: 10px 12px; overflow: auto; flex: 1; color:#e6e6eb;
 }
 </style>
