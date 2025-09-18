@@ -34,7 +34,7 @@
 
     <!-- ===== Desktop stage: LEFT | CENTER | RIGHT ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: collapsible instruction cards (independent, sticky) -->
+      <!-- LEFT: two independent collapsible cards -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
         <!-- Card 1 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
@@ -46,10 +46,7 @@
             <h3 class="wd-aside-title">How to Play</h3>
             <ol class="wd-steps">
               <li>Guess the word in <strong>{{ maxAttempts }}</strong> tries.</li>
-              <li>
-                Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word.
-                Press <kbd>Enter</kbd> to submit.
-              </li>
+              <li>Each guess must be a valid <strong>{{ targetLen }}</strong>-letter word. Press <kbd>Enter</kbd> to submit.</li>
               <li>The tile colors show how close your guess was:</li>
             </ol>
             <div class="wd-legend">
@@ -108,7 +105,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions (are hidden on desktop) -->
+        <!-- Mobile-only accordions -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -136,7 +133,7 @@
           </details>
         </div>
 
-        <!-- On-screen keyboard INSIDE center column (sticky on desktop) -->
+        <!-- On-screen keyboard INSIDE center column -->
         <div class="wd-kbd">
           <div class="wd-row">
             <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
@@ -152,37 +149,51 @@
         </div>
       </main>
 
-      <!-- RIGHT: fixed-width column (desktop only) to keep board centered -->
+      <!-- RIGHT (desktop): Health Tips column (sticky width-holder) -->
       <div class="wd-right-col" aria-label="Health Tips (desktop)">
-        <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+        <!-- IMPORTANT: add .tips-root so mobile sheet overrides can target it -->
+        <RightTips
+          class="tips-root"
+          :hint="currentHint"
+          :difficulty="difficulty"
+          :target-len="targetLen"
+        />
       </div>
     </div>
 
-    <!-- ===== Mobile FAB to open tips ===== -->
+    <!-- ===== Mobile Health Tips FAB + Bottom Sheet ===== -->
     <button
-      class="mobile-tips-fab"
-      @click="openTipsSheet"
-      aria-label="Open Health Tips"
+      class="tips-fab"
+      @click="openMobileTips"
+      aria-label="Open health tips"
     >
       Health Tips
     </button>
 
-    <!-- ===== Mobile Bottom-Sheet (teleport to body) ===== -->
-    <teleport to="body">
-      <div v-if="tipsSheetOpen" class="tips-sheet" @click.self="closeTipsSheet">
-        <div class="tips-sheet-panel" role="dialog" aria-modal="true" aria-label="Health Tips">
-          <div class="tips-sheet-header">
-            <div class="bar"></div>
+    <transition name="sheet">
+      <div v-if="mTipsOpen" class="tips-sheet" role="dialog" aria-modal="true" aria-label="Health Tips">
+        <div class="tips-mask" @click="closeMobileTips"></div>
+
+        <div class="tips-panel" @click.stop>
+          <div class="tips-grabber"></div>
+          <header class="tips-sheet-header">
             <strong>Health Tips</strong>
-            <button class="close" @click="closeTipsSheet" aria-label="Close">×</button>
-          </div>
+            <button class="tips-close" @click="closeMobileTips" aria-label="Close">×</button>
+          </header>
+
           <div class="tips-sheet-body">
-            <!-- Reuse RightTips inside the bottom-sheet -->
-            <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+            <!-- Wrap one layer to guarantee the class sticks even for multi-root components -->
+            <div class="tips-root">
+              <RightTips
+                :hint="currentHint"
+                :difficulty="difficulty"
+                :target-len="targetLen"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </teleport>
+    </transition>
 
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
@@ -460,16 +471,19 @@ function triggerRowShake(r) {
   setTimeout(() => shakingRows.delete(r), 600);
 }
 
-/* ===== Mobile tips bottom-sheet state ===== */
-const tipsSheetOpen = ref(false);
-function openTipsSheet() {
-  tipsSheetOpen.value = true;
-  // lock background scroll while the sheet is open
-  document.documentElement.style.overflow = 'hidden';
+/* ===== Mobile tips drawer ===== */
+const mTipsOpen = ref(false);
+function lockScroll(on){
+  const el = document.documentElement;
+  el.style.overflow = on ? 'hidden' : '';
 }
-function closeTipsSheet() {
-  tipsSheetOpen.value = false;
-  document.documentElement.style.overflow = '';
+function openMobileTips(){
+  mTipsOpen.value = true;
+  lockScroll(true);
+}
+function closeMobileTips(){
+  mTipsOpen.value = false;
+  lockScroll(false);
 }
 </script>
 
@@ -499,15 +513,15 @@ function closeTipsSheet() {
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT ===== */
+/* ===== DESKTOP LAYOUT (pure flex) ===== */
 .wd-stage{
   display:flex;
   align-items:flex-start;
-  justify-content:center;  /* center the middle column geometrically */
+  justify-content:center;  /* center middle column geometrically */
   gap: 28px;
 }
 
-/* LEFT column (sticky) */
+/* LEFT column */
 .wd-left-stack{
   flex: 0 0 300px;
   position: sticky;
@@ -519,10 +533,6 @@ function closeTipsSheet() {
 .wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
-
-/* RIGHT column keeps fixed width so board never shifts */
-.wd-right-col{ flex: 0 0 300px; }
-@media (max-width:980px){ .wd-right-col{ display:none !important; } }
 
 /* Collapsible cards (smooth) */
 .wd-aside{
@@ -593,9 +603,6 @@ function closeTipsSheet() {
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== Visibility reset: hide mobile panels on desktop ===== */
-.wd-mobile-panels { display: none !important; }
-
 /* ===== MOBILE (<=980px): board -> keyboard -> panels ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
@@ -608,8 +615,72 @@ function closeTipsSheet() {
 
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
+}
 
-  /* Card look for <details> */
+/* ===== RIGHT column (desktop only) ===== */
+.wd-right-col{ flex: 0 0 300px; }
+@media (max-width:980px){ .wd-right-col{ display:none !important; } }
+
+/* ===== Mobile FAB + Bottom Sheet ===== */
+.tips-fab{
+  position: fixed;
+  right: 16px; bottom: 16px;
+  background:#4f46e5; color:#fff; border:0; border-radius:999px;
+  font-weight:800; padding:10px 14px; box-shadow:0 6px 18px rgba(0,0,0,.35);
+  z-index: 1100; display:none;   /* hidden on desktop */
+}
+@media (max-width:980px){
+  .tips-fab{ display:inline-flex; align-items:center; gap:8px; }
+}
+
+/* bottom sheet container */
+.sheet-enter-from, .sheet-leave-to{ opacity:0; }
+.sheet-enter-active, .sheet-leave-active{ transition: opacity .18s ease; }
+
+.tips-sheet{
+  position: fixed; inset:0; z-index: 1200;
+}
+.tips-mask{
+  position:absolute; inset:0; background:rgba(0,0,0,.45);
+}
+.tips-panel{
+  position:absolute; left:0; right:0; bottom:0;
+  height: 70vh; background:#0f1118; border-top-left-radius:16px; border-top-right-radius:16px;
+  border:1px solid #2b2d3b; box-shadow:0 -10px 28px rgba(0,0,0,.35);
+  display:flex; flex-direction:column;
+}
+.tips-grabber{
+  width:64px; height:4px; border-radius:6px; background:#343644;
+  margin:10px auto 6px auto; opacity:.9;
+}
+.tips-sheet-header{
+  display:flex; align-items:center; gap:8px; padding:6px 12px 10px 12px; color:#e8e9f3;
+  border-bottom:1px solid #2b2d3b;
+}
+.tips-close{
+  margin-left:auto; width:28px; height:28px; border-radius:8px;
+  background:#1f2230; color:#e7e9f0; border:1px solid #343a55; cursor:pointer;
+}
+.tips-sheet-body{
+  flex:1; overflow:auto; padding:10px 12px 18px 12px;
+}
+
+/* Ensure RightTips is visible inside the sheet even if it's desktop-only by default */
+@media (max-width:980px){
+  .tips-sheet-body :deep(.tips-root){
+    display:block !important;
+    width:100% !important;
+  }
+  .tips-sheet-body :deep(.wd-right-tips){
+    display:block !important;
+    position:static !important;
+    top:auto !important;
+    width:100% !important;
+  }
+}
+
+/* Give <details> cards a bordered look on mobile */
+@media (max-width: 980px){
   .wd-coll{
     display:block;
     background:#10121a;
@@ -628,71 +699,5 @@ function closeTipsSheet() {
   .wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
   .wd-coll[open] > summary::before{ content:'▾'; }
   .wd-coll > *:not(summary){ margin-top:8px; }
-}
-
-/* ===== Mobile tips FAB & Bottom-sheet ===== */
-
-/* Desktop: FAB is hidden by default */
-.mobile-tips-fab{ display:none !important; }
-
-/* Bottom-sheet overlay and panel (common base) */
-.tips-sheet{
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 2000;
-  display: flex; justify-content: center; align-items: flex-end;
-}
-.tips-sheet-panel{
-  width: 100%;
-  max-height: 80vh;
-  background:#0f1118;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  border:1px solid #2b2d3b;
-  box-shadow: 0 -12px 28px rgba(0,0,0,.35);
-  display:flex; flex-direction:column;
-}
-.tips-sheet-header{
-  position: relative;
-  padding: 10px 12px 6px;
-  display:flex; align-items:center; justify-content:center;
-  color:#e8e9f3; font-weight:800;
-}
-.tips-sheet-header .bar{
-  position:absolute; top:6px; left:50%; transform:translateX(-50%);
-  width: 44px; height: 4px; border-radius: 999px;
-  background:#2b2d3b; opacity:.85;
-}
-.tips-sheet-header .close{
-  position:absolute; right:10px; top:6px;
-  width:28px; height:28px; border-radius:8px;
-  background:#1f2230; color:#e7e9f0; border:1px solid #343a55; cursor:pointer;
-}
-.tips-sheet-body{
-  flex: 1 1 auto;
-  overflow:auto;
-  padding: 6px 10px 12px;
-}
-
-/* Ensure RightTips renders inside the sheet even if it had "mobile hidden" rules */
-@media (max-width: 980px){
-  :deep(.tips-root),
-  :deep(.rt-root){
-    display: block !important;
-  }
-}
-
-/* Mobile-only FAB (fixed at bottom-right, above your on-screen keyboard) */
-@media (max-width: 980px){
-  .mobile-tips-fab{
-    display: inline-flex !important;
-    align-items:center; justify-content:center;
-    position: fixed; right: 16px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
-    z-index: 2001;
-    background:#4f46e5; color:#fff; border:0;
-    padding:10px 14px; border-radius:999px; font-weight:800;
-    box-shadow: 0 6px 18px rgba(79,70,229,.25);
-  }
 }
 </style>
