@@ -200,20 +200,35 @@ app.get("/api/recipes/filters", async (_req, res) => {
       WHERE ingredients IS NOT NULL
     `);
 
+    console.log('Raw ingredient data rows:', ingredientData.length);
+    if (ingredientData.length > 0) {
+      console.log('First ingredient row:', ingredientData[0]);
+    }
+
     // Extract unique ingredients from JSON
     const allIngredients = new Set();
     ingredientData.forEach(row => {
       try {
         const ingredients = JSON.parse(row.ingredients);
+        console.log('Parsed ingredients for debugging:', ingredients);
+        
         if (Array.isArray(ingredients)) {
           ingredients.forEach(ing => {
-            if (ing.name) allIngredients.add(ing.name);
+            if (typeof ing === 'string') {
+              allIngredients.add(ing);
+            } else if (ing && ing.name) {
+              allIngredients.add(ing.name);
+            }
           });
         }
       } catch (e) {
+        console.log('Error parsing ingredients:', e.message, row.ingredients);
         // Skip invalid JSON
       }
     });
+
+    console.log('Total ingredients found:', allIngredients.size);
+    console.log('Sample ingredients:', Array.from(allIngredients).slice(0, 10));
 
     res.json({
       categories: categories.map(c => ({

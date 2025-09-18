@@ -90,6 +90,42 @@
         </div>
       </div>
 
+      <!-- Pagination Controls (Top) -->
+      <div v-if="totalPages > 1" class="pagination-container-top">
+        <div class="pagination">
+          <button 
+            @click="prevPage" 
+            :disabled="currentPage === 1"
+            class="pagination-btn prev-btn"
+          >
+            ← Previous
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              v-for="page in totalPages" 
+              :key="page"
+              @click="goToPage(page)"
+              :class="['page-btn', { active: currentPage === page }]"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            @click="nextPage" 
+            :disabled="currentPage === totalPages"
+            class="pagination-btn next-btn"
+          >
+            Next →
+          </button>
+        </div>
+        
+        <div class="pagination-info">
+          Showing {{ ((currentPage - 1) * recipesPerPage) + 1 }} - {{ Math.min(currentPage * recipesPerPage, filteredRecipes.length) }} of {{ filteredRecipes.length }} recipes
+        </div>
+      </div>
+
       <!-- Recipe Grid Section -->
       <div class="recipes-section">
         <div class="white-overlay"></div>
@@ -129,49 +165,13 @@
               <div class="recipe-info">
                 <h3 class="recipe-title">{{ recipe.recipe_name }}</h3>
                 <div class="recipe-meta">
-                  <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ recipe.category }}</span>
+                  <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ capitalizeFirst(recipe.category) }}</span>
                   <span v-if="recipe.time_display" class="recipe-time">{{ recipe.time_display }}</span>
                 </div>
                 <div class="recipe-nutrition">
                   <span class="nutrition-item">{{ recipe.calories }} cal</span>
                   <span class="nutrition-item">{{ recipe.protein_g }}g protein</span>
                 </div>
-              </div>
-            </div>
-
-            <!-- Pagination Controls -->
-            <div v-if="totalPages > 1" class="pagination-container">
-              <div class="pagination">
-                <button 
-                  @click="prevPage" 
-                  :disabled="currentPage === 1"
-                  class="pagination-btn prev-btn"
-                >
-                  ← Previous
-                </button>
-                
-                <div class="page-numbers">
-                  <button 
-                    v-for="page in totalPages" 
-                    :key="page"
-                    @click="goToPage(page)"
-                    :class="['page-btn', { active: currentPage === page }]"
-                  >
-                    {{ page }}
-                  </button>
-                </div>
-                
-                <button 
-                  @click="nextPage" 
-                  :disabled="currentPage === totalPages"
-                  class="pagination-btn next-btn"
-                >
-                  Next →
-                </button>
-              </div>
-              
-              <div class="pagination-info">
-                Showing {{ ((currentPage - 1) * recipesPerPage) + 1 }} - {{ Math.min(currentPage * recipesPerPage, filteredRecipes.length) }} of {{ filteredRecipes.length }} recipes
               </div>
             </div>
           </div>
@@ -317,19 +317,53 @@ const filteredRecipes = computed(() => {
       if (!selectedCategories.value.includes(recipe.category)) return false;
     }
 
-    // Ingredients filter
-    if (selectedIngredients.value.length > 0) {
+    // Ingredients filter - Apply if ingredients are selected OR if no other filters are active
+    const hasActiveTimeOrCategory = selectedTimeRange.value || selectedCategories.value.length > 0;
+    
+    if (selectedIngredients.value.length > 0 || !hasActiveTimeOrCategory) {
       if (!recipe.ingredients) return false;
-      const recipeIngredients = Array.isArray(recipe.ingredients) 
-        ? recipe.ingredients.map(ing => ing.name || ing).map(name => name.toLowerCase())
-        : [];
       
-      const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
-        recipeIngredients.some(recipeIng => 
-          recipeIng.includes(selectedIng.toLowerCase())
-        )
-      );
-      if (!hasMatchingIngredient) return false;
+      // Parse ingredients from JSON
+      let recipeIngredients = [];
+      try {
+        if (typeof recipe.ingredients === 'string') {
+          recipeIngredients = JSON.parse(recipe.ingredients);
+        } else if (Array.isArray(recipe.ingredients)) {
+          recipeIngredients = recipe.ingredients;
+        }
+      } catch (e) {
+        console.log('Error parsing ingredients for recipe:', recipe.recipe_name, e);
+        return false;
+      }
+      
+      // Extract ingredient names
+      const ingredientNames = recipeIngredients.map(ing => {
+        if (typeof ing === 'string') return ing.toLowerCase();
+        if (ing && ing.name) return ing.name.toLowerCase();
+        return '';
+      }).filter(name => name.length > 0);
+      
+      console.log('Recipe:', recipe.recipe_name);
+      console.log('Raw ingredients:', recipe.ingredients);
+      console.log('Parsed ingredients:', ingredientNames);
+      console.log('Selected ingredients:', selectedIngredients.value);
+      
+      // If no ingredients are selected but we're in default mode, show all recipes
+      if (selectedIngredients.value.length === 0 && !hasActiveTimeOrCategory) {
+        return true;
+      }
+      
+      // If ingredients are selected, check for matches
+      if (selectedIngredients.value.length > 0) {
+        const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
+          ingredientNames.some(recipeIng => 
+            recipeIng.includes(selectedIng.toLowerCase())
+          )
+        );
+        
+        console.log('Has matching ingredient:', hasMatchingIngredient);
+        if (!hasMatchingIngredient) return false;
+      }
     }
 
     return true;
@@ -453,6 +487,12 @@ const getCategoryEmoji = (category) => {
   return emojiMap[category?.toLowerCase()] || '🍽️';
 };
 
+// Function to capitalize first letter
+const capitalizeFirst = (str) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 // API calls
 const API_BASE = 'https://nexgentech-api.onrender.com'; // Use the working API
 
@@ -480,8 +520,10 @@ const fetchFilterOptions = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+    console.log('Filter options data:', data); // Debug log
     categories.value = data.categories || [];
     allIngredients.value = data.ingredients || [];
+    console.log('Ingredients loaded:', allIngredients.value); // Debug log
   } catch (error) {
     console.error('Error fetching filter options:', error);
     // Set some default data for development
@@ -1205,6 +1247,13 @@ onMounted(() => {
 }
 
 /* Pagination Styles */
+.pagination-container-top {
+  margin: 20px 0;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
 .pagination-container {
   margin-top: 30px;
   text-align: center;
