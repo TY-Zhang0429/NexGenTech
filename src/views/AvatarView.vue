@@ -255,6 +255,7 @@ const selectSol = () => {
   // 设置选择状态并存储到localStorage
   localStorage.setItem('avatarSelected', 'true');
   localStorage.setItem('avatarType', 'avatara');
+  localStorage.setItem('avatarEvolutionLevel', '1'); // 初始化进化等级
   isAvatarAlreadySelected.value = true;
   
   // 设置并显示成功消息
@@ -279,6 +280,7 @@ const resetAvatar = () => {
   localStorage.removeItem('avatarPosition');
   localStorage.removeItem('avatarType');
   localStorage.removeItem('avatarEvolved');
+  localStorage.removeItem('avatarEvolutionLevel');
   
   // 更新当前状态
   isAvatarAlreadySelected.value = false;

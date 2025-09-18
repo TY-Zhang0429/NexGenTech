@@ -531,6 +531,7 @@ export default {
 
     checkWinLose(){
       if(this.score>=this.levelGoals[this.level-1]){
+        // 无论是否有avatar都显示礼花效果
         confetti({ particleCount:200, spread:120, origin:{ y:.6 } });
         setTimeout(()=>{
           alert("🎉 Level "+this.level+" Clear!");
@@ -553,25 +554,39 @@ export default {
       const avatarType = localStorage.getItem('avatarType');
       
       if (avatarType === 'avatara') {
-        // 如果用户选择的是Sol头像，触发进化
-        this.gameCompleteMessage = 'Congratulations! Your avatar has evolved';
-        this.showGameCompleteMessage = true;
+        // 如果用户选择的是Sol头像，检查当前进化等级并触发进化
+        const currentLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
         
-        // 保存进化状态到localStorage
-        localStorage.setItem('avatarEvolved', 'true');
-        
-        // 2秒后隐藏消息并通知头像组件更新
-        setTimeout(() => {
-          this.showGameCompleteMessage = false;
+        if (currentLevel < 3) {
+          // 进化到下一级
+          const newLevel = currentLevel + 1;
+          localStorage.setItem('avatarEvolutionLevel', newLevel.toString());
           
-          // 通知DraggableAvatar组件检查状态
+          // 立即触发头像更新
           if (this.$refs.avatarComponent) {
-            this.$refs.avatarComponent.checkAvatarSelected();
+            this.$refs.avatarComponent.triggerAvatarUpdate();
           }
           
+          this.gameCompleteMessage = `Congratulations! Your avatar evolved to level ${newLevel}`;
+          this.showGameCompleteMessage = true;
+          
+          // 2秒后隐藏消息并通知头像组件更新
+          setTimeout(() => {
+            this.showGameCompleteMessage = false;
+            
+            // 通知DraggableAvatar组件检查状态
+            if (this.$refs.avatarComponent) {
+              this.$refs.avatarComponent.checkAvatarSelected();
+            }
+            
+            alert("🏆 All Levels Complete!");
+            this.init();
+          }, 2000);
+        } else {
+          // 已经是最高等级，只显示完成消息
           alert("🏆 All Levels Complete!");
           this.init();
-        }, 2000);
+        }
       } else {
         // 如果用户选择的是自定义头像，只显示胜利效果
         alert("🏆 All Levels Complete!");
@@ -834,7 +849,8 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #1a5536;
+  color: #ffffff; /* 墨绿色 */
+  font-family: 'Merriweather', serif; /* Merriweather字体 */
   font-size: 36px;
   font-weight: bold;
   z-index: 1001;

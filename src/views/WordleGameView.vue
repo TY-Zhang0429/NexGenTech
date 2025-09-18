@@ -1,7 +1,13 @@
 <template>
   <section ref="pageRoot" class="wordly wordly-page">
     <!-- Optional: draggable avatar -->
-    <DraggableAvatar />
+    <DraggableAvatar ref="avatarComponent" />
+
+    <!-- 游戏完成提示框和模糊遮罩 -->
+    <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
+    <div v-if="showGameCompleteMessage" class="game-complete-message">
+      {{ gameCompleteMessage }}
+    </div>
 
     <!-- ===== Topbar: Back ===== -->
     <div class="wd-topbar">
@@ -269,11 +275,17 @@ const row3 = ['Z','X','C','V','B','N','M'];
 /* ===== Responsive: narrow breakpoint (≤980px) & mobile drawer state ===== */
 const isNarrow = ref(false);
 const tipsOpen = ref(false);
+
+/* ===== Game complete message state ===== */
+const showGameCompleteMessage = ref(false);
+const gameCompleteMessage = ref('');
+
 let mq;
 function handleMQ(e){ isNarrow.value = e.matches; if (!e.matches) tipsOpen.value = false; }
 
 /* === Local CSS var target (we won't touch other components) === */
 const pageRoot = ref(null);
+const avatarComponent = ref(null);
 
 /* Measure the sticky top nav height WITHOUT modifying that component */
 function setLocalTopnavVar() {
@@ -431,6 +443,31 @@ function afterReveal(guess) {
   if (guess === answer.value) {
     statusMsg.value = '🎉 You Win!';
     launchConfetti();
+    
+    // 检查头像进化逻辑
+    const avatarType = localStorage.getItem('avatarType');
+    if (avatarType === 'avatara') {
+      const currentLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
+      if (currentLevel < 3) {
+        // 进化到下一级
+        const newLevel = currentLevel + 1;
+        localStorage.setItem('avatarEvolutionLevel', newLevel.toString());
+        
+        // 立即触发头像更新
+        if (avatarComponent.value) {
+          avatarComponent.value.triggerAvatarUpdate();
+        }
+        
+        // 显示进化消息overlay而不是alert
+        gameCompleteMessage.value = `Congratulations! Your avatar evolved to level ${newLevel}`;
+        showGameCompleteMessage.value = true;
+        
+        // 2秒后隐藏消息
+        setTimeout(() => {
+          showGameCompleteMessage.value = false;
+        }, 2000);
+      }
+    }
   } else if (guesses.length >= maxAttempts) {
     statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
   } else if (status[rowIndex]?.every(st => st === 'absent')) {
@@ -788,5 +825,44 @@ function triggerRowShake(r) {
 }
 .tips-drawer__body{
   padding: 10px 12px; overflow: auto; flex: 1; color:#e6e6eb;
+}
+
+/* ===== 游戏完成提示样式 ===== */
+.wordly .overlay-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+}
+
+.wordly .game-complete-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff; /* 墨绿色 */
+  font-family: 'Merriweather', serif; /* Merriweather字体 */
+  font-size: 36px;
+  font-weight: bold;
+  z-index: 1001;
+  text-align: center;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 </style>

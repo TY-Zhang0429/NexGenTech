@@ -21,23 +21,29 @@ const props = defineProps({
 
 // 头像状态和位置
 const isVisible = ref(false);
-const position = ref({ x: 20, y: window.innerHeight - 120 }); // 左下角初始位置
+const position = ref({ x: 80, y: window.innerHeight / 2 - 75 }); // 左部偏中位置
 const avatarElement = ref(null);
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 
-// 根据localStorage中的avatarType动态计算头像图片路径
+// 根据localStorage中的avatarType和evolutionLevel动态计算头像图片路径
 const currentAvatarSrc = computed(() => {
   // 触发响应式更新
   storageWatcher.value;
   
   const avatarType = localStorage.getItem('avatarType');
-  const avatarEvolved = localStorage.getItem('avatarEvolved') === 'true';
+  const evolutionLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
   
   switch (avatarType) {
     case 'avatara':
-      // 如果Sol头像已经进化，显示avatara2，否则显示avatara
-      return avatarEvolved ? '/assets/avatara2.png' : '/assets/avatara.png';
+      // 根据进化等级显示不同的Sol头像：1=avatara, 2=avatara2, 3=avatara3
+      if (evolutionLevel >= 3) {
+        return '/assets/avatara3.png';
+      } else if (evolutionLevel >= 2) {
+        return '/assets/avatara2.png';
+      } else {
+        return '/assets/avatara.png';
+      }
     case 'avatarb':
       return '/assets/avatarb.png';
     case 'avatarc':
@@ -81,6 +87,11 @@ function checkAvatarSelected() {
   storageWatcher.value++;
 }
 
+// 手动触发头像更新（用于实时更新头像图片）
+function triggerAvatarUpdate() {
+  storageWatcher.value++;
+}
+
 // 处理storage变化事件
 function handleStorageChange(event) {
   if (event.key === 'avatarSelected') {
@@ -91,8 +102,8 @@ function handleStorageChange(event) {
     } catch (e) {
       console.error('Error parsing updated avatar position:', e);
     }
-  } else if (event.key === 'avatarType' || event.key === 'avatarEvolved') {
-    // 当头像类型或进化状态改变时，触发重新渲染
+  } else if (event.key === 'avatarType' || event.key === 'avatarEvolutionLevel') {
+    // 当头像类型或进化等级改变时，触发重新渲染
     storageWatcher.value++;
   }
 }
@@ -155,7 +166,8 @@ const stopDrag = () => {
 
 // 导出方法，使其可以被父组件调用
 defineExpose({
-  checkAvatarSelected
+  checkAvatarSelected,
+  triggerAvatarUpdate
 });
 </script>
 
@@ -164,8 +176,8 @@ defineExpose({
   position: fixed;
   z-index: 1000;
   cursor: grab;
-  width: 100px; /* 放大尺寸 */
-  height: 100px; /* 放大尺寸 */
+  width: 170px; /* 加大尺寸 */
+  height: 170px; /* 加大尺寸 */
   overflow: hidden;
   user-select: none;
   touch-action: none;
