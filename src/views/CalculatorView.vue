@@ -121,9 +121,9 @@
           </button>
         </div>
         
-        <div class="pagination-info">
-          Showing {{ ((currentPage - 1) * recipesPerPage) + 1 }} - {{ Math.min(currentPage * recipesPerPage, filteredRecipes.length) }} of {{ filteredRecipes.length }} recipes
-        </div>
+          <div class="pagination-info">
+            Showing {{ ((currentPage - 1) * recipesPerPage) + 1 }} - {{ Math.min(currentPage * recipesPerPage, filteredRecipes.length) }} of {{ filteredRecipes.length }} recipes
+          </div>
       </div>
 
       <!-- Recipe Grid Section -->
@@ -275,7 +275,7 @@ const selectedIngredients = ref([]);
 
 // Pagination state
 const currentPage = ref(1);
-const recipesPerPage = 10;
+const recipesPerPage = 9;
 
 // Filter options
 const timeRanges = ref([
@@ -290,7 +290,8 @@ const allIngredients = ref([]);
 
 // Computed properties
 const filteredRecipes = computed(() => {
-  return recipes.value.filter(recipe => {
+  
+  const filtered = recipes.value.filter(recipe => {
     // Time filter
     if (selectedTimeRange.value) {
       const totalTime = recipe.total_time || 0;
@@ -330,7 +331,6 @@ const filteredRecipes = computed(() => {
           recipeIngredients = recipe.ingredients;
         }
       } catch (e) {
-        console.log('Error parsing ingredients for recipe:', recipe.recipe_name, e);
         return false;
       }
       
@@ -341,10 +341,6 @@ const filteredRecipes = computed(() => {
         return '';
       }).filter(name => name.length > 0);
       
-      console.log('Recipe:', recipe.recipe_name);
-      console.log('Raw ingredients:', recipe.ingredients);
-      console.log('Parsed ingredients:', ingredientNames);
-      console.log('Selected ingredients:', selectedIngredients.value);
       
       // Check for ingredient matches - recipe must contain ANY selected ingredient (OR logic)
       // Use word boundary matching to avoid partial matches (e.g., "ice" matching "lime juice")
@@ -356,12 +352,13 @@ const filteredRecipes = computed(() => {
         })
       );
       
-      console.log('Has matching ingredient:', hasMatchingIngredient);
       if (!hasMatchingIngredient) return false;
     }
 
     return true;
   });
+  
+  return filtered;
 });
 
 const hasActiveFilters = computed(() => {
@@ -459,7 +456,6 @@ const closeModal = () => {
 
 const toggleFavorite = (recipe) => {
   // TODO: Implement favorite functionality
-  console.log('Toggle favorite for:', recipe.recipe_name);
 };
 
 // Removed handleImageError to prevent repeated placeholder calls
@@ -494,6 +490,7 @@ const fetchRecipes = async () => {
   loading.value = true;
   try {
     const response = await fetch(`${API_BASE}/api/recipes/search?limit=50`);
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -514,10 +511,8 @@ const fetchFilterOptions = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('Filter options data:', data); // Debug log
     categories.value = data.categories || [];
     allIngredients.value = data.ingredients || [];
-    console.log('Ingredients loaded:', allIngredients.value); // Debug log
   } catch (error) {
     console.error('Error fetching filter options:', error);
     // Set some default data for development
