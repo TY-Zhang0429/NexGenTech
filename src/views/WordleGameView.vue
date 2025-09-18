@@ -1,5 +1,5 @@
 <template>
-  <section class="wordly wordly-page">
+  <section class="wordly">
     <!-- 可留可去：小乌龟头像 -->
     <DraggableAvatar />
 
@@ -170,6 +170,7 @@ import RightTips from '@/components/RightTips.vue';
 
 const router = useRouter();
 function goBack() {
+  // 有历史就后退，否则回列表页（按你的路由改）
   if (window.history.length > 1) router.back();
   else router.push('/discover-games');
 }
@@ -263,7 +264,7 @@ function pickAnswerObj() {
     const fb = wordsRaw.value.filter(w => w?.difficulty === difficulty.value);
     const ch = fb[Math.floor(Math.random() * Math.max(fb.length, 1))] || { word: 'apple', hint: '' };
     return { word: (ch.word || 'apple').toLowerCase().slice(0, needLen).padEnd(needLen, 'a'), hint: ch.hint || '' };
-    }
+  }
   const choice = pool[Math.floor(Math.random() * pool.length)];
   return { word: (choice.word || '').toLowerCase(), hint: choice.hint || '' };
 }
@@ -445,20 +446,6 @@ function triggerRowShake(r) {
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
-  position: relative; /* 形成局部层叠上下文，安全 */
-}
-
-/* 全屏固定背景（按你 avatar 页同款写法） */
-.wordly-page::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background-image: url('/assets/wordle_bg.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: -1;
 }
 
 /* Topbar Back */
@@ -571,34 +558,40 @@ function triggerRowShake(r) {
 
 /* Sticky keyboard on desktop */
 @media (min-width: 981px){
-  .wordly{ --kbd-safe: 170px; }
+  /* 你可以按实际键盘高度微调这个安全高度 */
+  .wordly{ --kbd-safe: 170px; } /* 右栏离视口底部预留的空间 */
+
   .wd-kbd{
     position: sticky;
     bottom: 0;
-    z-index: 40;
-    background: rgba(13,15,22,.75);
+    z-index: 40;                        /* 让键盘压在右栏上方 */
+    background: rgba(13,15,22,.75);     /* 半透明底，避免内容“压”在键盘后看不清 */
     backdrop-filter: blur(3px);
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
   }
+
   .wd-right-col{
+    /* 右栏本身吸顶，并限制最大高度，超出自己内部滚动 */
     position: sticky;
-    top: 84px;
+    top: 84px;                          /* 和左侧说明一致的吸顶距离 */
     align-self: flex-start;
     max-height: calc(100vh - 84px - var(--kbd-safe));
-    z-index: 1;
-    margin-left: 20px;
+    z-index: 1;                         /* 明确比键盘低 */
+    margin-left: 20px;                  /* 稍微再往右挪一点点，舒适一些 */
   }
 }
+
+
 
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* —— 默认隐藏移动面板 —— */
+/* —— 关键：默认就隐藏移动面板（防止任何覆盖样式把它带出来） —— */
 .wd-mobile-panels{ display:none !important; }
 
-/* ===== MOBILE (<=980px) ===== */
+/* ===== MOBILE (<=980px): 仅在手机端显示折叠面板 ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
