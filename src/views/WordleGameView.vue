@@ -463,7 +463,7 @@ function triggerRowShake(r) {
   display:flex;
   align-items:flex-start;
   justify-content:center;  /* center middle column geometrically */
-  gap: 28px;
+  gap: clamp(40px, 7vw, 120px);
 }
 
 /* LEFT column */
@@ -583,6 +583,14 @@ function triggerRowShake(r) {
 }
 
 /* ===== RIGHT column width holder (desktop only) ===== */
-.wd-right-col{ flex: 0 0 300px; }          /* keep same width as left */
-@media (max-width:980px){ .wd-right-col{ display:none !important; } }
+@media (min-width: 1100px){
+  .wd-right-col{
+    transform: translateX(14px);
+  }
+}          /* keep same width as left */
+@media (min-width: 1400px){
+  .wd-right-col{
+    transform: translateX(24px);
+  }
+}
 </style>
