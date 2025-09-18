@@ -153,7 +153,7 @@
       <aside class="wd-right-tips" aria-label="Healthy Tips (desktop)">
         <!-- Collapsed state keeps width so the board stays centered -->
         <div v-if="!tipsOpen" class="tips-collapsed">
-          <button class="wd-btn ghost" @click="openTips" aria-label="Show tips">Show Tips</button>
+          <button class="wd-btn ghost" @click="openTips" aria-label="Show tips">Health Tips</button>
         </div>
 
         <div v-else class="tips-wrap">
