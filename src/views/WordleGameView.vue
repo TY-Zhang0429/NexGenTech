@@ -1,5 +1,5 @@
 <template>
-  <section class="wordly">
+  <section class="wordly wordly-page">
     <!-- 可留可去：小乌龟头像 -->
     <DraggableAvatar />
 
@@ -159,6 +159,11 @@
 
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
+
+    <!-- ✅ 移动端：把 Health Tips 悬浮按钮直接挂到 body，避免被右侧栏隐藏 -->
+    <teleport to="body">
+      <RightTips v-if="isNarrow" mode="mobile" />
+    </teleport>
   </section>
 </template>
 
@@ -170,7 +175,6 @@ import RightTips from '@/components/RightTips.vue';
 
 const router = useRouter();
 function goBack() {
-  // 有历史就后退，否则回列表页（按你的路由改）
   if (window.history.length > 1) router.back();
   else router.push('/discover-games');
 }
@@ -227,6 +231,11 @@ const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
+/* ===== Responsive: narrow breakpoint (match CSS 980px) ===== */
+const isNarrow = ref(false);
+let mq;
+function handleMQ(e){ isNarrow.value = e.matches; }
+
 /* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
@@ -234,6 +243,11 @@ onMounted(async () => {
     startGame();
     if (!isMobile) window.addEventListener('keydown', onKeydown, { passive: false });
     window.addEventListener('resize', resizeCanvas);
+
+    // init responsive flag
+    mq = window.matchMedia('(max-width: 980px)');
+    isNarrow.value = mq.matches;
+    mq.addEventListener('change', handleMQ);
   } catch (e) {
     error.value = 'Failed to load words. Please retry later.';
   } finally {
@@ -243,6 +257,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
+  mq?.removeEventListener('change', handleMQ);
   stopConfetti();
 });
 
@@ -446,6 +461,20 @@ function triggerRowShake(r) {
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
+  position: relative;
+}
+
+/* 全屏固定背景（与 avatar 页同款写法） */
+.wordly-page::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image: url('/assets/wordle_bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: -1;
 }
 
 /* Topbar Back */
@@ -557,16 +586,35 @@ function triggerRowShake(r) {
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
 /* Sticky keyboard on desktop */
-@media (min-width: 981px){ .wd-kbd{ position: sticky; bottom: 0; } }
+@media (min-width: 981px){
+  .wordly{ --kbd-safe: 170px; }
+  .wd-kbd{
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: rgba(13,15,22,.75);
+    backdrop-filter: blur(3px);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  .wd-right-col{
+    position: sticky;
+    top: 84px;
+    align-self: flex-start;
+    max-height: calc(100vh - 84px - var(--kbd-safe));
+    z-index: 1;
+    margin-left: 20px;
+  }
+}
 
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* —— 关键：默认就隐藏移动面板（防止任何覆盖样式把它带出来） —— */
+/* —— 默认隐藏移动面板 —— */
 .wd-mobile-panels{ display:none !important; }
 
-/* ===== MOBILE (<=980px): 仅在手机端显示折叠面板 ===== */
+/* ===== MOBILE (<=980px) ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
