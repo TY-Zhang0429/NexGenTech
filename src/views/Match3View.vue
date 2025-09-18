@@ -25,6 +25,15 @@
         </div>
         <div class="tip">Reminder：{{ tip }}</div>
         <button class="btn" @click="init">Restart</button>
+
+
+
+         <!-- 调试使用，用后删除！！！！！！！！！ -->
+        <!-- 调试用作弊按钮：一键胜利 -->
+        <button class="btn cheat" @click="cheatWin">Cheat: Win Level</button>
+
+
+
       </div>
     </div>
 
@@ -422,6 +431,19 @@ export default {
     animateSpecial(el){
       return new Promise(res=>{ el.style.transition="transform .25s ease, opacity .25s ease"; el.style.transform+=" scale(1.3)"; el.style.opacity="0.5"; setTimeout(res,250); });
     },
+
+
+
+
+        //调试使用，用后删除！！！！！！！
+        // 调试用作弊按钮：一键胜利
+    cheatWin() {
+      this.score = this.levelGoals[this.level - 1];
+      this.checkWinLose();
+    },
+
+
+
 
     checkWinLose(){
       if(this.score>=this.levelGoals[this.level-1]){
