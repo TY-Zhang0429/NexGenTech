@@ -209,7 +209,16 @@ app.get("/api/recipes/filters", async (_req, res) => {
     const allIngredients = new Set();
     ingredientData.forEach(row => {
       try {
-        const ingredients = JSON.parse(row.ingredients);
+        let ingredients;
+        
+        // Check if it's already a JavaScript array (not JSON string)
+        if (Array.isArray(row.ingredients)) {
+          ingredients = row.ingredients;
+        } else {
+          // Try to parse as JSON string
+          ingredients = JSON.parse(row.ingredients);
+        }
+        
         console.log('Parsed ingredients for debugging:', ingredients);
         
         if (Array.isArray(ingredients)) {
