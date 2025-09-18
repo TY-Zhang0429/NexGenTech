@@ -160,10 +160,32 @@
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
 
-    <!-- ✅ 移动端：把 Health Tips 悬浮按钮直接挂到 body，避免被右侧栏隐藏 -->
-    <teleport to="body">
-      <RightTips v-if="isNarrow" mode="mobile" />
-    </teleport>
+    <!-- ===== MOBILE: 悬浮按钮 + 抽屉（只在 ≤980px 显示） ===== -->
+    <button
+      v-if="isNarrow"
+      class="tips-fab"
+      @click="tipsOpen = true"
+      aria-label="Open Health Tips"
+    >
+      💡
+    </button>
+
+    <div v-if="isNarrow" class="tips-drawer" :class="{ open: tipsOpen }" aria-modal="true" role="dialog">
+      <header class="tips-drawer__header">
+        <strong>Health Tips</strong>
+        <button class="tips-drawer__close" @click="tipsOpen = false" aria-label="Close">✕</button>
+      </header>
+      <div class="tips-drawer__body">
+        <!-- 在抽屉中渲染移动端的 tips 内容 -->
+        <RightTips mode="mobile" />
+      </div>
+      <footer class="tips-drawer__footer">
+        <button class="wd-btn ghost" @click="tipsOpen = false">Close</button>
+      </footer>
+    </div>
+
+    <!-- 抽屉遮罩 -->
+    <div v-if="isNarrow && tipsOpen" class="tips-mask" @click="tipsOpen = false"></div>
   </section>
 </template>
 
@@ -231,10 +253,11 @@ const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
-/* ===== Responsive: narrow breakpoint (match CSS 980px) ===== */
+/* ===== Responsive: narrow breakpoint (≤980px) & mobile drawer state ===== */
 const isNarrow = ref(false);
+const tipsOpen = ref(false);
 let mq;
-function handleMQ(e){ isNarrow.value = e.matches; }
+function handleMQ(e){ isNarrow.value = e.matches; if (!e.matches) tipsOpen.value = false; }
 
 /* ===== Lifecycle ===== */
 onMounted(async () => {
@@ -464,7 +487,7 @@ function triggerRowShake(r) {
   position: relative;
 }
 
-/* 全屏固定背景（与 avatar 页同款写法） */
+/* 全屏固定背景（与你 avatar 页同款写法） */
 .wordly-page::before {
   content: '';
   position: fixed;
@@ -626,7 +649,6 @@ function triggerRowShake(r) {
 
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
-
   .wd-coll{
     display:block;
     background:#10121a;
@@ -645,5 +667,60 @@ function triggerRowShake(r) {
   .wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
   .wd-coll[open] > summary::before{ content:'▾'; }
   .wd-coll > *:not(summary){ margin-top:8px; }
+}
+
+/* ======= Mobile: 悬浮按钮 + 抽屉样式 ======= */
+.tips-fab{
+  position: fixed;
+  right: 14px;
+  bottom: 84px;           /* 避开虚拟键盘与屏幕键盘 */
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 0;
+  font-size: 22px;
+  font-weight: 700;
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  z-index: 1000;
+}
+.tips-fab:active{ transform: translateY(1px); }
+
+.tips-mask{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 998;
+}
+
+.tips-drawer{
+  position: fixed;
+  left: 0; right: 0; bottom: -70%;
+  height: 70%;
+  background: #0f1117;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -10px 30px rgba(0,0,0,.35);
+  transition: bottom .28s cubic-bezier(.2,.75,.25,1);
+  z-index: 999;
+  display: flex; flex-direction: column;
+  border: 1px solid #343644;
+}
+.tips-drawer.open{ bottom: 0; }
+
+.tips-drawer__header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #2a2c3a;
+  font-weight: 800; color:#e8e9f3;
+}
+.tips-drawer__close{
+  background: transparent; border: 0; color: #cfd3ff; font-size: 20px; cursor: pointer;
+}
+
+.tips-drawer__body{
+  padding: 10px 12px; overflow: auto; flex: 1;
+}
+.tips-drawer__footer{
+  padding: 10px 12px; border-top: 1px solid #2a2c3a;
 }
 </style>
