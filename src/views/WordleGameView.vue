@@ -168,7 +168,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'v
 import { useRouter } from 'vue-router';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 import RightTips from '@/components/RightTips.vue';
-import bgPattern from '@/assets/wordle_bg.png'; // 背景图
+import bgPattern from '../assets/wordle_bg.png'; // 背景图
 
 const router = useRouter();
 function goBack() {
