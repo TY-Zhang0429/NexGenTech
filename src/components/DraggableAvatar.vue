@@ -5,17 +5,17 @@
        :style="{ left: position.x + 'px', top: position.y + 'px' }"
        @mousedown="startDrag"
        @touchstart="startDrag">
-    <img :src="avatarSrc" alt="Avatar" />
+    <img :src="currentAvatarSrc" alt="Avatar" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 
 const props = defineProps({
   avatarSrc: {
     type: String,
-    default: '/assets/sol.png'
+    default: '/assets/avatara.png'
   }
 });
 
@@ -25,6 +25,27 @@ const position = ref({ x: 20, y: window.innerHeight - 120 }); // 左下角初始
 const avatarElement = ref(null);
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
+
+// 根据localStorage中的avatarType动态计算头像图片路径
+const currentAvatarSrc = computed(() => {
+  // 触发响应式更新
+  storageWatcher.value;
+  
+  const avatarType = localStorage.getItem('avatarType');
+  switch (avatarType) {
+    case 'avatara':
+      return '/assets/avatara.png';
+    case 'avatarb':
+      return '/assets/avatarb.png';
+    case 'avatarc':
+      return '/assets/avatarc.png';
+    default:
+      return props.avatarSrc;
+  }
+});
+
+// 监听localStorage变化的响应式变量
+const storageWatcher = ref(0);
 
 // 检查localStorage中的状态
 onMounted(() => {
@@ -53,6 +74,8 @@ onUnmounted(() => {
 function checkAvatarSelected() {
   const selected = localStorage.getItem('avatarSelected') === 'true';
   isVisible.value = selected;
+  // 触发头像图片更新
+  storageWatcher.value++;
 }
 
 // 处理storage变化事件
@@ -65,6 +88,9 @@ function handleStorageChange(event) {
     } catch (e) {
       console.error('Error parsing updated avatar position:', e);
     }
+  } else if (event.key === 'avatarType') {
+    // 当头像类型改变时，触发重新渲染
+    storageWatcher.value++;
   }
 }
 
