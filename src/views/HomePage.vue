@@ -7,7 +7,7 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-avatar">
-        <img src="../assets/homeavatar.png" alt="Sol Avatar" class="avatar-image" />
+        <img src="/assets/back2.png" alt="Sol Avatar" class="avatar-image" />
         <div class="glow-effect"></div>
       </div>
       <div class="hero-content">
@@ -27,7 +27,7 @@
       <div class="highlights-grid">
         <div class="highlight-card" @click="navigateToAvatar">
           <div class="highlight-image-container">
-            <img src="../assets/avatardef.png" alt="Your Avatar" class="highlight-image" />
+            <img src="/assets/avatarhighlight.png" alt="Your Avatar" class="highlight-image" />
             <div class="highlight-overlay">
               <h3>Your Avatar</h3>
               <p>Create and customize your own health avatar. Watch it grow and evolve as you make healthier food choices!</p>
