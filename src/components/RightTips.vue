@@ -1,5 +1,5 @@
 <template>
-  <!-- ========= DESKTOP PANEL ========= -->
+  <!-- ===== DESKTOP：固定右栏，内部滚动，不遮挡键盘 ===== -->
   <aside v-if="mode === 'desktop'" class="tips-panel" aria-label="Health Tips (desktop)">
     <header class="tips-h">
       <strong>Health Tips</strong>
@@ -7,66 +7,160 @@
       <button class="icon" @click="prevTip" aria-label="Prev">‹</button>
       <button class="icon" @click="nextTip" aria-label="Next">›</button>
     </header>
-    <TipsBody
-      :current-tip="currentTip"
-      :liked="liked"
-      :streak="streak"
-      :best-streak="bestStreak"
-      :week-count="weekCount"
-      :week-goal="WEEK_GOAL"
-      :countdown="countdownText"
-      :water-glasses="waterGlasses"
-      @toggle-like="toggleLike"
-      @shuffle="shuffleTip"
-      @done="markDone"
-      @check-in="checkIn"
-      @set-water="setWater"
-      @reset-water="() => setWater(0)"
-    />
+
+    <!-- 内容体 -->
+    <section class="tips-body">
+      <!-- Tip 卡片 -->
+      <article class="tip-card">
+        <div class="tip-tag">{{ currentTip.tag }}</div>
+        <h4 class="tip-title">{{ currentTip.title }}</h4>
+        <p class="tip-text">{{ currentTip.text }}</p>
+        <ul v-if="currentTip.bullets?.length" class="tip-bullets">
+          <li v-for="(b,i) in currentTip.bullets" :key="i">{{ b }}</li>
+        </ul>
+
+        <div class="tip-actions">
+          <button class="btn" @click="markDone(); checkIn()">I’ll try it</button>
+          <button class="btn ghost" @click="shuffleTip">Shuffle</button>
+          <button
+            class="heart"
+            :class="{ active: liked[currentTip.id] }"
+            @click="toggleLike(currentTip.id)"
+            :aria-pressed="!!liked[currentTip.id]"
+          >♥</button>
+        </div>
+      </article>
+
+      <!-- Mini challenges -->
+      <article class="box">
+        <h5 class="box-title">Mini Challenges</h5>
+        <div class="chips">
+          <button class="chip" @click="checkIn()">30s Breathing</button>
+          <button class="chip" @click="checkIn()">30s Stretch</button>
+        </div>
+      </article>
+
+      <!-- 周目标 + streak + 倒计时 -->
+      <article class="box">
+        <div class="row between">
+          <h5 class="box-title">Weekly Theme: Colorful Week</h5>
+          <div class="muted">Resets in {{ countdownText }}</div>
+        </div>
+
+        <div class="row wrap gap">
+          <button class="chip" @click="checkIn()">Log 1 serving</button>
+          <span class="muted">{{ Math.min(weekCount, WEEK_GOAL) }}/{{ WEEK_GOAL }}</span>
+          <span class="muted"> • Streak: <b>{{ streak }}</b> 🔥 (Best {{ bestStreak }})</span>
+        </div>
+
+        <div class="bar">
+          <div class="bar-fill" :style="{ width: (Math.min(weekCount, WEEK_GOAL)/WEEK_GOAL*100)+'%' }"></div>
+        </div>
+      </article>
+
+      <!-- 喝水计数 -->
+      <article class="box">
+        <div class="row between">
+          <h5 class="box-title">Water today</h5>
+          <button class="chip ghost" @click="setWater(0)" aria-label="Reset">↺</button>
+        </div>
+        <div class="dots">
+          <button
+            v-for="i in 8" :key="i"
+            class="dot" :class="{ on: i <= waterGlasses }"
+            @click="setWater(i)"
+          />
+        </div>
+      </article>
+    </section>
   </aside>
 
-  <!-- ========= MOBILE BODY（给底部抽屉用） ========= -->
+  <!-- ===== MOBILE：仅渲染内容体（由页面底部抽屉包裹） ===== -->
   <div v-else class="tips-mobile">
-    <TipsBody
-      :current-tip="currentTip"
-      :liked="liked"
-      :streak="streak"
-      :best-streak="bestStreak"
-      :week-count="weekCount"
-      :week-goal="WEEK_GOAL"
-      :countdown="countdownText"
-      :water-glasses="waterGlasses"
-      @toggle-like="toggleLike"
-      @shuffle="shuffleTip"
-      @done="markDone"
-      @check-in="checkIn"
-      @set-water="setWater"
-      @reset-water="() => setWater(0)"
-    />
+    <section class="tips-body">
+      <article class="tip-card">
+        <div class="tip-tag">{{ currentTip.tag }}</div>
+        <h4 class="tip-title">{{ currentTip.title }}</h4>
+        <p class="tip-text">{{ currentTip.text }}</p>
+        <ul v-if="currentTip.bullets?.length" class="tip-bullets">
+          <li v-for="(b,i) in currentTip.bullets" :key="i">{{ b }}</li>
+        </ul>
+
+        <div class="tip-actions">
+          <button class="btn" @click="markDone(); checkIn()">I’ll try it</button>
+          <button class="btn ghost" @click="shuffleTip">Shuffle</button>
+          <button
+            class="heart"
+            :class="{ active: liked[currentTip.id] }"
+            @click="toggleLike(currentTip.id)"
+            :aria-pressed="!!liked[currentTip.id]"
+          >♥</button>
+        </div>
+      </article>
+
+      <article class="box">
+        <div class="row between">
+          <h5 class="box-title">Weekly Theme: Colorful Week</h5>
+          <div class="muted">Resets in {{ countdownText }}</div>
+        </div>
+
+        <div class="row wrap gap">
+          <button class="chip" @click="checkIn()">Log 1 serving</button>
+          <span class="muted">{{ Math.min(weekCount, WEEK_GOAL) }}/{{ WEEK_GOAL }}</span>
+          <span class="muted"> • Streak: <b>{{ streak }}</b> 🔥 (Best {{ bestStreak }})</span>
+        </div>
+
+        <div class="bar">
+          <div class="bar-fill" :style="{ width: (Math.min(weekCount, WEEK_GOAL)/WEEK_GOAL*100)+'%' }"></div>
+        </div>
+      </article>
+
+      <article class="box">
+        <h5 class="box-title">Mini Challenges</h5>
+        <div class="chips">
+          <button class="chip" @click="checkIn()">30s Breathing</button>
+          <button class="chip" @click="checkIn()">30s Stretch</button>
+        </div>
+      </article>
+
+      <article class="box">
+        <div class="row between">
+          <h5 class="box-title">Water today</h5>
+          <button class="chip ghost" @click="setWater(0)" aria-label="Reset">↺</button>
+        </div>
+        <div class="dots">
+          <button
+            v-for="i in 8" :key="i"
+            class="dot" :class="{ on: i <= waterGlasses }"
+            @click="setWater(i)"
+          />
+        </div>
+      </article>
+    </section>
   </div>
 </template>
 
 <script setup>
 /**
- * RightTips
- * - desktop: 固定右栏，内部滚动
- * - mobile: 仅渲染“内容体”（由页面的底部抽屉包裹）
- * - 含：随机小贴士、打卡+连续天数（streak）、周目标进度、喝水计数、每日重置倒计时
+ * RightTips（单 script 版）
+ * - props: mode = 'desktop' | 'mobile'
+ * - 功能：随机小贴士、点赞、每日打卡（streak + best）、当周累计、倒计时、喝水计数
+ * - 所有状态本地持久化（localStorage）
  */
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue';
 
 const props = defineProps({
-  mode: { type: String, default: 'desktop' } // 'desktop' | 'mobile'
+  mode: { type: String, default: 'desktop' }
 });
 
 /* ------- Tips data ------- */
 const tipsList = ref([
   { id: 'hydration', tag: 'Hydration', title: 'Drink a glass of water',
     text: 'Dehydration can feel like hunger. Sip water before your next snack.',
-    bullets: ['Sparkling + lemon', 'Keep a bottle nearby'] },
+    bullets: ['Sparkling + lemon','Keep a bottle within reach'] },
   { id: 'color', tag: 'Micronutrients', title: 'Eat the rainbow',
     text: 'Add one colorful veggie/fruit to your next meal—fiber + vitamins!',
-    bullets: ['Bell pepper · Berries · Spinach'] },
+    bullets: ['Bell pepper • Berries • Spinach'] },
   { id: 'protein', tag: 'Protein', title: 'Palm-sized protein',
     text: 'A palm-sized protein each meal helps satiety & recovery.' },
   { id: 'move', tag: 'Movement', title: '1-minute reset',
@@ -80,12 +174,15 @@ function nextTip(){ tipIndex.value = (tipIndex.value + 1) % tipsList.value.lengt
 function prevTip(){ tipIndex.value = (tipIndex.value - 1 + tipsList.value.length) % tipsList.value.length; }
 function shuffleTip(){ tipIndex.value = Math.floor(Math.random() * tipsList.value.length); }
 
-/* ------- Persistence helpers ------- */
+/* ------- like ------- */
 const liked = reactive(JSON.parse(localStorage.getItem('ht_liked') || '{}'));
-function toggleLike(id){ liked[id] = !liked[id]; localStorage.setItem('ht_liked', JSON.stringify(liked)); }
+function toggleLike(id){
+  liked[id] = !liked[id];
+  localStorage.setItem('ht_liked', JSON.stringify(liked));
+}
 
-/* ------- Streak + Weekly goal ------- */
-const WEEK_GOAL = 5; // 当周目标 5 次
+/* ------- streak + weekly ------- */
+const WEEK_GOAL = 5;
 const streak = ref(parseInt(localStorage.getItem('ht_streak') || '0', 10));
 const bestStreak = ref(parseInt(localStorage.getItem('ht_best') || '0', 10));
 const lastCheckDate = ref(localStorage.getItem('ht_last') || ''); // YYYY-MM-DD
@@ -98,38 +195,34 @@ const weekKey = computed(() => {
 });
 const weekCount = ref(parseInt(localStorage.getItem(weekKey.value) || '0', 10));
 watchEffect(() => {
-  // 当周切换（跨周）自动取新 key
-  const n = parseInt(localStorage.getItem(weekKey.value) || '0', 10);
-  weekCount.value = n;
+  weekCount.value = parseInt(localStorage.getItem(weekKey.value) || '0', 10);
 });
 
 function checkIn(){
   const today = new Date().toISOString().slice(0,10);
-  if (lastCheckDate.value === today) return; // 当天已打卡
+  if (lastCheckDate.value === today) return;
 
-  // streak 逻辑
   if (lastCheckDate.value){
     const diff = daysBetween(lastCheckDate.value, today);
     streak.value = (diff === 1) ? streak.value + 1 : 1;
-  }else{
+  } else {
     streak.value = 1;
   }
   lastCheckDate.value = today;
   bestStreak.value = Math.max(bestStreak.value, streak.value);
 
-  // 周累计
   const nowCount = parseInt(localStorage.getItem(weekKey.value) || '0', 10) + 1;
   localStorage.setItem(weekKey.value, String(nowCount));
   weekCount.value = nowCount;
 
-  // 持久化
   localStorage.setItem('ht_streak', String(streak.value));
   localStorage.setItem('ht_best', String(bestStreak.value));
   localStorage.setItem('ht_last', lastCheckDate.value);
 }
 
 function daysBetween(isoA, isoB){
-  const a = new Date(isoA + 'T00:00:00'); const b = new Date(isoB + 'T00:00:00');
+  const a = new Date(isoA + 'T00:00:00');
+  const b = new Date(isoB + 'T00:00:00');
   return Math.round((b - a) / 86400000);
 }
 function isoWeek(d){
@@ -140,7 +233,7 @@ function isoWeek(d){
   return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
 }
 
-/* ------- Water tracker + countdown ------- */
+/* ------- water + countdown ------- */
 const waterGlasses = ref(parseInt(localStorage.getItem('ht_water') || '0', 10));
 function setWater(n){ waterGlasses.value = n; localStorage.setItem('ht_water', String(n)); }
 
@@ -155,105 +248,26 @@ function updateCountdown(){
   const ss = String(Math.floor((ms%60000)/1000)).padStart(2,'0');
   countdownText.value = `${hh}:${mm}:${ss}`;
 }
+
+function markDone(){ /* 这里保留占位，后续可扩展 toast 等 */ }
+
 onMounted(() => {
-  // 每日重置：提供 day key；重置只影响 water 计数和“当天已打卡”状态（不清 streak）
+  // 每日喝水计数重置
   const today = new Date().toISOString().slice(0,10);
   const savedDay = localStorage.getItem('ht_day');
   if (savedDay !== today){
     localStorage.setItem('ht_day', today);
     localStorage.setItem('ht_water', '0');
     waterGlasses.value = 0;
-    // 当跨天但没打卡，不重置 streak；streak 的滚动由用户是否打卡决定
   }
   updateCountdown();
   timer = setInterval(updateCountdown, 1000);
 });
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
-
-/* ------- Expose minimal API for parent (可选) ------- */
-// 不需要方法暴露了；抽屉在父组件控制开关。
 </script>
-
-<!-- 共用内容体组件（避免重复模板） -->
-<script setup name="TipsBody">
-const emits = defineEmits(['toggle-like','shuffle','done','check-in','set-water','reset-water']);
-const bodyProps = defineProps({
-  currentTip: { type: Object, required: true },
-  liked: { type: Object, required: true },
-  streak: { type: Number, required: true },
-  bestStreak: { type: Number, required: true },
-  weekCount: { type: Number, required: true },
-  weekGoal: { type: Number, required: true },
-  countdown: { type: String, required: true },
-  waterGlasses: { type: Number, required: true },
-});
-</script>
-
-<template #default>
-  <section class="tips-body">
-    <!-- Tip -->
-    <article class="tip-card">
-      <div class="tip-tag">{{ bodyProps.currentTip.tag }}</div>
-      <h4 class="tip-title">{{ bodyProps.currentTip.title }}</h4>
-      <p class="tip-text">{{ bodyProps.currentTip.text }}</p>
-      <ul v-if="bodyProps.currentTip.bullets?.length" class="tip-bullets">
-        <li v-for="(b,i) in bodyProps.currentTip.bullets" :key="i">{{ b }}</li>
-      </ul>
-
-      <div class="tip-actions">
-        <button class="btn" @click="$emit('done'); $emit('check-in')">I’ll try it</button>
-        <button class="btn ghost" @click="$emit('shuffle')">Shuffle</button>
-        <button
-          class="heart"
-          :class="{ active: bodyProps.liked[bodyProps.currentTip.id] }"
-          @click="$emit('toggle-like', bodyProps.currentTip.id)"
-          :aria-pressed="!!bodyProps.liked[bodyProps.currentTip.id]"
-        >♥</button>
-      </div>
-    </article>
-
-    <!-- Mini Challenges -->
-    <article class="box">
-      <h5 class="box-title">Mini Challenges</h5>
-      <div class="chips">
-        <button class="chip" @click="$emit('check-in')">30s Breathing</button>
-        <button class="chip" @click="$emit('check-in')">30s Stretch</button>
-      </div>
-    </article>
-
-    <!-- Weekly theme + streak -->
-    <article class="box">
-      <div class="row between">
-        <h5 class="box-title">Weekly Theme: Colorful Week</h5>
-        <div class="muted">Resets in {{ bodyProps.countdown }}</div>
-      </div>
-
-      <div class="row wrap gap">
-        <button class="chip" @click="$emit('check-in')">Log 1 serving</button>
-        <span class="muted"> {{ Math.min(bodyProps.weekCount, bodyProps.weekGoal) }}/{{ bodyProps.weekGoal }}</span>
-        <span class="muted"> • Streak: <b>{{ bodyProps.streak }}</b> 🔥 (Best {{ bodyProps.bestStreak }})</span>
-      </div>
-
-      <div class="bar">
-        <div class="bar-fill" :style="{ width: (Math.min(bodyProps.weekCount, bodyProps.weekGoal)/bodyProps.weekGoal*100)+'%' }"></div>
-      </div>
-    </article>
-
-    <!-- Water tracker -->
-    <article class="box">
-      <div class="row between">
-        <h5 class="box-title">Water today</h5>
-        <button class="chip ghost" @click="$emit('reset-water')" aria-label="Reset">↺</button>
-      </div>
-      <div class="dots">
-        <button v-for="i in 8" :key="i" class="dot" :class="{ on: i <= bodyProps.waterGlasses }" @click="$emit('set-water', i)"></button>
-      </div>
-    </article>
-  </section>
-</template>
 
 <style scoped>
-/* Desktop panel wrapper */
+/* Desktop wrapper */
 .tips-panel{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:10px 12px; position: sticky; top:84px;
@@ -271,6 +285,7 @@ const bodyProps = defineProps({
 .tip-text{ margin:0 0 6px; line-height:1.45; }
 .tip-bullets{ margin:6px 0 0 18px; padding:0; line-height:1.45; }
 .tip-actions{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+
 .btn{ background:#4f46e5; color:#fff; border:0; padding:6px 10px; border-radius:8px; font-weight:700; cursor:pointer; }
 .btn.ghost{ background:transparent; border:1px dashed #4f46e5; color:#cfd3ff; }
 .heart{ background:#1f2230; border:1px solid #343a55; color:#e7e9f0; padding:6px 10px; border-radius:8px; font-weight:800; cursor:pointer; }
@@ -292,6 +307,6 @@ const bodyProps = defineProps({
 .dot{ width:16px; height:16px; border-radius:50%; border:1px solid #4a4e69; background:#161923; cursor:pointer; }
 .dot.on{ background:#22c55e; border-color:#22c55e; }
 
-/* Mobile body wrapper（仅内容，不带抽屉皮肤） */
+/* Mobile wrapper（仅内容体） */
 .tips-mobile{ padding:0; }
 </style>
