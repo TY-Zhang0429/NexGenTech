@@ -276,7 +276,7 @@ app.get("/api/recipes/search", async (req, res) => {
         r.directions,
         r.ingredients,
         r.created_at,
-        CONCAT(LOWER(REPLACE(r.title, ' ', '_')), '.png') as image_filename
+        r.title as image_filename
       FROM \`${DB}\`.recipes r
       WHERE 1=1
     `;
@@ -303,7 +303,7 @@ app.get("/api/recipes/search", async (req, res) => {
         NULL as directions,
         NULL as ingredients,
         tr.created_at,
-        CONCAT(LOWER(REPLACE(tr.recipe_name, ' ', '_')), '.png') as image_filename
+        tr.recipe_name as image_filename
       FROM \`${DB}\`.teen_recipes tr
       WHERE 1=1
     `;
@@ -443,7 +443,7 @@ app.get("/api/recipes/:source/:id", async (req, res) => {
           ingredients,
           created_at,
           updated_at,
-          CONCAT(LOWER(REPLACE(title, ' ', '_')), '.png') as image_filename
+          title as image_filename
         FROM \`${DB}\`.recipes 
         WHERE id = ?
       `;
@@ -470,7 +470,7 @@ app.get("/api/recipes/:source/:id", async (req, res) => {
           NULL as ingredients,
           created_at,
           updated_at,
-          CONCAT(LOWER(REPLACE(recipe_name, ' ', '_')), '.png') as image_filename
+          recipe_name as image_filename
         FROM \`${DB}\`.teen_recipes 
         WHERE id = ?
       `;
@@ -531,7 +531,7 @@ app.get("/api/recipes/popular", async (req, res) => {
           category,
           calories,
           (prep_time_minutes + COALESCE(cook_time_minutes, 0)) as total_time,
-          CONCAT(LOWER(REPLACE(title, ' ', '_')), '.png') as image_filename,
+          title as image_filename,
           created_at,
           1 as priority
         FROM \`${DB}\`.recipes
@@ -547,7 +547,7 @@ app.get("/api/recipes/popular", async (req, res) => {
           category,
           calories,
           NULL as total_time,
-          CONCAT(LOWER(REPLACE(recipe_name, ' ', '_')), '.png') as image_filename,
+          recipe_name as image_filename,
           created_at,
           2 as priority
         FROM \`${DB}\`.teen_recipes

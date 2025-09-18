@@ -115,7 +115,7 @@
             >
               <div class="recipe-image-container">
                 <img 
-                  :src="`/food_icons/unsweet_iced_tea.png`" 
+                  :src="`/food_icons/${recipe.image_filename}.png`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
                 />
@@ -363,7 +363,7 @@ const toggleFavorite = (recipe) => {
   console.log('Toggle favorite for:', recipe.recipe_name);
 };
 
-// Image error handler removed - using hardcoded image for testing
+// Removed handleImageError to prevent repeated placeholder calls
 
 const getCategoryEmoji = (category) => {
   const emojiMap = {
