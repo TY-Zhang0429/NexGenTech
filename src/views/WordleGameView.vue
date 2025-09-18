@@ -32,7 +32,7 @@
     <div class="wd-notice" v-if="loading">Loading words…</div>
     <div class="wd-notice wd-error" v-else-if="error">{{ error }}</div>
 
-    <!-- ===== Desktop stage: LEFT (instructions) | CENTER (board+keyboard) | RIGHT (ghost) ===== -->
+    <!-- ===== Desktop stage: LEFT | CENTER | RIGHT ===== -->
     <div class="wd-stage" v-if="!loading && !error">
       <!-- LEFT: two independent collapsible cards -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
@@ -149,63 +149,10 @@
         </div>
       </main>
 
-      <!-- RIGHT: Health tips (desktop only) -->
-      <aside class="wd-right-tips" aria-label="Healthy Tips (desktop)">
-        <!-- Collapsed state keeps width so the board stays centered -->
-        <div v-if="!tipsOpen" class="tips-collapsed">
-          <button class="wd-btn ghost" @click="openTips" aria-label="Show tips">Health Tips</button>
-        </div>
-
-        <div v-else class="tips-wrap">
-          <header class="tips-header">
-            <strong>Health Tips</strong>
-            <div class="spacer"></div>
-            <button class="icon" @click="prevTip" aria-label="Previous tip">‹</button>
-            <button class="icon" @click="nextTip" aria-label="Next tip">›</button>
-            <button class="icon close" @click="closeTips" aria-label="Hide tips">×</button>
-          </header>
-
-          <article class="tip-card">
-            <div class="tip-tag">{{ currentTip.tag }}</div>
-            <h4 class="tip-title">{{ currentTip.title }}</h4>
-            <p class="tip-text">{{ currentTip.text }}</p>
-            <ul v-if="currentTip.bullets?.length" class="tip-bullets">
-              <li v-for="(b,i) in currentTip.bullets" :key="i">{{ b }}</li>
-            </ul>
-
-            <div class="tip-actions">
-              <button class="wd-btn mini" @click="markDone">I’ll try it</button>
-              <button class="wd-btn ghost mini" @click="shuffleTip">Shuffle</button>
-              <button
-                class="heart"
-                :class="{ active: liked[currentTip.id] }"
-                @click="toggleLike(currentTip.id)"
-                :aria-pressed="!!liked[currentTip.id]"
-                aria-label="Like this tip"
-              >♥</button>
-            </div>
-
-            <div v-if="tipToast" class="tip-toast">{{ tipToast }}</div>
-          </article>
-
-          <!-- Tiny tracker: water glasses today -->
-          <section class="mini-track">
-            <div class="mini-title">Water today</div>
-            <div class="dots">
-              <button
-                v-for="i in 8"
-                :key="i"
-                class="dot"
-                :class="{ on: i <= waterGlasses }"
-                @click="setWater(i)"
-                :aria-label="`Glasses ${i}`"
-              ></button>
-              <button class="reset" @click="setWater(0)" aria-label="Reset water count">↺</button>
-            </div>
-          </section>
-        </div>
-      </aside>
-
+      <!-- RIGHT: lazy-loaded health tips (desktop only) -->
+      <div class="wd-right-col">
+        <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+      </div>
     </div>
 
     <!-- Confetti -->
@@ -215,9 +162,12 @@
 
 <script setup>
 /* ===== Imports ===== */
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, defineAsyncComponent } from 'vue';
 import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
+
+/* Lazy load RightTips component */
+const RightTips = defineAsyncComponent(() => import('@/components/RightTips.vue'));
 
 const API_BASE = '';
 
@@ -480,98 +430,6 @@ function triggerRowShake(r) {
   shakingRows.add(r);
   setTimeout(() => shakingRows.delete(r), 600);
 }
-
-/* ===== Health tips (desktop right column) ===== */
-// Tip list (simple, editable later or from API)
-const tipsList = ref([
-  {
-    id: 'hydration',
-    tag: 'Hydration',
-    title: 'Drink a glass of water',
-    text: 'Dehydration can feel like hunger. Sip some water before your next snack.',
-    bullets: ['Try sparkling water + lemon', 'Keep a bottle within reach'],
-  },
-  {
-    id: 'color_plate',
-    tag: 'Micronutrients',
-    title: 'Eat the rainbow',
-    text: 'Add one colorful veggie/fruit to your next meal—fiber + vitamins!',
-    bullets: ['Ideas: bell pepper, berries, spinach'],
-  },
-  {
-    id: 'protein',
-    tag: 'Protein',
-    title: 'Palm-sized protein',
-    text: 'Aim for a palm-sized protein each meal to support satiety & recovery.',
-  },
-  {
-    id: 'movement',
-    tag: 'Movement',
-    title: '1-minute reset',
-    text: 'Stand up, roll shoulders, stretch neck & wrists. Quick reset boosts focus.',
-  },
-  {
-    id: 'swap',
-    tag: 'Smart swap',
-    title: 'Soda → sparkling water',
-    text: 'Cut ~140 kcal. Add citrus or mint for flavor without sugar.',
-  },
-]);
-
-const tipsOpen = ref(true);
-const tipIndex = ref(0);
-const currentTip = computed(() => tipsList.value[tipIndex.value]);
-
-// like / done — persisted in localStorage (lightweight personalization)
-const liked = reactive(JSON.parse(localStorage.getItem('tips_liked') || '{}'));
-const doneTips = reactive(JSON.parse(localStorage.getItem('tips_done') || '{}'));
-
-function saveLikes() { localStorage.setItem('tips_liked', JSON.stringify(liked)); }
-function saveDone()  { localStorage.setItem('tips_done', JSON.stringify(doneTips)); }
-
-function nextTip() { tipIndex.value = (tipIndex.value + 1) % tipsList.value.length; }
-function prevTip() { tipIndex.value = (tipIndex.value - 1 + tipsList.value.length) % tipsList.value.length; }
-function shuffleTip() { tipIndex.value = Math.floor(Math.random() * tipsList.value.length); }
-
-const tipToast = ref('');
-function toast(msg) { tipToast.value = msg; setTimeout(() => (tipToast.value = ''), 1200); }
-
-function toggleLike(id) {
-  liked[id] = !liked[id];
-  saveLikes();
-  toast(liked[id] ? 'Saved ❤️' : 'Unsaved');
-}
-function markDone() {
-  doneTips[currentTip.value.id] = true;
-  saveDone();
-  toast('Nice! 🙌');
-}
-
-function closeTips() { tipsOpen.value = false; localStorage.setItem('tips_open', '0'); }
-function openTips()  { tipsOpen.value = true;  localStorage.setItem('tips_open', '1'); }
-
-// restore open state
-onMounted(() => {
-  const persisted = localStorage.getItem('tips_open');
-  if (persisted === '0') tipsOpen.value = false;
-
-  // Water tracker restore/reset daily
-  const today = new Date().toISOString().slice(0, 10);
-  const savedDay = localStorage.getItem('water_day');
-  if (savedDay !== today) {
-    localStorage.setItem('water_day', today);
-    localStorage.setItem('water_glasses', '0');
-  }
-  waterGlasses.value = parseInt(localStorage.getItem('water_glasses') || '0', 10);
-});
-
-/* Mini water tracker */
-const waterGlasses = ref(0);
-function setWater(n) {
-  waterGlasses.value = n;
-  localStorage.setItem('water_glasses', String(n));
-}
-
 </script>
 
 <style scoped>
@@ -620,9 +478,6 @@ function setWater(n) {
 .wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
-
-/* RIGHT ghost mirrors left width */
-.wd-right-ghost{ flex: 0 0 300px; }
 
 /* Collapsible cards (smooth) */
 .wd-aside{
@@ -693,15 +548,10 @@ function setWater(n) {
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== HARD RESET visibility to avoid overrides ===== */
-.wd-mobile-panels { display: none !important; } /* hide mobile accordions on desktop */
-.wd-left-stack    { display: block !important; }
-.wd-right-ghost   { display: block !important; }
-
-/* ===== MOBILE (<=980px): board -> keyboard -> panels, with bordered cards ===== */
+/* ===== MOBILE (<=980px): board -> keyboard -> panels ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
-  .wd-left-stack, .wd-right-ghost{ display:none !important; }
+  .wd-left-stack{ display:none !important; }
 
   .wd-center{ display:flex; flex-direction:column; }
   .wd-board-col{ order:1; }
@@ -732,56 +582,7 @@ function setWater(n) {
   .wd-coll > *:not(summary){ margin-top:8px; }
 }
 
-/* ===== Right tips column (desktop) ===== */
-.wd-right-tips{
-  flex: 0 0 300px;             /* keep same width as left stack */
-  position: sticky;
-  top: 84px;
-}
-.tips-collapsed{ display:flex; justify-content:center; }
-.tips-wrap{ background:#10121a; border:1px solid #343644; border-radius:12px; padding:10px 12px; color:#cfd2dd; }
-
-.tips-header{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.tips-header .spacer{ flex:1; }
-.tips-header .icon{
-  background:#1f2230; border:1px solid #343a55; color:#e7e9f0;
-  width:28px; height:28px; border-radius:8px; cursor:pointer; line-height:26px;
-}
-.tips-header .icon.close{ width:28px; }
-
-.tip-card{ background:#0f1118; border:1px solid #2b2d3b; border-radius:10px; padding:10px; }
-.tip-tag{ font-size:12px; opacity:.8; margin-bottom:4px; }
-.tip-title{ margin:2px 0 6px; font-size:15px; font-weight:800; color:#e8e9f3; }
-.tip-text{ margin:0 0 6px; line-height:1.45; }
-.tip-bullets{ margin:6px 0 0 18px; padding:0; line-height:1.45; }
-
-.tip-actions{ display:flex; align-items:center; gap:8px; margin-top:8px; }
-.wd-btn.mini{ padding:4px 8px; font-size:13px; border-radius:8px; }
-.heart{
-  background:#1f2230; border:1px solid #343a55; color:#e7e9f0;
-  padding:4px 8px; border-radius:8px; cursor:pointer; font-weight:800;
-}
-.heart.active{ background:#e11d48; border-color:#e11d48; color:#0b0c0f; }
-
-.tip-toast{
-  margin-top:8px; font-size:12px; color:#bfe6c2;
-}
-
-/* Mini tracker */
-.mini-track{ margin-top:10px; background:#0f1118; border:1px solid #2b2d3b; border-radius:10px; padding:10px; }
-.mini-title{ font-weight:800; color:#e8e9f3; font-size:14px; margin-bottom:6px; }
-.dots{ display:flex; align-items:center; gap:6px; }
-.dot{
-  width:16px; height:16px; border-radius:50%; border:1px solid #4a4e69; background:#161923; cursor:pointer;
-}
-.dot.on{ background:#22c55e; border-color:#22c55e; }
-.reset{
-  background:#1f2230; color:#e7e9f0; border:1px solid #343a55; border-radius:8px; padding:2px 6px; font-size:12px; cursor:pointer;
-}
-
-/* Keep desktop-only; mobile hides right tips */
-@media (max-width: 980px){
-  .wd-right-tips{ display:none !important; }
-}
-
+/* ===== RIGHT column width holder (desktop only) ===== */
+.wd-right-col{ flex: 0 0 300px; }          /* keep same width as left */
+@media (max-width:980px){ .wd-right-col{ display:none !important; } }
 </style>
