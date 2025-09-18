@@ -4,7 +4,8 @@
     <img src="/assets/howitworkback.png" alt="background" class="background-image" />
     
     <div class="content-container">
-      <h1 class="main-title">Nutrient Panel Calculator</h1>
+      <h1 class="main-title">Mix, Match, Make It Yours</h1>
+      <p class="subtitle">Use the filters below to discover recipes that fit your vibe. Pick your prep time, choose your category, search ingredients - Find exactly what you're craving.</p>
       
       <!-- Filter Section -->
       <div class="filters-section">
@@ -39,9 +40,8 @@
                 :class="{ active: selectedCategories.includes(category.name) }"
                 @click="toggleCategory(category.name)"
               >
-                <span class="category-emoji">{{ category.emoji }}</span>
-                {{ category.name }}
-                <span class="category-count">({{ category.count }})</span>
+                <span class="category-emoji">{{ getCategoryEmoji(category.name) }}</span>
+                {{ capitalizeFirst(category.name) }}
               </button>
             </div>
           </div>
@@ -90,6 +90,42 @@
         </div>
       </div>
 
+      <!-- Pagination Controls (Top) -->
+      <div v-if="totalPages > 1" class="pagination-container-top">
+        <div class="pagination">
+          <button 
+            @click="prevPage" 
+            :disabled="currentPage === 1"
+            class="pagination-btn prev-btn"
+          >
+            ← Previous
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              v-for="page in totalPages" 
+              :key="page"
+              @click="goToPage(page)"
+              :class="['page-btn', { active: currentPage === page }]"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            @click="nextPage" 
+            :disabled="currentPage === totalPages"
+            class="pagination-btn next-btn"
+          >
+            Next →
+          </button>
+        </div>
+        
+        <div class="pagination-info">
+          Showing {{ ((currentPage - 1) * recipesPerPage) + 1 }} - {{ Math.min(currentPage * recipesPerPage, filteredRecipes.length) }} of {{ filteredRecipes.length }} recipes
+        </div>
+      </div>
+
       <!-- Recipe Grid Section -->
       <div class="recipes-section">
         <div class="white-overlay"></div>
@@ -108,17 +144,16 @@
 
           <div v-else class="recipes-grid">
             <div 
-              v-for="recipe in filteredRecipes" 
+              v-for="recipe in paginatedRecipes" 
               :key="recipe.unique_id"
               class="recipe-card"
               @click="selectRecipe(recipe)"
             >
               <div class="recipe-image-container">
                 <img 
-                  :src="`/food_icons/${recipe.image_filename}`" 
+                  :src="`/food_icons/${recipe.image_filename}.png`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
-                  @error="handleImageError"
                 />
                 <div class="recipe-overlay">
                   <button class="favorite-btn" @click.stop="toggleFavorite(recipe)">
@@ -130,7 +165,7 @@
               <div class="recipe-info">
                 <h3 class="recipe-title">{{ recipe.recipe_name }}</h3>
                 <div class="recipe-meta">
-                  <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ recipe.category }}</span>
+                  <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ capitalizeFirst(recipe.category) }}</span>
                   <span v-if="recipe.time_display" class="recipe-time">{{ recipe.time_display }}</span>
                 </div>
                 <div class="recipe-nutrition">
@@ -177,7 +212,7 @@
           <h3 class="section-title">Ingredients</h3>
           <ul class="ingredients-list">
             <li v-for="(ingredient, index) in selectedRecipe.ingredients" :key="index" class="ingredient-item">
-              {{ ingredient.name || ingredient }} {{ ingredient.amount ? `- ${ingredient.amount}` : '' }}
+              {{ capitalizeFirst(ingredient.name || ingredient) }}
             </li>
           </ul>
         </div>
@@ -238,11 +273,15 @@ const selectedTimeRange = ref('');
 const selectedCategories = ref([]);
 const selectedIngredients = ref([]);
 
+// Pagination state
+const currentPage = ref(1);
+const recipesPerPage = 10;
+
 // Filter options
 const timeRanges = ref([
   { value: '0-5', label: 'Super Quick (0-5 min)' },
   { value: '5-15', label: 'Quick Prep (5-15 min)' },
-  { value: '15-30', label: 'Some Time (15-30 min)' },
+  { value: '15-30', label: 'Half-Hour Hero (15-30 min)' },
   { value: '30+', label: 'Weekend Project (30+ min)' }
 ]);
 
@@ -278,18 +317,46 @@ const filteredRecipes = computed(() => {
       if (!selectedCategories.value.includes(recipe.category)) return false;
     }
 
-    // Ingredients filter
+    // Ingredients filter - Only apply if ingredients are selected
     if (selectedIngredients.value.length > 0) {
       if (!recipe.ingredients) return false;
-      const recipeIngredients = Array.isArray(recipe.ingredients) 
-        ? recipe.ingredients.map(ing => ing.name || ing).map(name => name.toLowerCase())
-        : [];
       
+      // Parse ingredients from JSON
+      let recipeIngredients = [];
+      try {
+        if (typeof recipe.ingredients === 'string') {
+          recipeIngredients = JSON.parse(recipe.ingredients);
+        } else if (Array.isArray(recipe.ingredients)) {
+          recipeIngredients = recipe.ingredients;
+        }
+      } catch (e) {
+        console.log('Error parsing ingredients for recipe:', recipe.recipe_name, e);
+        return false;
+      }
+      
+      // Extract ingredient names
+      const ingredientNames = recipeIngredients.map(ing => {
+        if (typeof ing === 'string') return ing.toLowerCase();
+        if (ing && ing.name) return ing.name.toLowerCase();
+        return '';
+      }).filter(name => name.length > 0);
+      
+      console.log('Recipe:', recipe.recipe_name);
+      console.log('Raw ingredients:', recipe.ingredients);
+      console.log('Parsed ingredients:', ingredientNames);
+      console.log('Selected ingredients:', selectedIngredients.value);
+      
+      // Check for ingredient matches - recipe must contain ANY selected ingredient (OR logic)
+      // Use word boundary matching to avoid partial matches (e.g., "ice" matching "lime juice")
       const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
-        recipeIngredients.some(recipeIng => 
-          recipeIng.includes(selectedIng.toLowerCase())
-        )
+        ingredientNames.some(recipeIng => {
+          // Create word boundary regex for exact word matching
+          const regex = new RegExp(`\\b${selectedIng.toLowerCase()}\\b`);
+          return regex.test(recipeIng);
+        })
       );
+      
+      console.log('Has matching ingredient:', hasMatchingIngredient);
       if (!hasMatchingIngredient) return false;
     }
 
@@ -301,6 +368,17 @@ const hasActiveFilters = computed(() => {
   return selectedTimeRange.value || 
          selectedCategories.value.length > 0 || 
          selectedIngredients.value.length > 0;
+});
+
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredRecipes.value.length / recipesPerPage);
+});
+
+const paginatedRecipes = computed(() => {
+  const start = (currentPage.value - 1) * recipesPerPage;
+  const end = start + recipesPerPage;
+  return filteredRecipes.value.slice(start, end);
 });
 
 // Methods
@@ -349,6 +427,26 @@ const clearFilters = () => {
   selectedIngredients.value = [];
   ingredientSearch.value = '';
   filteredIngredients.value = [];
+  currentPage.value = 1; // Reset to first page when clearing filters
+};
+
+// Pagination methods
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
 };
 
 const selectRecipe = (recipe) => {
@@ -364,21 +462,29 @@ const toggleFavorite = (recipe) => {
   console.log('Toggle favorite for:', recipe.recipe_name);
 };
 
-const handleImageError = (event) => {
-  event.target.src = '/assets/placeholder-food.png';
-};
+// Removed handleImageError to prevent repeated placeholder calls
 
 const getCategoryEmoji = (category) => {
   const emojiMap = {
     'breakfast': '🌅',
+    'snacks': '🍿',
     'snack': '🍿',
     'lunch': '🥙',
+    'main-meals': '🍽️',
     'dinner': '🍽️',
+    'desserts': '🍰',
     'dessert': '🍰',
+    'beverages': '🥤',
     'beverage': '🥤',
     'drink': '🥤'
   };
   return emojiMap[category?.toLowerCase()] || '🍽️';
+};
+
+// Function to capitalize first letter
+const capitalizeFirst = (str) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
 // API calls
@@ -408,8 +514,10 @@ const fetchFilterOptions = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+    console.log('Filter options data:', data); // Debug log
     categories.value = data.categories || [];
     allIngredients.value = data.ingredients || [];
+    console.log('Ingredients loaded:', allIngredients.value); // Debug log
   } catch (error) {
     console.error('Error fetching filter options:', error);
     // Set some default data for development
@@ -479,10 +587,24 @@ onMounted(() => {
   text-align: center;
   color: white;
   font-size: 3rem;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   position: relative;
   z-index: 1;
+}
+
+.subtitle {
+  text-align: center;
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
 .filters-section {
@@ -1115,6 +1237,115 @@ onMounted(() => {
     flex-direction: column;
     gap: 15px;
     text-align: center;
+  }
+}
+
+/* Pagination Styles */
+.pagination-container-top {
+  margin: 20px 0;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-container {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  background: #1a5536;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #2d7a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 5px;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #d4c4a8;
+  background: white;
+  color: #8b7765;
+  border-radius: 50%;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover {
+  border-color: #1a5536;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-btn.active {
+  background: #1a5536;
+  color: white;
+  border-color: #1a5536;
+}
+
+.pagination-info {
+  color: white;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-family: 'Merriweather', serif;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .pagination-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .page-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 0.8rem;
+  }
+  
+  .pagination-info {
+    font-size: 0.8rem;
   }
 }
 </style>

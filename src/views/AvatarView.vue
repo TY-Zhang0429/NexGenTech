@@ -33,7 +33,7 @@
         <div v-if="activeTab === 'default'" class="default-sol-content">
           <div class="avatar-container">
             <div class="sol-card">
-              <img src="/assets/sol.png" alt="Sol Avatar" class="avatar-image" />
+              <img src="/assets/avatara.png" alt="Sol Avatar" class="avatar-image" />
               <button 
                 class="select-button" 
                 :class="{ 'already-selected': isAvatarAlreadySelected }"
@@ -68,12 +68,12 @@
 
         <div v-else class="create-avatar-content">
           <!-- 问卷前的介绍卡片 -->
-          <div v-if="!showQuestionnaire" class="avatar-intro-card">
+          <div v-if="!showQuestionnaire && !showAvatarComplete" class="avatar-intro-card">
             <h2 class="create-title">Create Your Own</h2>
             
             <div class="create-description">
               <p>Want a representative that feels more you?</p>
-              <p>Create your own personalized avatar based on a quick 10-question quiz.</p>
+              <p>Create your own personalized avatar based on a quick 5-question questionaire.</p>
             </div>
             
             <hr class="card-divider" />
@@ -93,6 +93,27 @@
             </button>
           </div>
           
+          <!-- 头像完成页面 -->
+          <div v-else-if="showAvatarComplete" class="avatar-complete-container">
+            <div class="avatar-complete-card">
+              <h2 class="avatar-complete-title">Your Avatar</h2>
+              
+              <div class="avatar-image-container">
+                <img :src="getSelectedAvatar()" alt="Your Avatar" class="completed-avatar-image" />
+              </div>
+              
+              <div class="avatar-name-section">
+                <div class="avatar-name-placeholder">{{ getAvatarName() }}</div>
+              </div>
+              
+              <button class="select-avatar-button" @click="selectCreatedAvatar">
+                Select Avatar
+              </button>
+              
+              <p class="completion-message">You can start any game or activity now.</p>
+            </div>
+          </div>
+          
           <!-- 问卷界面 -->
           <div v-else class="questionnaire-container">
             <div class="questionnaire-card">
@@ -100,7 +121,7 @@
                 <h2 class="create-title">Create Your Own</h2>
                 <div class="create-description">
                   <p>Want a representative that feels more you?</p>
-                  <p>Create your own personalized avatar based on a quick 10-question quiz.</p>
+                  <p>Create your own personalized avatar based on a quick 5-question quiz.</p>
                 </div>
               </div>
               
@@ -133,12 +154,21 @@
                   </ul>
                 </div>
                 
-                <button 
-                  class="next-button" 
-                  @click="answerAndNext(userAnswers[currentQuestion-1])"
-                  :disabled="!userAnswers[currentQuestion-1]">
-                  Next
-                </button>
+                <div class="navigation-buttons">
+                  <button 
+                    v-if="currentQuestion > 1"
+                    class="previous-button" 
+                    @click="goToPrevious">
+                    Previous
+                  </button>
+                  
+                  <button 
+                    class="next-button" 
+                    @click="answerAndNext(userAnswers[currentQuestion-1])"
+                    :disabled="!userAnswers[currentQuestion-1]">
+                    {{ currentQuestion === totalQuestions ? 'Submit' : 'Next' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -165,6 +195,9 @@ const successMessage = ref('Sol Selected!');
 // 控制问卷界面显示
 const showQuestionnaire = ref(false);
 
+// 控制头像完成页面显示
+const showAvatarComplete = ref(false);
+
 // 当前问题
 const currentQuestion = ref(1);
 const totalQuestions = ref(5);
@@ -176,20 +209,20 @@ const questions = ref([
     options: ["Always", "Sometimes", "Rarely", "Never"]
   },
   {
-    question: "Does your daily meal consist of fruits and vegetables?",
-    options: ["Always", "Sometimes", "Rarely", "Never"]
+    question: "How often do you consume sugary drinks or sugary snacks like donut, soft drinks in a week?",
+    options: ["0 times", "1-2 times", "3-4 times", "5 or more times"]
   },
   {
-    question: "Does your daily meal consist of fruits and vegetables?",
-    options: ["Always", "Sometimes", "Rarely", "Never"]
+    question: "When you are enjoying time with your friends, do their food choices affect yours?",
+    options: ["Never", "Maybe", "Rarely", "Always"]
   },
   {
-    question: "Does your daily meal consist of fruits and vegetables?",
-    options: ["Always", "Sometimes", "Rarely", "Never"]
+    question: "If you find a delicious but potentially unhealthy dish, how likely are you to try it?",
+    options: ["Never", "Maybe", "Rarely", "Always"]
   },
   {
-    question: "Does your daily meal consist of fruits and vegetables?",
-    options: ["Always", "Sometimes", "Rarely", "Never"]
+    question: "Which of the following foods would you prefer to eat for dinner?",
+    options: ["Vegetables/salad", "Rice/pasta/noodles", "Meat/seafood", "Takeaway"]
   }
 ]);
 
@@ -221,6 +254,7 @@ const selectSol = () => {
   
   // 设置选择状态并存储到localStorage
   localStorage.setItem('avatarSelected', 'true');
+  localStorage.setItem('avatarType', 'avatara');
   isAvatarAlreadySelected.value = true;
   
   // 设置并显示成功消息
@@ -243,6 +277,8 @@ const resetAvatar = () => {
   // 重置localStorage中的状态
   localStorage.removeItem('avatarSelected');
   localStorage.removeItem('avatarPosition');
+  localStorage.removeItem('avatarType');
+  localStorage.removeItem('avatarEvolved');
   
   // 更新当前状态
   isAvatarAlreadySelected.value = false;
@@ -263,6 +299,7 @@ const resetAvatar = () => {
 // 打开问卷
 const openQuestionnaire = () => {
   showQuestionnaire.value = true;
+  showAvatarComplete.value = false;
   currentQuestion.value = 1;
   userAnswers.value = [];
 };
@@ -280,13 +317,64 @@ const answerAndNext = (answer) => {
   }
 };
 
+// 返回上一题
+const goToPrevious = () => {
+  if (currentQuestion.value > 1) {
+    currentQuestion.value--;
+  }
+};
+
+// 获取选择的头像图片
+const getSelectedAvatar = () => {
+  // 计算选择第一个选项(Always/0 times/Never等)的次数
+  const firstOptionCount = userAnswers.value.filter((answer, index) => {
+    return answer === questions.value[index].options[0];
+  }).length;
+  
+  // 如果选择了2个或更多第一个选项，返回avatara，否则返回avatarb
+  return firstOptionCount >= 2 ? '/assets/avatarb.png' : '/assets/avatarc.png';
+};
+
+// 获取头像名字
+const getAvatarName = () => {
+  const avatarSrc = getSelectedAvatar();
+  if (avatarSrc.includes('avatarb')) {
+    return 'Harry';
+  } else if (avatarSrc.includes('avatarc')) {
+    return 'David';
+  }
+  return 'Sol';
+};
+
+// 获取头像类型（用于保存到localStorage）
+const getAvatarType = () => {
+  const avatarSrc = getSelectedAvatar();
+  if (avatarSrc.includes('avatarb')) {
+    return 'avatarb';
+  } else if (avatarSrc.includes('avatarc')) {
+    return 'avatarc';
+  }
+  return 'avatara';
+};
+
 // 提交问卷
 const submitQuestionnaire = () => {
   // 在这里处理用户的所有回答
   console.log('问卷已提交', userAnswers.value);
   
-  // 展示成功消息
-  successMessage.value = 'Avatar Created!';
+  // 显示头像完成页面
+  showAvatarComplete.value = true;
+};
+
+// 选择创建的头像
+const selectCreatedAvatar = () => {
+  // 设置选择状态并存储到localStorage
+  localStorage.setItem('avatarSelected', 'true');
+  localStorage.setItem('avatarType', getAvatarType());
+  isAvatarAlreadySelected.value = true;
+  
+  // 设置并显示成功消息
+  successMessage.value = 'Avatar Selected!';
   showSuccessMessage.value = true;
   
   // 设置提示消息2秒后消失
@@ -295,16 +383,14 @@ const submitQuestionnaire = () => {
     
     // 重置问卷状态
     showQuestionnaire.value = false;
+    showAvatarComplete.value = false;
     
-    // 设置已选择头像状态
-    localStorage.setItem('avatarSelected', 'true');
-    isAvatarAlreadySelected.value = true;
-    
-    // 通知DraggableAvatar组件更新状态
-    if (avatarComponent.value) {
-      avatarComponent.value.checkAvatarSelected();
-    }
   }, 2000);
+  
+  // 通知DraggableAvatar组件更新状态
+  if (avatarComponent.value) {
+    avatarComponent.value.checkAvatarSelected();
+  }
 };
 </script>
 
@@ -624,10 +710,10 @@ const submitQuestionnaire = () => {
 
 .questionnaire-button {
   font-family: 'Merriweather', serif;
-  background-color: #d9d9d9;
-  color: #333333;
+  background-color: #1d5737;
+  color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 25px;
   padding: 14px 30px;
   font-size: 18px;
   cursor: pointer;
@@ -637,7 +723,7 @@ const submitQuestionnaire = () => {
 }
 
 .questionnaire-button:hover {
-  background-color: #c9c9c9;
+  background-color: #2c8a56;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -736,6 +822,32 @@ const submitQuestionnaire = () => {
   color: #333333;
 }
 
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+}
+
+.previous-button {
+  font-family: 'Merriweather', serif;
+  background-color: #e0e0e0;
+  color: #333333;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.previous-button:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 .next-button {
   font-family: 'Merriweather', serif;
   background-color: #1a5536;
@@ -746,7 +858,6 @@ const submitQuestionnaire = () => {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  float: right;
   transition: all 0.3s ease;
 }
 
@@ -762,6 +873,92 @@ const submitQuestionnaire = () => {
   opacity: 0.7;
 }
 
+/* 头像完成页面样式 */
+.avatar-complete-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 400px;
+}
+
+.avatar-complete-card {
+  background-color: #fffaeb;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 100%;
+}
+
+.avatar-complete-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 30px;
+}
+
+.avatar-image-container {
+  margin-bottom: 30px;
+}
+
+.completed-avatar-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 15px;
+  border-radius: 10px;
+}
+
+.avatar-image-label {
+  font-size: 18px;
+  color: #333333;
+  margin: 0;
+}
+
+.avatar-name-section {
+  margin-bottom: 30px;
+}
+
+.avatar-name-placeholder {
+  background-color: #a8c4a2;
+  color: #333333;
+  padding: 15px 25px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 150px;
+}
+
+.select-avatar-button {
+  font-family: 'Merriweather', serif;
+  background-color: #1a5536;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 15px 40px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.select-avatar-button:hover {
+  background-color: #2c8a56;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.completion-message {
+  font-size: 18px;
+  color: #8b4513;
+  margin: 0;
+  font-style: italic;
+}
+
 /* 响应式调整 */
 @media (max-width: 992px) {
   .questionnaire-card {
@@ -770,6 +967,19 @@ const submitQuestionnaire = () => {
   
   .questionnaire-header {
     margin-bottom: 20px;
+  }
+  
+  .navigation-buttons {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .previous-button {
+    order: 2;
+  }
+  
+  .next-button {
+    order: 1;
   }
 }
 
@@ -780,6 +990,15 @@ const submitQuestionnaire = () => {
   
   .sol-card {
     margin: 0 auto;
+  }
+  
+  .avatar-complete-card {
+    padding: 30px 20px;
+  }
+  
+  .completed-avatar-image {
+    width: 150px;
+    height: 150px;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <section class="wordly wordly-page">
+  <section ref="pageRoot" class="wordly wordly-page">
     <!-- Optional: draggable avatar -->
     <DraggableAvatar />
 
@@ -33,6 +33,7 @@
     </header>
 
     <!-- ===== Tagline (requested) ===== -->
+    <h1 class="wd-title">Wordle</h1>
     <p class="wd-tagline">Engage in Word play and find the correct word</p>
 
     <!-- Loading / Error -->
@@ -271,6 +272,28 @@ const tipsOpen = ref(false);
 let mq;
 function handleMQ(e){ isNarrow.value = e.matches; if (!e.matches) tipsOpen.value = false; }
 
+/* === Local CSS var target (we won't touch other components) === */
+const pageRoot = ref(null);
+
+/* Measure the sticky top nav height WITHOUT modifying that component */
+function setLocalTopnavVar() {
+  // Find the header that has class "nav" (your TopNav component)
+  const nav = document.querySelector('header.nav');
+  const h = nav?.offsetHeight || 66; // safe fallback
+  const el = pageRoot.value || document.documentElement;
+
+  // Write CSS custom properties on the page root only
+  el.style.setProperty('--topnav-h', `${h}px`);
+
+  // Also provide a safe-area aware variable when supported
+  if (window.CSS?.supports?.('top: env(safe-area-inset-top)')) {
+    el.style.setProperty('--topnav-h-safe', `calc(${h}px + env(safe-area-inset-top))`);
+  }
+}
+
+/* Observe nav size changes without touching the nav component */
+let navRO = null;
+
 /* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
@@ -283,6 +306,16 @@ onMounted(async () => {
     mq = window.matchMedia('(max-width: 980px)');
     isNarrow.value = mq.matches;
     mq.addEventListener('change', handleMQ);
+
+    // Set CSS var for topnav height and keep it fresh
+    setLocalTopnavVar();
+    window.addEventListener('resize', setLocalTopnavVar);
+    window.addEventListener('orientationchange', setLocalTopnavVar);
+    const nav = document.querySelector('header.nav');
+    if (nav && 'ResizeObserver' in window) {
+      navRO = new ResizeObserver(setLocalTopnavVar);
+      navRO.observe(nav);
+    }
   } catch (e) {
     error.value = 'Failed to load words. Please retry later.';
   } finally {
@@ -293,6 +326,9 @@ onBeforeUnmount(() => {
   if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
   mq?.removeEventListener('change', handleMQ);
+  navRO?.disconnect?.();
+  window.removeEventListener('resize', setLocalTopnavVar);
+  window.removeEventListener('orientationchange', setLocalTopnavVar);
   stopConfetti();
 });
 
@@ -500,6 +536,16 @@ function triggerRowShake(r) {
   position: relative;
 }
 
+.wd-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  margin: 6px 0 10px;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+
 /* Full-screen fixed background */
 .wordly-page::before {
   content: '';
@@ -706,16 +752,21 @@ function triggerRowShake(r) {
 }
 .tips-fab:active{ transform: translateY(1px); }
 
+/* Mask honors nav height (no global changes required) */
 .tips-mask{
-  position: fixed; inset: 0;
+  position: fixed;
+  top: var(--topnav-h-safe, var(--topnav-h, 66px));
+  bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,.35);
   z-index: 998;
 }
 
-/* Right slide-out panel */
+/* Right slide-out panel (starts below nav height) */
 .tips-drawer{
   position: fixed;
-  top: 0; bottom: 0; right: -80%;
+  top: var(--topnav-h-safe, var(--topnav-h, 66px));
+  bottom: 0;
+  right: -80%;
   width: min(80vw, 340px);
   background: #0f1117;
   border-left: 1px solid #343644;

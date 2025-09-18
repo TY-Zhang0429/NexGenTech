@@ -1,5 +1,15 @@
 <template>
-  <div class="match3 game-wrapper">
+  <!-- root carries CSS vars like --topnav-h -->
+  <div ref="pageRoot" class="match3 game-wrapper">
+    <!-- 引入可拖动头像组件 -->
+    <DraggableAvatar ref="avatarComponent" />
+    
+    <!-- 游戏完成提示框和模糊遮罩 -->
+    <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
+    <div v-if="showGameCompleteMessage" class="game-complete-message">
+      {{ gameCompleteMessage }}
+    </div>
+    
     <h1>Healthy Match-3</h1>
 
     <!-- HUD -->
@@ -10,20 +20,18 @@
         <div class="pill">Score <strong>{{ score }}</strong></div>
       </div>
 
-      <!-- 右侧信息块：棕色圆角底提升对比度 -->
+      <!-- Right HUD block with brown rounded background for contrast -->
       <div class="hud-right">
         <div class="goal-row">
           <span>Goal {{ levelGoals[level - 1] }}</span>
           <div class="bar">
             <div
               class="bar-fill"
-              :style="{
-                width: Math.min(100, Math.round((score / levelGoals[level-1]) * 100)) + '%'
-              }"
+              :style="{ width: Math.min(100, Math.round((score / levelGoals[level-1]) * 100)) + '%' }"
             ></div>
           </div>
         </div>
-        <div class="tip">Reminder：{{ tip }}</div>
+        <div class="tip">Reminder: {{ tip }}</div>
         <button class="btn" @click="init">Restart</button>
 
 
@@ -37,9 +45,9 @@
       </div>
     </div>
 
-    <!-- 主区域：左侧说明 | 中间棋盘 | 右侧健康提示（桌面） -->
+    <!-- Main area: Left legend | Center board | Right tips (desktop only) -->
     <div class="board-row">
-      <!-- 左：说明卡片 -->
+      <!-- Left: Legend card (brown background for higher readability) -->
       <div class="legend">
         <h3>Special Blocks</h3>
         <ul>
@@ -48,24 +56,22 @@
         </ul>
       </div>
 
-      <!-- 中：棋盘 -->
+      <!-- Center: Board -->
       <div ref="board" class="board" aria-label="game board">
         <div ref="tiles" class="tiles-layer"></div>
         <div ref="fx" class="fx-layer"></div>
       </div>
 
-      <!-- 右：健康提示（桌面端显示） -->
+      <!-- Right: Health tips (desktop only) -->
       <aside class="side-tips">
         <RightTips mode="desktop" />
       </aside>
     </div>
 
-    <!-- 移动端：悬浮按钮 -->
-    <button class="tips-fab" @click="tipsOpen = true" aria-label="Open Health Tips">
-      💡
-    </button>
+    <!-- Mobile: floating action button to open tips drawer -->
+    <button class="tips-fab" @click="tipsOpen = true" aria-label="Open Health Tips">💡</button>
 
-    <!-- 移动端：右侧抽屉 -->
+    <!-- Mobile: right slide-out drawer (positioned below TopNav) -->
     <div class="tips-drawer" :class="{ open: tipsOpen }" aria-hidden="!tipsOpen">
       <div class="drawer-header">
         <strong>Health Tips</strong>
@@ -75,19 +81,30 @@
         <RightTips mode="mobile" />
       </div>
     </div>
+
+    <!-- Mobile: dimmed mask (starts below TopNav too) -->
     <div class="drawer-mask" :class="{ show: tipsOpen }" @click="tipsOpen = false"></div>
   </div>
 </template>
 
 <script>
+/**
+ * Full SFC for the Match-3 page.
+ * - Does NOT modify your global TopNav. We only read its height.
+ * - Measures TopNav height and writes CSS vars on this page root:
+ *   --topnav-h and --topnav-h-safe (with safe-area inset).
+ * - Mobile drawer & mask are offset from the TopNav height, so they won't be covered.
+ */
 import confetti from "canvas-confetti";
 import RightTips from "@/components/RightTips.vue";
+import DraggableAvatar from "@/components/DraggableAvatar.vue";
 
 export default {
   name: "Match3View",
-  components: { RightTips },
+  components: { RightTips, DraggableAvatar },
   data() {
     return {
+      // Game constants/state
       SIZE: 10,
       TYPES: ["🍎","🥦","🥕","🥛","🍞","🧃","🍌","🍇"],
       CELL: 48,
@@ -99,11 +116,55 @@ export default {
       tip: "——",
       selected: null,
       animating: false,
-      tipsOpen: false, // 移动端抽屉开关
+
+      // Mobile drawer state
+      tipsOpen: false,
+
+      // 游戏完成状态
+      showGameCompleteMessage: false,
+      gameCompleteMessage: '',
+
+      // internal observer
+      navRO: null,
     };
   },
-  mounted(){ this.init(); },
+  mounted() {
+    // Init game
+    this.init();
+
+    // Set CSS vars for TopNav height on this page only
+    this.setLocalTopnavVar();
+    window.addEventListener("resize", this.setLocalTopnavVar);
+    window.addEventListener("orientationchange", this.setLocalTopnavVar);
+
+    // Recompute on TopNav size changes
+    const nav = document.querySelector("header.nav");
+    if (nav && "ResizeObserver" in window) {
+      this.navRO = new ResizeObserver(this.setLocalTopnavVar);
+      this.navRO.observe(nav);
+    }
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.setLocalTopnavVar);
+    window.removeEventListener("orientationchange", this.setLocalTopnavVar);
+    this.navRO?.disconnect?.();
+  },
   methods: {
+    /** Measure TopNav height and write --topnav-h(, --topnav-h-safe) onto the page root */
+    setLocalTopnavVar() {
+      const nav = document.querySelector("header.nav");
+      const h = nav?.offsetHeight || 66; // fallback if the nav isn't found
+      const el = this.$refs.pageRoot;
+      if (!el) return;
+      el.style.setProperty("--topnav-h", `${h}px`);
+      if (window.CSS?.supports?.("top: env(safe-area-inset-top)")) {
+        el.style.setProperty("--topnav-h-safe", `calc(${h}px + env(safe-area-inset-top))`);
+      } else {
+        el.style.setProperty("--topnav-h-safe", `${h}px`);
+      }
+    },
+
+    // ======== Game utilities ========
     rnd(n){ return Math.floor(Math.random()*n); },
     randomType(){ return this.TYPES[this.rnd(this.TYPES.length)]; },
     idx(r,c){ return r*this.SIZE+c; },
@@ -111,6 +172,7 @@ export default {
     tilesEl(){ return this.$refs.tiles; },
     fxEl(){ return this.$refs.fx; },
 
+    /** Reset and render a fresh board */
     init(){
       this.grid = Array(this.SIZE*this.SIZE).fill(null).map(()=>this.randomType());
       this.score=0; this.moves=15; this.level=1; this.tip="——";
@@ -134,6 +196,7 @@ export default {
       this.render();
     },
 
+    /** Paint tiles into the layer */
     render(){
       const board=this.$refs.board;
       board.style.width  = `${this.SIZE*this.CELL}px`;
@@ -167,6 +230,7 @@ export default {
       }
     },
 
+    /** Click FX */
     spawnClickRipple(i){
       const [r,c]=this.rc(i);
       const d=document.createElement("div");
@@ -177,6 +241,7 @@ export default {
       setTimeout(()=>d.remove?.(), 450);
     },
 
+    /** Tile click handler: select / swap / resolve */
     async onTileClick(i, el){
       if(this.animating) return;
 
@@ -212,10 +277,12 @@ export default {
       this.unhighlight(); this.selected=null;
     },
 
+    /** Selection helpers */
     highlight(i){ const el=this.tilesEl().children[i]; el && el.classList.add("tile-selected"); },
     unhighlight(){ [...this.tilesEl().children].forEach(el=>el.classList.remove("tile-selected")); },
     adjacent(a,b){ const [ar,ac]=this.rc(a), [br,bc]=this.rc(b); return Math.abs(ar-br)+Math.abs(ac-bc)===1; },
 
+    /** Swap with animation; reverse=true swaps back */
     swapWithAnimation(a,b,reverse=false){
       this.animating=true;
       const A=this.tilesEl().children[a], B=this.tilesEl().children[b];
@@ -236,8 +303,10 @@ export default {
       }
     },
 
+    /** Pure pre-check if a swap would create any 3+ matches (no special spawns) */
     findMatchesPure(g){
       const matched=new Set();
+      // rows
       for(let r=0;r<this.SIZE;r++){
         let run=1;
         for(let c=1;c<=this.SIZE;c++){
@@ -247,6 +316,7 @@ export default {
           else{ if(run>=3) for(let k=1;k<=run;k++) matched.add(this.idx(r,c-k)); run=1; }
         }
       }
+      // cols
       for(let c=0;c<this.SIZE;c++){
         let run=1;
         for(let r=1;r<=this.SIZE;r++){
@@ -265,9 +335,10 @@ export default {
       jiggle(A); jiggle(B);
     },
 
+    /** Real match finder (also spawns 💥/🌈 for runs of 4/5+) */
     findMatches(){
       const matched=new Set();
-      // 行
+      // rows
       for(let r=0;r<this.SIZE;r++){
         let run=1;
         for(let c=1;c<=this.SIZE;c++){
@@ -284,7 +355,7 @@ export default {
           }
         }
       }
-      // 列
+      // cols
       for(let c=0;c<this.SIZE;c++){
         let run=1;
         for(let r=1;r<=this.SIZE;r++){
@@ -304,6 +375,7 @@ export default {
       return matched;
     },
 
+    /** Plan vertical gravity moves after removals */
     computeGravityPlan(){
       const temp=this.grid.slice();
       const moves=[];
@@ -324,6 +396,7 @@ export default {
       return { moves, nextGrid: temp };
     },
 
+    /** Animate falling tiles with per-column stagger */
     async animateGravity(moves){
       const layer=this.tilesEl();
       const steps=[];
@@ -336,6 +409,7 @@ export default {
         steps.push({ el, tx:tc*this.CELL, ty:tr*this.CELL, duration, delay });
       }
       if(!steps.length) return;
+      // force reflow then play
       layer.offsetHeight; await new Promise(requestAnimationFrame);
       const promises=[];
       for(const s of steps){
@@ -347,6 +421,7 @@ export default {
       await Promise.all(promises);
     },
 
+    /** Full cascade loop (remove → fall → refill → repeat) */
     async cascade(first){
       this.animating=true;
       await this.removeMatches(first);
@@ -357,6 +432,7 @@ export default {
         this.grid=nextGrid;
         this.render();
 
+        // Refill from top with slide-in
         const born=[];
         for(let i=0;i<this.grid.length;i++){
           if(this.grid[i]===null){ this.grid[i]=this.randomType(); born.push(i); }
@@ -383,6 +459,7 @@ export default {
       this.animating=false;
     },
 
+    /** Remove matched tiles with small FX and scoring */
     removeMatches(matches){
       this.score += matches.size*10;
       this.tip = [
@@ -412,10 +489,16 @@ export default {
           this.fxEl().appendChild(float);
           setTimeout(()=>float.remove?.(),600);
         }
-        setTimeout(()=>{ for(const i of matches){ if(this.grid[i]!=="💥" && this.grid[i]!=="🌈") this.grid[i]=null; } this.render(); res(); },240);
+        setTimeout(()=>{
+          for(const i of matches){
+            if(this.grid[i]!=="💥" && this.grid[i]!=="🌈") this.grid[i]=null;
+          }
+          this.render(); res();
+        },240);
       });
     },
 
+    /** Specials */
     triggerBomb(index){
       const [r]=this.rc(index);
       const sweep=document.createElement("div");
@@ -444,12 +527,16 @@ export default {
       this.cascade(this.findMatches()).then(this.checkWinLose);
     },
     animateSpecial(el){
-      return new Promise(res=>{ el.style.transition="transform .25s ease, opacity .25s ease"; el.style.transform+=" scale(1.3)"; el.style.opacity="0.5"; setTimeout(res,250); });
+      return new Promise(res=>{
+        el.style.transition="transform .25s ease, opacity .25s ease";
+        el.style.transform+=" scale(1.3)";
+        el.style.opacity="0.5";
+        setTimeout(res,250);
+      });
     },
 
 
-
-
+    /** Win/Lose check with confetti */
         //调试使用，用后删除！！！！！！！
         // 调试用作弊按钮：一键胜利
     cheatWin() {
@@ -457,16 +544,15 @@ export default {
       this.checkWinLose();
     },
 
-
-
-
     checkWinLose(){
       if(this.score>=this.levelGoals[this.level-1]){
         confetti({ particleCount:200, spread:120, origin:{ y:.6 } });
         setTimeout(()=>{
           alert("🎉 Level "+this.level+" Clear!");
           this.level++;
-          if(this.level>this.levelGoals.length){ alert("🏆 All Levels Complete!"); this.init(); }
+          if(this.level>this.levelGoals.length){ 
+            this.handleGameComplete();
+          }
           else{ this.moves=15; this.render(); }
         },500);
       }else if(this.moves<0 || (this.moves===0 && !this.animating)){
@@ -476,13 +562,44 @@ export default {
         setTimeout(()=>{ alert("❌ Game Over. Final Score: "+this.score); this.init(); },800);
       }
     },
+
+    // 处理游戏完成
+    handleGameComplete() {
+      const avatarType = localStorage.getItem('avatarType');
+      
+      if (avatarType === 'avatara') {
+        // 如果用户选择的是Sol头像，触发进化
+        this.gameCompleteMessage = 'Congratulations! Your avatar has evolved';
+        this.showGameCompleteMessage = true;
+        
+        // 保存进化状态到localStorage
+        localStorage.setItem('avatarEvolved', 'true');
+        
+        // 2秒后隐藏消息并通知头像组件更新
+        setTimeout(() => {
+          this.showGameCompleteMessage = false;
+          
+          // 通知DraggableAvatar组件检查状态
+          if (this.$refs.avatarComponent) {
+            this.$refs.avatarComponent.checkAvatarSelected();
+          }
+          
+          alert("🏆 All Levels Complete!");
+          this.init();
+        }, 2000);
+      } else {
+        // 如果用户选择的是自定义头像，只显示胜利效果
+        alert("🏆 All Levels Complete!");
+        this.init();
+      }
+    },
   }
 };
 </script>
 
-<!-- 不要 scoped -->
+<!-- DO NOT scope: background & drawer need to escape local scoping -->
 <style>
-/* 背景：固定铺满 */
+/* ===== Full-page dark, food-themed background (fixed) ===== */
 .match3.game-wrapper{
   position: relative;
 }
@@ -499,21 +616,20 @@ export default {
   pointer-events: none;
 }
 
+/* Layout & heading */
 .match3.game-wrapper{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .match3 h1{ letter-spacing:.5px; margin:10px 0 6px; text-shadow:0 2px 12px rgba(108,99,255,.25); }
 
-/* HUD */
+/* ===== HUD ===== */
 .match3 .hud{
   display:flex; gap:20px; align-items:center; justify-content:space-between;
   width:min(980px,94vw); margin:10px auto 6px;
 }
 .match3 .hud-left{ display:flex; gap:12px; flex-wrap:wrap; }
-.match3 .pill{
-  background:#1f2235; padding:8px 12px; border-radius:999px; border:1px solid #2f3350; color:#dfe6ff; font-size:14px;
-}
+.match3 .pill{ background:#1f2235; padding:8px 12px; border-radius:999px; border:1px solid #2f3350; color:#dfe6ff; font-size:14px; }
 .match3 .pill strong{ color:#ffd369; margin-left:6px; }
 
-/* 右侧信息块（棕色底） */
+/* Right HUD block (brown rounded) */
 .match3 .hud-right{
   display:grid; gap:8px; align-items:center;
   background: rgba(60,40,20,.9);
@@ -534,14 +650,14 @@ export default {
 }
 .match3 .btn:hover{ transform:translateY(-1px); background:#4a3522; }
 
-/* === 主区域：左说明 | 中棋盘 | 右健康提示 === */
+/* ===== Main Area: left legend | center board | right tips ===== */
 .match3 .board-row{
   display:flex; justify-content:center; align-items:flex-start; gap:22px;
   width: 100%;
   margin-top: 14px;
 }
 
-/* 左：说明卡片 */
+/* Left: legend card */
 .match3 .legend{
   flex:0 0 220px;
   padding:12px 14px;
@@ -555,7 +671,7 @@ export default {
 .match3 .legend ul{ margin:0; padding-left:18px; font-size:14px; }
 .match3 .legend li{ margin-bottom:6px; }
 
-/* 中：棋盘 */
+/* Center: board shell (no clipping) */
 .match3 .board{
   --bd-r: 16px; --gutter: 10px; --bd-bw: 1px;
   position:relative;
@@ -573,17 +689,17 @@ export default {
 }
 .match3 .fx-layer{ pointer-events:none; z-index:100; }
 
-/* 右：健康提示（桌面端显示） */
+/* Right: sticky health tips (desktop only) */
 .match3 .side-tips{
   flex:0 0 260px;
   position: sticky;
-  top: 92px;                   /* 与 HUD 有个落差，不挡视线 */
+  top: 92px; /* clear HUD */
   align-self: flex-start;
   display: block;
 }
 @media (max-width: 1100px){ .match3 .side-tips{ flex-basis: 220px; } }
 
-/* tile */
+/* ===== Tiles ===== */
 .match3 .tile{
   position:absolute;
   width:48px; height:48px; border-radius:10px; background:#3a3d5c; color:#fff;
@@ -606,7 +722,7 @@ export default {
   100%{ box-shadow:0 0 0 2px #6c63ff, 0 0 8px rgba(108,99,255,.35) }
 }
 
-/* fx */
+/* ===== FX ===== */
 .match3 .click-ripple{
   position:absolute; width:10px; height:10px; border-radius:50%;
   transform:translate(-50%,-50%); opacity:.8;
@@ -648,25 +764,31 @@ export default {
   to  { opacity:0;  transform:translate(-50%,-50%) scale(2.6) }
 }
 
-/* 移动端抽屉 & 悬浮按钮（<= 900px 显示） */
+/* ===== Mobile drawer & FAB (≤900px visible) ===== */
 .tips-fab{
   position: fixed;
-  right: 14px; bottom: 18px;
+  right: 14px; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   width: 48px; height: 48px; border-radius: 999px;
   border: 1px solid rgba(120,85,45,.6);
   background: rgba(60,40,20,.95);
   color:#ffd369; font-size:20px; font-weight:800;
   box-shadow: 0 6px 18px rgba(0,0,0,.35);
   cursor: pointer; display: none;
+  z-index: 1000;
 }
+.tips-fab:active{ transform: translateY(1px); }
+
+/* Drawer starts below TopNav using --topnav-h-safe */
 .tips-drawer{
-  position: fixed; top: 0; right: 0; bottom: 0;
+  position: fixed;
+  top: var(--topnav-h-safe, var(--topnav-h, 66px));
+  right: 0; bottom: 0;
   width: min(88vw, 360px);
   background: rgba(24,26,36,.98);
   border-left: 1px solid rgba(255,255,255,.06);
   transform: translateX(100%);
   transition: transform .28s ease;
-  z-index: 500;
+  z-index: 999;
   display: none;
 }
 .tips-drawer.open{ transform: translateX(0); }
@@ -675,18 +797,22 @@ export default {
   padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08);
   color:#fff;
 }
-.close-btn{
-  background: transparent; border:0; color:#fff; font-size:18px; cursor:pointer;
-}
-.drawer-body{ padding: 12px 14px; color:#e8e9f3; }
+.close-btn{ background: transparent; border:0; color:#fff; font-size:18px; cursor:pointer; }
+.drawer-body{ padding: 12px 14px; color:#e8e9f3; overflow:auto; height: 100%; }
+
+/* Mask also respects TopNav height */
 .drawer-mask{
-  position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none;
+  position: fixed;
+  top: var(--topnav-h-safe, var(--topnav-h, 66px));
+  left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none;
   transition: opacity .2s;
-  z-index: 480; display: none;
+  z-index: 998; display: none;
 }
 .drawer-mask.show{ opacity: 1; pointer-events: auto; }
 
-/* 响应式：窄屏时 侧栏隐藏，显示抽屉入口；legend 下移 */
+/* Responsive switch for mobile UI */
 @media (max-width: 900px){
   .match3 .board-row{
     flex-direction:column-reverse;
@@ -702,5 +828,43 @@ export default {
   .tips-drawer{ display: block; }
   .drawer-mask{ display: block; }
   .match3 .bar{ width:min(260px,56vw); }
+}
+
+/* ===== 游戏完成提示样式 ===== */
+.match3 .overlay-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+}
+
+.match3 .game-complete-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1a5536;
+  font-size: 36px;
+  font-weight: bold;
+  z-index: 1001;
+  text-align: center;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 </style>

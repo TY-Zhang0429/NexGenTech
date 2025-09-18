@@ -27,85 +27,95 @@ const spriteUrl = '/assets/walk-sprites.png'
 const frameW = ref(96)
 const frameH = ref(96)
 
+/* —— 可调参数 —— */
+const ENTER_EXTRA_PX = 16     // 再向门内推进的像素（按视觉可调 12~20）
+const ALIGN_PIVOT    = 0.38   // 以角色宽度的 38% 作为对齐点（更像以前脚对齐）
+
 // DOM references
 const sceneRef = ref(null)
 const avatarRef = ref(null)
 const doorRef = ref(null)
 
-// State management
+// State
 const state = reactive({
   tx: 0,
   ty: 0,
   running: false,
   doorGlow: false,
-  isDoorClosed: true  // default closed state
+  isDoorClosed: true
 })
 
 // door images
-const doorOpenImage = '/assets/door.png'      // door open image
-const doorClosedImage = '/assets/doorclose.png' // door closed image
+const doorOpenImage = '/assets/door.png'
+const doorClosedImage = '/assets/doorclose.png'
 
-// computed properties
+// computed
 const avatarStyle = computed(() => ({
   transform: `translateX(${state.tx}px)`,
   transition: state.running ? 'transform 2s ease-out' : 'none'
 }))
-
 const doorGlow = computed(() => state.doorGlow)
-
-const currentDoorImage = computed(() => {
-  return state.isDoorClosed ? doorClosedImage : doorOpenImage
-})
+const currentDoorImage = computed(() => (state.isDoorClosed ? doorClosedImage : doorOpenImage))
 
 // Methods
 function reset() {
   state.doorGlow = false
   state.running = false
-  state.isDoorClosed = true  // close the door on reset
+  state.isDoorClosed = true
 
-  // directly reset position without transition
   avatarRef.value.style.transition = 'none'
   state.tx = 0
   state.ty = 0
-
-  // force reflow
+  // 强制重排
+  // eslint-disable-next-line no-unused-expressions
   avatarRef.value.offsetHeight
   avatarRef.value.style.transition = ''
 }
 
-function calcDelta() {
+/** 计算从角色当前点到门的水平位移
+ *  extraPx: 额外推进多少像素到门内
+ *  align:   角色对齐点（0 左沿 ~ 1 右沿），默认 0.38 更贴近“前脚”
+ */
+function calcDelta(extraPx = 0, align = 0.5) {
   if (!sceneRef.value || !avatarRef.value || !doorRef.value) return { tx: 0, ty: 0 }
-  
+
   const a = avatarRef.value.getBoundingClientRect()
   const d = doorRef.value.getBoundingClientRect()
   const s = sceneRef.value.getBoundingClientRect()
-  
-  const ax = a.left - s.left + a.width/2
-  const ay = a.top - s.top + a.height/2
-  const dx = d.left - s.left + d.width/2
-  const dy = d.top - s.top + d.height/2
-  
+
+  // 以 align 作为角色的对齐参考，而不是几何中心
+  const ax = a.left - s.left + a.width * align
+  const ay = a.top - s.top + a.height / 2
+
+  // 门以几何中心 + 额外推进 px
+  const dx = d.left - s.left + d.width / 2 + extraPx
+  const dy = d.top - s.top + d.height / 2
+
   return { tx: dx - ax, ty: dy - ay }
 }
 
-function runToDoor() {
-  // reset avatar position
+function runToDoor(opts = {}) {
+  const extra = typeof opts.extraPx === 'number' ? opts.extraPx : ENTER_EXTRA_PX
+  const align = typeof opts.align === 'number' ? opts.align : ALIGN_PIVOT
+
+  // reset position
   avatarRef.value.style.transition = 'none'
   state.tx = 0
   state.ty = 0
   state.doorGlow = false
   state.running = false
-  state.isDoorClosed = false  // when spinning open the door
+  state.isDoorClosed = false // 打开门
 
-  // force reflow
+  // 强制重排
+  // eslint-disable-next-line no-unused-expressions
   avatarRef.value.offsetHeight
 
-  // then start new animation
+  // start animation
   requestAnimationFrame(() => {
     avatarRef.value.style.transition = ''
-    const { tx, ty } = calcDelta()
+    const { tx } = calcDelta(extra, align)
     if (!sceneRef.value) return
-    
+
     state.running = true
     state.tx = tx
     state.ty = 0
@@ -121,7 +131,7 @@ function handleResize() {
   reset()
 }
 
-// Lifecycle hooks
+// lifecycle
 onMounted(() => {
   const img = new Image()
   img.src = spriteUrl
@@ -129,10 +139,8 @@ onMounted(() => {
     frameW.value = Math.floor(img.naturalWidth / frames)
     frameH.value = img.naturalHeight
   }
-  
   window.addEventListener('resize', handleResize)
 })
-
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   state.running = false
@@ -151,11 +159,11 @@ defineExpose({ runToDoor, reset })
   background: transparent;
   overflow: visible !important;
   isolation: isolate;
-  /* add padding to create space for the glow effect */
-  padding: 40px;
+  padding: 40px;  /* 为门光留空间 */
   margin: -40px;
 }
 
+/* 门盖在小人之上，进门更自然 */
 .door {
   position: absolute;
   right: 15%;
@@ -164,37 +172,32 @@ defineExpose({ runToDoor, reset })
   transition: all .3s var(--ease);
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
   transform-origin: bottom center;
-  z-index: 1;
+  z-index: 3;  /* ↑ */
 }
-
 .door::before {
   content: '';
   position: absolute;
-  inset: -80%;  /* add padding to create space for the glow effect */
+  inset: -80%;
   background: radial-gradient(
-    circle at center, 
-    rgba(255,210,90,0) 20%, 
-    rgba(255,210,90,0.25) 50%,  /* increase brightness of middle area */
+    circle at center,
+    rgba(255,210,90,0) 20%,
+    rgba(255,210,90,0.25) 50%,
     rgba(255,210,90,0) 70%
   );
   opacity: 0;
   transition: opacity .3s var(--ease);
   z-index: -1;
-  transform: scale(2);  /* increase overall scale */
+  transform: scale(2);
   pointer-events: none;
 }
-
 .door.glow {
-  filter: 
-    drop-shadow(0 0 25px rgba(255,210,90,0.9))  /* increase inner glow intensity and range */
-    drop-shadow(0 0 50px rgba(255,210,90,0.5))  /* increase middle glow intensity and range */
-    drop-shadow(0 0 75px rgba(255,210,90,0.3)); /* increase outer glow intensity and range */
+  filter:
+    drop-shadow(0 0 25px rgba(255,210,90,0.9))
+    drop-shadow(0 0 50px rgba(255,210,90,0.5))
+    drop-shadow(0 0 75px rgba(255,210,90,0.3));
   transform: translateY(-1px) scale(1.02);
 }
-
-.door.glow::before {
-  opacity: 1;
-}
+.door.glow::before { opacity: 1; }
 
 .avatar {
   position: absolute;
@@ -206,6 +209,7 @@ defineExpose({ runToDoor, reset })
   overflow: hidden;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
   transform-origin: bottom center;
+  z-index: 2; /* 低于门 */
 }
 
 .sprite-img {
@@ -219,17 +223,11 @@ defineExpose({ runToDoor, reset })
   image-rendering: pixelated;
   will-change: transform;
 }
-
 .avatar.running .sprite-img {
   animation: sprite-run 1.6s steps(24) infinite;
 }
-
 @keyframes sprite-run {
-  from {
-    background-position-x: 0;
-  }
-  to {
-    background-position-x: -2304px;
-  }
+  from { background-position-x: 0; }
+  to   { background-position-x: -2304px; }
 }
 </style>

@@ -200,20 +200,44 @@ app.get("/api/recipes/filters", async (_req, res) => {
       WHERE ingredients IS NOT NULL
     `);
 
+    console.log('Raw ingredient data rows:', ingredientData.length);
+    if (ingredientData.length > 0) {
+      console.log('First ingredient row:', ingredientData[0]);
+    }
+
     // Extract unique ingredients from JSON
     const allIngredients = new Set();
     ingredientData.forEach(row => {
       try {
-        const ingredients = JSON.parse(row.ingredients);
+        let ingredients;
+        
+        // Check if it's already a JavaScript array (not JSON string)
+        if (Array.isArray(row.ingredients)) {
+          ingredients = row.ingredients;
+        } else {
+          // Try to parse as JSON string
+          ingredients = JSON.parse(row.ingredients);
+        }
+        
+        console.log('Parsed ingredients for debugging:', ingredients);
+        
         if (Array.isArray(ingredients)) {
           ingredients.forEach(ing => {
-            if (ing.name) allIngredients.add(ing.name);
+            if (typeof ing === 'string') {
+              allIngredients.add(ing);
+            } else if (ing && ing.name) {
+              allIngredients.add(ing.name);
+            }
           });
         }
       } catch (e) {
+        console.log('Error parsing ingredients:', e.message, row.ingredients);
         // Skip invalid JSON
       }
     });
+
+    console.log('Total ingredients found:', allIngredients.size);
+    console.log('Sample ingredients:', Array.from(allIngredients).slice(0, 10));
 
     res.json({
       categories: categories.map(c => ({
@@ -276,7 +300,7 @@ app.get("/api/recipes/search", async (req, res) => {
         r.directions,
         r.ingredients,
         r.created_at,
-        CONCAT(LOWER(REPLACE(r.title, ' ', '_')), '.png') as image_filename
+        r.title as image_filename
       FROM \`${DB}\`.recipes r
       WHERE 1=1
     `;
@@ -303,7 +327,7 @@ app.get("/api/recipes/search", async (req, res) => {
         NULL as directions,
         NULL as ingredients,
         tr.created_at,
-        CONCAT(LOWER(REPLACE(tr.recipe_name, ' ', '_')), '.png') as image_filename
+        tr.recipe_name as image_filename
       FROM \`${DB}\`.teen_recipes tr
       WHERE 1=1
     `;
@@ -443,7 +467,7 @@ app.get("/api/recipes/:source/:id", async (req, res) => {
           ingredients,
           created_at,
           updated_at,
-          CONCAT(LOWER(REPLACE(title, ' ', '_')), '.png') as image_filename
+          title as image_filename
         FROM \`${DB}\`.recipes 
         WHERE id = ?
       `;
@@ -470,7 +494,7 @@ app.get("/api/recipes/:source/:id", async (req, res) => {
           NULL as ingredients,
           created_at,
           updated_at,
-          CONCAT(LOWER(REPLACE(recipe_name, ' ', '_')), '.png') as image_filename
+          recipe_name as image_filename
         FROM \`${DB}\`.teen_recipes 
         WHERE id = ?
       `;
@@ -531,7 +555,7 @@ app.get("/api/recipes/popular", async (req, res) => {
           category,
           calories,
           (prep_time_minutes + COALESCE(cook_time_minutes, 0)) as total_time,
-          CONCAT(LOWER(REPLACE(title, ' ', '_')), '.png') as image_filename,
+          title as image_filename,
           created_at,
           1 as priority
         FROM \`${DB}\`.recipes
@@ -547,7 +571,7 @@ app.get("/api/recipes/popular", async (req, res) => {
           category,
           calories,
           NULL as total_time,
-          CONCAT(LOWER(REPLACE(recipe_name, ' ', '_')), '.png') as image_filename,
+          recipe_name as image_filename,
           created_at,
           2 as priority
         FROM \`${DB}\`.teen_recipes
