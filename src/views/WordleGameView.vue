@@ -1,8 +1,12 @@
 <template>
-  <section class="wordly">
-    <!-- Avatar & Breadcrumbs -->
+  <section class="wordly wordly-page">
+    <!-- 可留可去：小乌龟头像 -->
     <DraggableAvatar />
-    <BreadcrumbNav />
+
+    <!-- ===== 顶部：Back 按钮 ===== -->
+    <div class="wd-topbar">
+      <button class="back-btn" @click="goBack">← Back</button>
+    </div>
 
     <!-- ===== Toolbar ===== -->
     <header class="wd-toolbar">
@@ -34,9 +38,8 @@
 
     <!-- ===== Desktop stage: LEFT | CENTER | RIGHT ===== -->
     <div class="wd-stage" v-if="!loading && !error">
-      <!-- LEFT: two independent collapsible cards -->
+      <!-- LEFT: collapsible cards -->
       <aside class="wd-left-stack" aria-label="Instructions (desktop)">
-        <!-- Card 1 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: playOpen }">
           <button class="wd-aside-toggle" @click="playOpen = !playOpen" :aria-expanded="playOpen">
             <span class="chev" :class="{ open: playOpen }">▸</span>
@@ -58,7 +61,6 @@
           </div>
         </div>
 
-        <!-- Card 2 -->
         <div class="wd-aside wd-aside-collapsible" :class="{ open: rulesOpen }">
           <button class="wd-aside-toggle" @click="rulesOpen = !rulesOpen" :aria-expanded="rulesOpen">
             <span class="chev" :class="{ open: rulesOpen }">▸</span>
@@ -105,7 +107,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions -->
+        <!-- Mobile-only accordions（桌面已强制隐藏） -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -133,7 +135,7 @@
           </details>
         </div>
 
-        <!-- On-screen keyboard INSIDE center column -->
+        <!-- On-screen keyboard -->
         <div class="wd-kbd">
           <div class="wd-row">
             <button v-for="k in row1" :key="k" class="wd-key" :class="keyState[k.toLowerCase()]" @click="press(k)">{{ k }}</button>
@@ -149,25 +151,55 @@
         </div>
       </main>
 
-      <!-- RIGHT: lazy-loaded health tips (desktop only) -->
+      <!-- RIGHT: tips（桌面专用） -->
       <div class="wd-right-col">
-        <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+        <RightTips mode="desktop" />
       </div>
     </div>
 
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
+
+    <!-- ===== MOBILE: 悬浮按钮 + 抽屉（只在 ≤980px 显示） ===== -->
+    <button
+      v-if="isNarrow"
+      class="tips-fab"
+      @click="tipsOpen = true"
+      aria-label="Open Health Tips"
+    >
+      💡
+    </button>
+
+    <div v-if="isNarrow" class="tips-drawer" :class="{ open: tipsOpen }" aria-modal="true" role="dialog">
+      <header class="tips-drawer__header">
+        <strong>Health Tips</strong>
+        <button class="tips-drawer__close" @click="tipsOpen = false" aria-label="Close">✕</button>
+      </header>
+      <div class="tips-drawer__body">
+        <!-- 在抽屉中渲染移动端的 tips 内容 -->
+        <RightTips mode="mobile" />
+      </div>
+      <footer class="tips-drawer__footer">
+        <button class="wd-btn ghost" @click="tipsOpen = false">Close</button>
+      </footer>
+    </div>
+
+    <!-- 抽屉遮罩 -->
+    <div v-if="isNarrow && tipsOpen" class="tips-mask" @click="tipsOpen = false"></div>
   </section>
 </template>
 
 <script setup>
-/* ===== Imports ===== */
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, defineAsyncComponent } from 'vue';
-import BreadcrumbNav from '@/components/BreadcrumbNav.vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
+import RightTips from '@/components/RightTips.vue';
 
-/* Lazy load RightTips component */
-const RightTips = defineAsyncComponent(() => import('@/components/RightTips.vue'));
+const router = useRouter();
+function goBack() {
+  if (window.history.length > 1) router.back();
+  else router.push('/discover-games');
+}
 
 const API_BASE = '';
 
@@ -221,6 +253,12 @@ const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
+/* ===== Responsive: narrow breakpoint (≤980px) & mobile drawer state ===== */
+const isNarrow = ref(false);
+const tipsOpen = ref(false);
+let mq;
+function handleMQ(e){ isNarrow.value = e.matches; if (!e.matches) tipsOpen.value = false; }
+
 /* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
@@ -228,6 +266,11 @@ onMounted(async () => {
     startGame();
     if (!isMobile) window.addEventListener('keydown', onKeydown, { passive: false });
     window.addEventListener('resize', resizeCanvas);
+
+    // init responsive flag
+    mq = window.matchMedia('(max-width: 980px)');
+    isNarrow.value = mq.matches;
+    mq.addEventListener('change', handleMQ);
   } catch (e) {
     error.value = 'Failed to load words. Please retry later.';
   } finally {
@@ -237,6 +280,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
+  mq?.removeEventListener('change', handleMQ);
   stopConfetti();
 });
 
@@ -433,13 +477,34 @@ function triggerRowShake(r) {
 </script>
 
 <style scoped>
-/* ===== Base container ===== */
+/* ===== Base ===== */
 .wordly{
   --cell: 52px;
   max-width: 1100px;
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
+  position: relative;
+}
+
+/* 全屏固定背景（与你 avatar 页同款写法） */
+.wordly-page::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image: url('/assets/wordle_bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: -1;
+}
+
+/* Topbar Back */
+.wd-topbar{ display:flex; align-items:center; margin-bottom:8px; }
+.back-btn{
+  background:#1f2230; color:#e7e9f0; border:1px solid #343a55;
+  padding:6px 12px; border-radius:10px; font-weight:700; cursor:pointer;
 }
 
 /* Toolbar */
@@ -458,12 +523,12 @@ function triggerRowShake(r) {
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT (pure flex) ===== */
+/* ===== LAYOUT ===== */
 .wd-stage{
   display:flex;
   align-items:flex-start;
-  justify-content:center;  /* center middle column geometrically */
-  gap: clamp(40px, 7vw, 120px);
+  justify-content:center;
+  gap:28px;
 }
 
 /* LEFT column */
@@ -474,12 +539,16 @@ function triggerRowShake(r) {
 }
 .wd-left-stack .wd-aside + .wd-aside{ margin-top:14px; }
 
-/* CENTER column */
+/* CENTER */
 .wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* Collapsible cards (smooth) */
+/* RIGHT placeholder width 等同左侧，避免改变中间列位置 */
+.wd-right-col{ flex: 0 0 300px; }
+@media (max-width:980px){ .wd-right-col{ display:none !important; } }
+
+/* Cards */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
@@ -498,7 +567,6 @@ function triggerRowShake(r) {
 }
 .wd-aside-collapsible.open .wd-aside-body{ max-height:900px; opacity:1; }
 
-/* Inner content */
 .wd-aside-title{ margin:2px 0 8px; font-size:15px; font-weight:800; color:#e8e9f3; }
 .wd-steps{ margin:0 0 8px 18px; padding:0; line-height:1.5; }
 .wd-legend{ margin:8px 0; }
@@ -508,8 +576,7 @@ function triggerRowShake(r) {
 
 /* Tiles */
 .wd-cell{
-  width:var(--cell); height:var(--cell);
-  display:grid; place-items:center;
+  width:var(--cell); height:var(--cell); display:grid; place-items:center;
   border:2px solid #343644; border-radius:8px;
   font-weight:800; font-size:20px; text-transform:uppercase;
   background:#16171d; color:#e6e6eb;
@@ -531,7 +598,7 @@ function triggerRowShake(r) {
 /* Confetti */
 .wd-confetti{ position:fixed; inset:0; pointer-events:none; background:transparent !important; z-index:9999; }
 
-/* On-screen keyboard */
+/* Keyboard */
 .wd-kbd{ max-width:640px; margin:18px auto 0; user-select:none; }
 .wd-row{ display:flex; justify-content:center; gap:8px; margin-top:8px; }
 .wd-key{ background:#1f2230; color:#e7e9f0; border:1px solid #343a55; padding:10px 12px; border-radius:8px; min-width:34px; font-weight:700; cursor:pointer; }
@@ -542,13 +609,35 @@ function triggerRowShake(r) {
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
 /* Sticky keyboard on desktop */
-@media (min-width: 981px){ .wd-kbd{ position: sticky; bottom: 0; } }
+@media (min-width: 981px){
+  .wordly{ --kbd-safe: 170px; }
+  .wd-kbd{
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: rgba(13,15,22,.75);
+    backdrop-filter: blur(3px);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  .wd-right-col{
+    position: sticky;
+    top: 84px;
+    align-self: flex-start;
+    max-height: calc(100vh - 84px - var(--kbd-safe));
+    z-index: 1;
+    margin-left: 20px;
+  }
+}
 
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== MOBILE (<=980px): board -> keyboard -> panels ===== */
+/* —— 默认隐藏移动面板 —— */
+.wd-mobile-panels{ display:none !important; }
+
+/* ===== MOBILE (<=980px) ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
@@ -560,8 +649,6 @@ function triggerRowShake(r) {
 
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
-
-  /* Card look for <details> */
   .wd-coll{
     display:block;
     background:#10121a;
@@ -582,15 +669,58 @@ function triggerRowShake(r) {
   .wd-coll > *:not(summary){ margin-top:8px; }
 }
 
-/* ===== RIGHT column width holder (desktop only) ===== */
-@media (min-width: 1100px){
-  .wd-right-col{
-    transform: translateX(14px);
-  }
-}          /* keep same width as left */
-@media (min-width: 1400px){
-  .wd-right-col{
-    transform: translateX(24px);
-  }
+/* ======= Mobile: 悬浮按钮 + 抽屉样式 ======= */
+.tips-fab{
+  position: fixed;
+  right: 14px;
+  bottom: 84px;           /* 避开虚拟键盘与屏幕键盘 */
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 0;
+  font-size: 22px;
+  font-weight: 700;
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  z-index: 1000;
+}
+.tips-fab:active{ transform: translateY(1px); }
+
+.tips-mask{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 998;
+}
+
+.tips-drawer{
+  position: fixed;
+  left: 0; right: 0; bottom: -70%;
+  height: 70%;
+  background: #0f1117;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -10px 30px rgba(0,0,0,.35);
+  transition: bottom .28s cubic-bezier(.2,.75,.25,1);
+  z-index: 999;
+  display: flex; flex-direction: column;
+  border: 1px solid #343644;
+}
+.tips-drawer.open{ bottom: 0; }
+
+.tips-drawer__header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #2a2c3a;
+  font-weight: 800; color:#e8e9f3;
+}
+.tips-drawer__close{
+  background: transparent; border: 0; color: #cfd3ff; font-size: 20px; cursor: pointer;
+}
+
+.tips-drawer__body{
+  padding: 10px 12px; overflow: auto; flex: 1;
+}
+.tips-drawer__footer{
+  padding: 10px 12px; border-top: 1px solid #2a2c3a;
 }
 </style>
