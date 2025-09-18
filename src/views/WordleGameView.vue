@@ -1,9 +1,9 @@
 <template>
-  <section class="wordly wordle-page">
-    <!-- avatar -->
+  <section class="wordly">
+    <!-- 可留可去：小乌龟头像 -->
     <DraggableAvatar />
 
-    <!-- Back -->
+    <!-- ===== 顶部：Back 按钮 ===== -->
     <div class="wd-topbar">
       <button class="back-btn" @click="goBack">← Back</button>
     </div>
@@ -107,7 +107,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions -->
+        <!-- Mobile-only accordions（桌面已强制隐藏） -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -151,7 +151,7 @@
         </div>
       </main>
 
-      <!-- RIGHT: tips -->
+      <!-- RIGHT: tips（桌面专用） -->
       <div class="wd-right-col">
         <RightTips mode="desktop" />
       </div>
@@ -170,6 +170,7 @@ import RightTips from '@/components/RightTips.vue';
 
 const router = useRouter();
 function goBack() {
+  // 有历史就后退，否则回列表页（按你的路由改）
   if (window.history.length > 1) router.back();
   else router.push('/discover-games');
 }
@@ -438,34 +439,6 @@ function triggerRowShake(r) {
 </script>
 
 <style scoped>
-/* ===== 页面背景：与 avatar-page 同款结构 ===== */
-.wordle-page { position: relative; z-index: 0; }
-
-/* 底图（放在 public/assets/wordle_bg.png） */
-.wordle-page::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-image: url('/assets/wordle_bg.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: -2;
-  filter: saturate(.9) brightness(.82);
-}
-
-/* 顶部轻微晕光 + 暗化，提升对比度 */
-.wordle-page::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 40rem at 50% -10%, rgba(79,70,229,.18), transparent 60%),
-    linear-gradient(180deg, rgba(5,7,12,.86), rgba(5,7,12,.94));
-}
-
 /* ===== Base ===== */
 .wordly{
   --cell: 52px;
@@ -519,31 +492,8 @@ function triggerRowShake(r) {
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* RIGHT placeholder width 等同左侧，避免改变中间列位置；并避免遮挡键盘 */
+/* RIGHT placeholder width 等同左侧，避免改变中间列位置 */
 .wd-right-col{ flex: 0 0 300px; }
-@media (min-width: 981px){
-  .wordly{ --kbd-safe: 170px; }
-
-  .wd-kbd{
-    position: sticky;
-    bottom: 0;
-    z-index: 40;                        /* 键盘压在右栏上方 */
-    background: rgba(13,15,22,.75);
-    backdrop-filter: blur(3px);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-  }
-
-  .wd-right-col{
-    position: sticky;
-    top: 84px;
-    align-self: flex-start;
-    max-height: calc(100vh - 84px - var(--kbd-safe));
-    overflow: hidden;                   /* 组件内部自己处理滚动 */
-    z-index: 1;                         /* 比键盘低，避免遮挡 */
-    margin-left: 20px;
-  }
-}
 @media (max-width:980px){ .wd-right-col{ display:none !important; } }
 
 /* Cards */
@@ -606,11 +556,39 @@ function triggerRowShake(r) {
 .wd-key.present{ background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
+/* Sticky keyboard on desktop */
+@media (min-width: 981px){
+  /* 你可以按实际键盘高度微调这个安全高度 */
+  .wordly{ --kbd-safe: 170px; } /* 右栏离视口底部预留的空间 */
+
+  .wd-kbd{
+    position: sticky;
+    bottom: 0;
+    z-index: 40;                        /* 让键盘压在右栏上方 */
+    background: rgba(13,15,22,.75);     /* 半透明底，避免内容“压”在键盘后看不清 */
+    backdrop-filter: blur(3px);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+
+  .wd-right-col{
+    /* 右栏本身吸顶，并限制最大高度，超出自己内部滚动 */
+    position: sticky;
+    top: 84px;                          /* 和左侧说明一致的吸顶距离 */
+    align-self: flex-start;
+    max-height: calc(100vh - 84px - var(--kbd-safe));
+    z-index: 1;                         /* 明确比键盘低 */
+    margin-left: 20px;                  /* 稍微再往右挪一点点，舒适一些 */
+  }
+}
+
+
+
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* —— 默认隐藏移动面板 —— */
+/* —— 关键：默认就隐藏移动面板（防止任何覆盖样式把它带出来） —— */
 .wd-mobile-panels{ display:none !important; }
 
 /* ===== MOBILE (<=980px): 仅在手机端显示折叠面板 ===== */
