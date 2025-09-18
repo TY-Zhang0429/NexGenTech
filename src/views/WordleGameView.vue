@@ -432,11 +432,19 @@ function triggerRowShake(r) {
 }
 </script>
 
+<!-- global styles -->
+<style>
+html{ scrollbar-gutter: stable both-edges; }
+@supports not (scrollbar-gutter: stable){
+  html{ overflow-y: scroll; }
+}
+</style>
+
 <style scoped>
 /* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -458,24 +466,23 @@ function triggerRowShake(r) {
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT (pure flex) ===== */
+/* ===== DESKTOP LAYOUT: fixed Grid，no impact from right column ===== */
 .wd-stage{
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;  /* center middle column geometrically */
-  gap: clamp(40px, 7vw, 120px);
+  display: grid;
+  grid-template-columns: 300px minmax(520px, 1fr) 300px;
+  column-gap: clamp(32px, 5vw, 80px);
+  align-items: start;
 }
 
 /* LEFT column */
 .wd-left-stack{
-  flex: 0 0 300px;
   position: sticky;
   top: 84px;
 }
 .wd-left-stack .wd-aside + .wd-aside{ margin-top:14px; }
 
 /* CENTER column */
-.wd-center{ flex: 0 1 auto; min-width: 420px; display:flex; flex-direction:column; }
+.wd-center{ min-width: 520px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
@@ -582,15 +589,10 @@ function triggerRowShake(r) {
   .wd-coll > *:not(summary){ margin-top:8px; }
 }
 
-/* ===== RIGHT column width holder (desktop only) ===== */
-@media (min-width: 1100px){
-  .wd-right-col{
-    transform: translateX(14px);
-  }
-}          /* keep same width as left */
-@media (min-width: 1400px){
-  .wd-right-col{
-    transform: translateX(24px);
-  }
+/* ===== RIGHT column (desktop only) ===== */
+.wd-right-col{ 
+  position: sticky;
+  top: 84px;
 }
+@media (max-width:980px){ .wd-right-col{ display:none !important; } }
 </style>
