@@ -149,11 +149,40 @@
         </div>
       </main>
 
-      <!-- RIGHT: lazy-loaded health tips (desktop only) -->
+      <!-- RIGHT: health tips (desktop only) -->
       <div class="wd-right-col">
         <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
       </div>
     </div>
+
+    <!-- ===== Mobile FAB + Bottom Sheet for Tips ===== -->
+    <button
+      class="mobile-tips-fab"
+      v-if="!loading && !error"
+      @click="openTipsSheet"
+      aria-label="Open health tips"
+    >
+      Health Tips
+    </button>
+
+    <transition name="tips-sheet-fade">
+      <div v-if="tipsSheetOpen" class="tips-sheet" role="dialog" aria-modal="true" aria-label="Health Tips">
+        <div class="tips-sheet-backdrop" @click="closeTipsSheet" />
+        <transition name="tips-sheet-slide">
+          <div class="tips-sheet-panel">
+            <div class="grabber" />
+            <div class="tips-sheet-header">
+              <strong>Health Tips</strong>
+              <button class="sheet-close" @click="closeTipsSheet" aria-label="Close tips">×</button>
+            </div>
+            <div class="tips-sheet-body">
+              <!-- 复用同一组件；无需改 RightTips -->
+              <RightTips :hint="currentHint" :difficulty="difficulty" :target-len="targetLen" />
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
 
     <!-- Confetti -->
     <canvas v-if="confettiRunning" ref="confettiCanvas" class="wd-confetti"></canvas>
@@ -221,6 +250,18 @@ const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
 const row2 = ['A','S','D','F','G','H','J','K','L'];
 const row3 = ['Z','X','C','V','B','N','M'];
 
+/* ===== Mobile Tips Sheet ===== */
+const tipsSheetOpen = ref(false);
+function openTipsSheet(){
+  tipsSheetOpen.value = true;
+  // 锁定背景滚动
+  document.documentElement.style.overflow = 'hidden';
+}
+function closeTipsSheet(){
+  tipsSheetOpen.value = false;
+  document.documentElement.style.overflow = '';
+}
+
 /* ===== Lifecycle ===== */
 onMounted(async () => {
   try {
@@ -238,6 +279,7 @@ onBeforeUnmount(() => {
   if (!isMobile) window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('resize', resizeCanvas);
   stopConfetti();
+  document.documentElement.style.overflow = '';
 });
 
 /* ===== API ===== */
@@ -432,7 +474,7 @@ function triggerRowShake(r) {
 }
 </script>
 
-<!-- global styles -->
+<!-- global: styles for scrollbar stability -->
 <style>
 html{ scrollbar-gutter: stable both-edges; }
 @supports not (scrollbar-gutter: stable){
@@ -444,7 +486,7 @@ html{ scrollbar-gutter: stable both-edges; }
 /* ===== Base container ===== */
 .wordly{
   --cell: 52px;
-  max-width: 1280px;
+  max-width: 1280px; 
   margin: 24px auto;
   padding: 0 16px 48px;
   color: #e6e6eb;
@@ -466,7 +508,7 @@ html{ scrollbar-gutter: stable both-edges; }
 .wd-notice{ background:#1b1c22; border:1px solid #343644; padding:10px 12px; border-radius:10px; margin:8px 0 16px; }
 .wd-error{ border-color:#b91c1c; color:#fecaca; }
 
-/* ===== DESKTOP LAYOUT: fixed Grid，no impact from right column ===== */
+/* ===== DESKTOP LAYOUT: three-column Grid（fixed layout，not affected by right column） ===== */
 .wd-stage{
   display: grid;
   grid-template-columns: 300px minmax(520px, 1fr) 300px;
@@ -474,19 +516,16 @@ html{ scrollbar-gutter: stable both-edges; }
   align-items: start;
 }
 
-/* LEFT column */
-.wd-left-stack{
-  position: sticky;
-  top: 84px;
-}
+/* LEFT */
+.wd-left-stack{ position: sticky; top: 84px; }
 .wd-left-stack .wd-aside + .wd-aside{ margin-top:14px; }
 
-/* CENTER column */
+/* CENTER */
 .wd-center{ min-width: 520px; display:flex; flex-direction:column; }
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* Collapsible cards (smooth) */
+/* Collapsible cards */
 .wd-aside{
   background:#10121a; border:1px solid #343644; border-radius:12px; color:#cfd2dd;
   padding:0; overflow:hidden;
@@ -555,10 +594,11 @@ html{ scrollbar-gutter: stable both-edges; }
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* ===== MOBILE (<=980px): board -> keyboard -> panels ===== */
+/* ===== MOBILE (<=980px): single column + mobile tips support ===== */
 @media (max-width: 980px){
   .wd-stage{ display:block !important; }
   .wd-left-stack{ display:none !important; }
+  .wd-right-col{ display:none !important; } /* desktop right column hidden */
 
   .wd-center{ display:flex; flex-direction:column; }
   .wd-board-col{ order:1; }
@@ -568,7 +608,7 @@ html{ scrollbar-gutter: stable both-edges; }
   .wordly{ --cell: 46px; }
   .wd-key{ padding:8px 10px; }
 
-  /* Card look for <details> */
+  /* <details> card with border */
   .wd-coll{
     display:block;
     background:#10121a;
@@ -587,12 +627,61 @@ html{ scrollbar-gutter: stable both-edges; }
   .wd-coll > summary::before{ content:'▸'; display:inline-block; transform:translateY(1px); opacity:.9; }
   .wd-coll[open] > summary::before{ content:'▾'; }
   .wd-coll > *:not(summary){ margin-top:8px; }
+
+  /* —— floating action button —— */
+  .mobile-tips-fab{
+    position: fixed;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); /* higher than keyboard */
+    z-index: 1000;
+    background:#4f46e5; color:#fff; border:0;
+    padding:10px 14px; border-radius:999px; font-weight:800;
+    box-shadow: 0 6px 18px rgba(79,70,229,.25);
+  }
+
+  /* —— Bottom Sheet —— */
+  .tips-sheet{ position:fixed; inset:0; z-index: 1001; }
+  .tips-sheet-backdrop{
+    position:absolute; inset:0; background:rgba(0,0,0,.35);
+  }
+  .tips-sheet-panel{
+    position:absolute; left:0; right:0;
+    bottom:0;
+    max-height: 80vh;
+    background:#10121a; color:#cfd2dd;
+    border:1px solid #343644; border-bottom:none;
+    border-top-left-radius:16px; border-top-right-radius:16px;
+    padding: 6px 0 10px;
+    box-shadow: 0 -12px 30px rgba(0,0,0,.35);
+    display:flex; flex-direction:column;
+  }
+  .grabber{ width:44px; height:4px; border-radius:2px; background:#4b4f66; margin:8px auto 6px; opacity:.9; }
+  .tips-sheet-header{
+    display:flex; align-items:center; padding:0 12px 6px; gap:8px;
+  }
+  .tips-sheet-header strong{ font-weight:800; color:#e8e9f3; }
+  .sheet-close{
+    margin-left:auto; background:transparent; border:1px solid #343a55; color:#e7e9f0;
+    width:28px; height:28px; border-radius:8px; line-height:26px;
+  }
+  .tips-sheet-body{
+    overflow:auto; padding:0 10px 6px;
+    /* RightTips in mobile */
+  }
+
+  /* enter/leave animations */
+  .tips-sheet-fade-enter-from, .tips-sheet-fade-leave-to{ opacity:0; }
+  .tips-sheet-fade-enter-active, .tips-sheet-fade-leave-active{ transition: opacity .18s ease; }
+
+  .tips-sheet-slide-enter-from{ transform: translateY(100%); }
+  .tips-sheet-slide-enter-active{ transition: transform .24s ease; }
+  .tips-sheet-slide-leave-to{ transform: translateY(100%); }
+  .tips-sheet-slide-leave-active{ transition: transform .22s ease; }
 }
 
 /* ===== RIGHT column (desktop only) ===== */
-.wd-right-col{ 
+.wd-right-col{
   position: sticky;
   top: 84px;
 }
-@media (max-width:980px){ .wd-right-col{ display:none !important; } }
 </style>
