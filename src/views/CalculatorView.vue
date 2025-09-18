@@ -317,10 +317,8 @@ const filteredRecipes = computed(() => {
       if (!selectedCategories.value.includes(recipe.category)) return false;
     }
 
-    // Ingredients filter - Apply if ingredients are selected OR if no other filters are active
-    const hasActiveTimeOrCategory = selectedTimeRange.value || selectedCategories.value.length > 0;
-    
-    if (selectedIngredients.value.length > 0 || !hasActiveTimeOrCategory) {
+    // Ingredients filter - Only apply if ingredients are selected
+    if (selectedIngredients.value.length > 0) {
       if (!recipe.ingredients) return false;
       
       // Parse ingredients from JSON
@@ -348,22 +346,15 @@ const filteredRecipes = computed(() => {
       console.log('Parsed ingredients:', ingredientNames);
       console.log('Selected ingredients:', selectedIngredients.value);
       
-      // If no ingredients are selected but we're in default mode, show all recipes
-      if (selectedIngredients.value.length === 0 && !hasActiveTimeOrCategory) {
-        return true;
-      }
+      // Check for ingredient matches
+      const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
+        ingredientNames.some(recipeIng => 
+          recipeIng.includes(selectedIng.toLowerCase())
+        )
+      );
       
-      // If ingredients are selected, check for matches
-      if (selectedIngredients.value.length > 0) {
-        const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
-          ingredientNames.some(recipeIng => 
-            recipeIng.includes(selectedIng.toLowerCase())
-          )
-        );
-        
-        console.log('Has matching ingredient:', hasMatchingIngredient);
-        if (!hasMatchingIngredient) return false;
-      }
+      console.log('Has matching ingredient:', hasMatchingIngredient);
+      if (!hasMatchingIngredient) return false;
     }
 
     return true;
