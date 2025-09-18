@@ -1,10 +1,9 @@
 <template>
-  <!-- 挂上 has-bg 并把图片作为 CSS 变量传进来 -->
-  <section class="wordly has-bg" :style="{ '--bg-img': `url(${bgPattern})` }">
-    <!-- 可留可去：小乌龟头像 -->
+  <section class="wordly wordle-page">
+    <!-- avatar -->
     <DraggableAvatar />
 
-    <!-- ===== 顶部：Back 按钮 ===== -->
+    <!-- Back -->
     <div class="wd-topbar">
       <button class="back-btn" @click="goBack">← Back</button>
     </div>
@@ -108,7 +107,7 @@
           />
         </div>
 
-        <!-- Mobile-only accordions（桌面已强制隐藏） -->
+        <!-- Mobile-only accordions -->
         <div class="wd-mobile-panels">
           <details class="wd-coll">
             <summary>How to Play</summary>
@@ -152,7 +151,7 @@
         </div>
       </main>
 
-      <!-- RIGHT: tips（桌面专用） -->
+      <!-- RIGHT: tips -->
       <div class="wd-right-col">
         <RightTips mode="desktop" />
       </div>
@@ -168,12 +167,11 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'v
 import { useRouter } from 'vue-router';
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 import RightTips from '@/components/RightTips.vue';
-import bgPattern from '../assets/wordle_bg.png'; // 背景图
 
 const router = useRouter();
 function goBack() {
   if (window.history.length > 1) router.back();
-  else router.push('/discover-games'); // 按你的路由改
+  else router.push('/discover-games');
 }
 
 const API_BASE = '';
@@ -440,36 +438,32 @@ function triggerRowShake(r) {
 </script>
 
 <style scoped>
-/* ===== 背景（深色 + 卡通底纹） ===== */
-:global(body){ background-color:#0b0f17; }
+/* ===== 页面背景：与 avatar-page 同款结构 ===== */
+.wordle-page { position: relative; z-index: 0; }
 
-.wordly.has-bg{ position:relative; z-index:0; }
-/* 底纹：使用传入的 CSS 变量 --bg-img */
-.wordly.has-bg::before{
-  content:"";
-  position:fixed; inset:0;
-  z-index:-2;
-  background-image:var(--bg-img);
-  background-repeat:repeat;
-  background-size:280px 280px;      /* 可按需要调密度 */
-  filter:saturate(.9) brightness(.82);
+/* 底图（放在 public/assets/wordle_bg.png） */
+.wordle-page::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url('/assets/wordle_bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: -2;
+  filter: saturate(.9) brightness(.82);
 }
-/* 顶层暗化罩层与轻微晕光，保证可读性 */
-.wordly.has-bg::after{
-  content:"";
-  position:fixed; inset:0;
-  z-index:-1;
-  pointer-events:none;
+
+/* 顶部轻微晕光 + 暗化，提升对比度 */
+.wordle-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(60rem 40rem at 50% -10%, rgba(79,70,229,.18), transparent 60%),
     linear-gradient(180deg, rgba(5,7,12,.86), rgba(5,7,12,.94));
-}
-@media (max-width:980px){
-  .wordly.has-bg::after{
-    background:
-      radial-gradient(45rem 30rem at 50% -10%, rgba(79,70,229,.14), transparent 60%),
-      linear-gradient(180deg, rgba(5,7,12,.82), rgba(5,7,12,.92));
-  }
 }
 
 /* ===== Base ===== */
@@ -525,8 +519,31 @@ function triggerRowShake(r) {
 .wd-board-col{ display:flex; justify-content:center; }
 .wd-board{ display:grid; grid-template-rows:repeat(6,var(--cell)); gap:10px; perspective:900px; }
 
-/* RIGHT 占位宽度与左一致，且为吸顶面板 */
+/* RIGHT placeholder width 等同左侧，避免改变中间列位置；并避免遮挡键盘 */
 .wd-right-col{ flex: 0 0 300px; }
+@media (min-width: 981px){
+  .wordly{ --kbd-safe: 170px; }
+
+  .wd-kbd{
+    position: sticky;
+    bottom: 0;
+    z-index: 40;                        /* 键盘压在右栏上方 */
+    background: rgba(13,15,22,.75);
+    backdrop-filter: blur(3px);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+
+  .wd-right-col{
+    position: sticky;
+    top: 84px;
+    align-self: flex-start;
+    max-height: calc(100vh - 84px - var(--kbd-safe));
+    overflow: hidden;                   /* 组件内部自己处理滚动 */
+    z-index: 1;                         /* 比键盘低，避免遮挡 */
+    margin-left: 20px;
+  }
+}
 @media (max-width:980px){ .wd-right-col{ display:none !important; } }
 
 /* Cards */
@@ -589,35 +606,11 @@ function triggerRowShake(r) {
 .wd-key.present{ background:#eab308; border-color:#eab308; color:#0b0c0f; }
 .wd-key.absent{ background:#272935; border-color:#3a3d4b; color:#9aa0ad; }
 
-/* Sticky keyboard on desktop —— 不与右栏互挡 */
-@media (min-width: 981px){
-  .wordly{ --kbd-safe: 170px; } /* 右栏离底部预留空间，可调 */
-
-  .wd-kbd{
-    position: sticky;
-    bottom: 0;
-    z-index: 40;                        /* 键盘在右栏之上 */
-    background: rgba(13,15,22,.75);
-    backdrop-filter: blur(3px);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-  }
-
-  .wd-right-col{
-    position: sticky;
-    top: 84px;
-    align-self: flex-start;
-    max-height: calc(100vh - 84px - var(--kbd-safe));
-    z-index: 1;                         /* 明确低于键盘 */
-    margin-left: 20px;                  /* 右移一点更舒适 */
-  }
-}
-
 /* Shake */
 .wd-cell.shaking{ animation: wd-shake .6s ease; }
 @keyframes wd-shake{ 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-6px)} 30%,60%,90%{transform:translateX(6px)} }
 
-/* —— 默认隐藏移动面板，避免桌面露出 —— */
+/* —— 默认隐藏移动面板 —— */
 .wd-mobile-panels{ display:none !important; }
 
 /* ===== MOBILE (<=980px): 仅在手机端显示折叠面板 ===== */
