@@ -115,7 +115,7 @@
             >
               <div class="recipe-image-container">
                 <img 
-                  :src="recipe.image_url" 
+                  :src="`/food_icons/${recipe.image_filename}`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
                   @error="handleImageError"
