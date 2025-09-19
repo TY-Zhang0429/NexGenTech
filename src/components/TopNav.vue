@@ -2,7 +2,7 @@
   <header class="nav">
     <div class="nav__left">
       <img class="logo" src="@/assets/logo.png" alt="Logo" />
-      <span class="brand-name">NexGen</span>
+      <span class="brand-name">NexGenTech</span>
     </div>
 
     <!-- 汉堡菜单按钮 -->
