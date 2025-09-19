@@ -530,6 +530,8 @@ export default {
       this.fxEl().appendChild(wave);
       setTimeout(()=>wave.remove?.(), 600);
 
+      this.grid[index] = null;
+
       const type=this.TYPES[this.rnd(this.TYPES.length)];
       for(let j=0;j<this.grid.length;j++) if(this.grid[j]===type) this.grid[j]=null;
       this.render();
