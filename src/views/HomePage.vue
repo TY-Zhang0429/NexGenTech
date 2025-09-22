@@ -12,7 +12,7 @@
         <div class="glow-effect"></div>
       </div>
       <div class="hero-content">
-        <p class="hero-subtitle">“Every choice matters — swap junk for power-ups, fuel your body with the right foods, and watch your health (and your avatar) level up. With NexGen, healthy eating is no longer boring, it's your new adventure.”</p>
+        <p class="hero-subtitle">“Play, Learn and make smarter food choices while the avatar evolves with your progress.”</p>
         <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
         <button class="avatar-btn" @click="navigateToAvatar">Create Your Avatar</button>
       </div>
@@ -767,8 +767,8 @@ const navigateToCalculator = () => {
   width: 100%;
   text-align: center;
   padding: 1rem;
-  margin-top: 6rem; /* Move title upward by reducing top margin */
-  margin-bottom: -4rem; /* Reduce negative margin to move content up */
+  margin-top: 8rem; /* Move title upward by reducing top margin */
+  margin-bottom: -7rem; /* Reduce negative margin to move content up */
   color: #ffffff;
   font-size: 3.5rem;
   font-weight: bold;
