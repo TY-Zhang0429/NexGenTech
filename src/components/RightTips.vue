@@ -19,7 +19,7 @@
         </ul>
 
         <div class="tip-actions">
-          <button class="btn" @click="markDone(); checkIn()">I’ll try it</button>
+          <button class="btn" @click="markDone()/*; checkIn()*/">I’ll try it</button>
           <button class="btn ghost" @click="shuffleTip">Shuffle</button>
           <button
             class="heart"
@@ -31,7 +31,7 @@
       </article>
 
       <!-- Mini challenges (with countdown timer) -->
-      <article class="box">
+      <!-- <article class="box">
         <h5 class="box-title">Mini Challenges</h5>
 
         <div class="challenge">
@@ -51,10 +51,10 @@
             <div class="mini-fill" :style="{ width: (stretch.pct * 100) + '%' }"></div>
           </div>
         </div>
-      </article>
+      </article> -->
 
       <!-- weekly goals + streak + countdown -->
-      <article class="box">
+      <!-- <article class="box">
         <div class="row between">
           <h5 class="box-title">Weekly Theme: Colorful Week</h5>
           <div class="muted">Resets in {{ countdownText }}</div>
@@ -69,10 +69,10 @@
         <div class="bar">
           <div class="bar-fill" :style="{ width: (Math.min(weekCount, WEEK_GOAL)/WEEK_GOAL*100)+'%' }"></div>
         </div>
-      </article>
+      </article> -->
 
       <!-- water times -->
-      <article class="box">
+      <!-- <article class="box">
         <div class="row between">
           <h5 class="box-title">Water today</h5>
           <button class="chip ghost" @click="setWater(0)" aria-label="Reset">↺</button>
@@ -80,7 +80,7 @@
         <div class="dots">
           <button v-for="i in 8" :key="i" class="dot" :class="{ on: i <= waterGlasses }" @click="setWater(i)" />
         </div>
-      </article>
+      </article> -->
     </section>
   </aside>
 
@@ -96,7 +96,7 @@
         </ul>
 
         <div class="tip-actions">
-          <button class="btn" @click="markDone(); checkIn()">I’ll try it</button>
+          <button class="btn" @click="markDone()/*; checkIn()*/">I’ll try it</button>
           <button class="btn ghost" @click="shuffleTip">Shuffle</button>
           <button
             class="heart"
@@ -107,7 +107,8 @@
         </div>
       </article>
 
-      <article class="box">
+      <!-- Mini challenges (with countdown timer) -->
+      <!-- <article class="box">
         <h5 class="box-title">Mini Challenges</h5>
 
         <div class="challenge">
@@ -127,9 +128,10 @@
             <div class="mini-fill" :style="{ width: (stretch.pct * 100) + '%' }"></div>
           </div>
         </div>
-      </article>
-
-      <article class="box">
+      </article> -->
+        
+      <!-- weekly goals + streak + countdown -->
+      <!-- <article class="box">
         <div class="row between">
           <h5 class="box-title">Weekly Theme: Colorful Week</h5>
           <div class="muted">Resets in {{ countdownText }}</div>
@@ -144,9 +146,11 @@
         <div class="bar">
           <div class="bar-fill" :style="{ width: (Math.min(weekCount, WEEK_GOAL)/WEEK_GOAL*100)+'%' }"></div>
         </div>
-      </article>
+      </article> -->
 
-      <article class="box">
+
+      <!-- water times -->
+      <!-- <article class="box">
         <div class="row between">
           <h5 class="box-title">Water today</h5>
         </div>
@@ -154,7 +158,7 @@
           <button v-for="i in 8" :key="i" class="dot" :class="{ on: i <= waterGlasses }" @click="setWater(i)" />
           <button class="chip ghost" @click="setWater(0)" aria-label="Reset">↺</button>
         </div>
-      </article>
+      </article> -->
     </section>
   </div>
 </template>
@@ -204,130 +208,130 @@ function toggleLike(id){
 }
 
 /* ========= Weekly / streak ========= */
-const WEEK_GOAL = 5;
-const streak = ref(parseInt(localStorage.getItem('ht_streak') || '0', 10));
-const bestStreak = ref(parseInt(localStorage.getItem('ht_best') || '0', 10));
-const lastCheckDate = ref(localStorage.getItem('ht_last') || ''); // YYYY-MM-DD
+// const WEEK_GOAL = 5;
+// const streak = ref(parseInt(localStorage.getItem('ht_streak') || '0', 10));
+// const bestStreak = ref(parseInt(localStorage.getItem('ht_best') || '0', 10));
+// const lastCheckDate = ref(localStorage.getItem('ht_last') || ''); // YYYY-MM-DD
 
-const weekKey = computed(() => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const w = isoWeek(d);
-  return `ht_week_${y}-${String(w).padStart(2,'0')}`;
-});
-const weekCount = ref(parseInt(localStorage.getItem(weekKey.value) || '0', 10));
-watchEffect(() => {
-  weekCount.value = parseInt(localStorage.getItem(weekKey.value) || '0', 10);
-});
+// const weekKey = computed(() => {
+//   const d = new Date();
+//   const y = d.getFullYear();
+//   const w = isoWeek(d);
+//   return `ht_week_${y}-${String(w).padStart(2,'0')}`;
+// });
+// const weekCount = ref(parseInt(localStorage.getItem(weekKey.value) || '0', 10));
+// watchEffect(() => {
+//   weekCount.value = parseInt(localStorage.getItem(weekKey.value) || '0', 10);
+// });
 
-function checkIn(){
-  const today = new Date().toISOString().slice(0,10);
-  // only once per day
-  if (lastCheckDate.value === today) return;
+// function checkIn(){
+//   const today = new Date().toISOString().slice(0,10);
+//   // only once per day
+//   if (lastCheckDate.value === today) return;
 
-  if (lastCheckDate.value){
-    const diff = daysBetween(lastCheckDate.value, today);
-    streak.value = (diff === 1) ? streak.value + 1 : 1;
-  } else {
-    streak.value = 1;
-  }
-  lastCheckDate.value = today;
-  bestStreak.value = Math.max(bestStreak.value, streak.value);
+//   if (lastCheckDate.value){
+//     const diff = daysBetween(lastCheckDate.value, today);
+//     streak.value = (diff === 1) ? streak.value + 1 : 1;
+//   } else {
+//     streak.value = 1;
+//   }
+//   lastCheckDate.value = today;
+//   bestStreak.value = Math.max(bestStreak.value, streak.value);
 
-  const nowCount = parseInt(localStorage.getItem(weekKey.value) || '0', 10) + 1;
-  setLS(weekKey.value, String(nowCount));
-  weekCount.value = nowCount;
+//   const nowCount = parseInt(localStorage.getItem(weekKey.value) || '0', 10) + 1;
+//   setLS(weekKey.value, String(nowCount));
+//   weekCount.value = nowCount;
 
-  setLS('ht_streak', String(streak.value));
-  setLS('ht_best', String(bestStreak.value));
-  setLS('ht_last', lastCheckDate.value);
-}
+//   setLS('ht_streak', String(streak.value));
+//   setLS('ht_best', String(bestStreak.value));
+//   setLS('ht_last', lastCheckDate.value);
+// }
 
-function daysBetween(isoA, isoB){
-  const a = new Date(isoA + 'T00:00:00');
-  const b = new Date(isoB + 'T00:00:00');
-  return Math.round((b - a) / 86400000);
-}
-function isoWeek(d){
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-}
+// function daysBetween(isoA, isoB){
+//   const a = new Date(isoA + 'T00:00:00');
+//   const b = new Date(isoB + 'T00:00:00');
+//   return Math.round((b - a) / 86400000);
+// }
+// function isoWeek(d){
+//   d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+//   const dayNum = d.getUTCDay() || 7;
+//   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+//   const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+//   return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+// }
 
 /* ========= Water + midnight countdown ========= */
-const waterGlasses = ref(parseInt(localStorage.getItem('ht_water') || '0', 10));
-function setWater(n){ waterGlasses.value = n; setLS('ht_water', String(n)); }
+// const waterGlasses = ref(parseInt(localStorage.getItem('ht_water') || '0', 10));
+// function setWater(n){ waterGlasses.value = n; setLS('ht_water', String(n)); }
 
-const countdownText = ref('');
-let timer = null;
-function updateCountdown(){
-  const now = new Date();
-  const midnight = new Date(now); midnight.setHours(24,0,0,0);
-  const ms = Math.max(0, midnight - now);
-  const hh = String(Math.floor(ms/3600000)).padStart(2,'0');
-  const mm = String(Math.floor((ms%3600000)/60000)).padStart(2,'0');
-  const ss = String(Math.floor((ms%60000)/1000)).padStart(2,'0');
-  countdownText.value = `${hh}:${mm}:${ss}`;
-}
+// const countdownText = ref('');
+// let timer = null;
+// function updateCountdown(){
+//   const now = new Date();
+//   const midnight = new Date(now); midnight.setHours(24,0,0,0);
+//   const ms = Math.max(0, midnight - now);
+//   const hh = String(Math.floor(ms/3600000)).padStart(2,'0');
+//   const mm = String(Math.floor((ms%3600000)/60000)).padStart(2,'0');
+//   const ss = String(Math.floor((ms%60000)/1000)).padStart(2,'0');
+//   countdownText.value = `${hh}:${mm}:${ss}`;
+// }
 
 /* ========= Mini timers (30s progress bars) ========= */
-function makeTimer(){
-  return reactive({ running:false, end:0, left:0, pct:0, leftLabel:'', iv:null });
-}
-const breath  = makeTimer();
-const stretch = makeTimer();
+// function makeTimer(){
+//   return reactive({ running:false, end:0, left:0, pct:0, leftLabel:'', iv:null });
+// }
+// const breath  = makeTimer();
+// const stretch = makeTimer();
 
-function toggleTimer(t, seconds){
-  if (t.running){
-    stopTimer(t);
-    return;
-  }
-  startTimer(t, seconds);
-}
-function startTimer(t, seconds){
-  t.running = true;
-  t.end = Date.now() + seconds * 1000;
-  tick(t, seconds);
-  t.iv = setInterval(() => tick(t, seconds), 100);
-}
-function stopTimer(t){
-  t.running = false; t.end = 0; t.left = 0; t.pct = 0; t.leftLabel = '';
-  if (t.iv){ clearInterval(t.iv); t.iv = null; }
-}
-function tick(t, total){
-  const leftMs = Math.max(0, t.end - Date.now());
-  t.left = leftMs;
-  t.pct = 1 - leftMs / (total*1000);
-  t.leftLabel = String(Math.ceil(leftMs/1000)) + 's';
-  if (leftMs <= 0){ stopTimer(t); }
-}
+// function toggleTimer(t, seconds){
+//   if (t.running){
+//     stopTimer(t);
+//     return;
+//   }
+//   startTimer(t, seconds);
+// }
+// function startTimer(t, seconds){
+//   t.running = true;
+//   t.end = Date.now() + seconds * 1000;
+//   tick(t, seconds);
+//   t.iv = setInterval(() => tick(t, seconds), 100);
+// }
+// function stopTimer(t){
+//   t.running = false; t.end = 0; t.left = 0; t.pct = 0; t.leftLabel = '';
+//   if (t.iv){ clearInterval(t.iv); t.iv = null; }
+// }
+// function tick(t, total){
+//   const leftMs = Math.max(0, t.end - Date.now());
+//   t.left = leftMs;
+//   t.pct = 1 - leftMs / (total*1000);
+//   t.leftLabel = String(Math.ceil(leftMs/1000)) + 's';
+//   if (leftMs <= 0){ stopTimer(t); }
+// }
 
 /* ========= Cross-instance sync ========= */
 let bc = null;
 function applySync({key, value}){
   if (!key) return;
-  if (key === 'ht_water'){ waterGlasses.value = parseInt(value || '0', 10); }
-  else if (key === 'ht_last'){ lastCheckDate.value = value || ''; }
-  else if (key === 'ht_streak'){ streak.value = parseInt(value || '0', 10); }
-  else if (key === 'ht_best'){ bestStreak.value = parseInt(value || '0', 10); }
-  else if (key.startsWith('ht_week_')){ if (key === weekKey.value) weekCount.value = parseInt(value || '0', 10); }
-  else if (key === 'ht_liked'){ try{ const obj = JSON.parse(value||'{}'); Object.assign(liked, obj); }catch{} }
+//   if (key === 'ht_water'){ waterGlasses.value = parseInt(value || '0', 10); }
+//   else if (key === 'ht_last'){ lastCheckDate.value = value || ''; }
+//   else if (key === 'ht_streak'){ streak.value = parseInt(value || '0', 10); }
+//   else if (key === 'ht_best'){ bestStreak.value = parseInt(value || '0', 10); }
+//   else if (key.startsWith('ht_week_')){ if (key === weekKey.value) weekCount.value = parseInt(value || '0', 10); }
+  if (key === 'ht_liked'){ try{ const obj = JSON.parse(value||'{}'); Object.assign(liked, obj); }catch{} }
 }
 
 onMounted(() => {
   // reset daily water count (only on first load)
-  const today = new Date().toISOString().slice(0,10);
-  const savedDay = localStorage.getItem('ht_day');
-  if (savedDay !== today){
-    setLS('ht_day', today);
-    setLS('ht_water', '0');
-    waterGlasses.value = 0;
-  }
+//   const today = new Date().toISOString().slice(0,10);
+//   const savedDay = localStorage.getItem('ht_day');
+//   if (savedDay !== today){
+//     setLS('ht_day', today);
+//     setLS('ht_water', '0');
+//     waterGlasses.value = 0;
+//   }
 
-  updateCountdown();
-  timer = setInterval(updateCountdown, 1000);
+//   updateCountdown();
+//   timer = setInterval(updateCountdown, 1000);
 
   window.addEventListener('ht-sync', (e) => applySync(e.detail || {}));
   try{
@@ -339,7 +343,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer);
+//   if (timer) clearInterval(timer);
   if (bc) try{ bc.close(); }catch{}
 });
 
