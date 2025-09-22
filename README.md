@@ -27,26 +27,26 @@ This project combines nutrition education with interactive entertainment, design
 
 ## 📂 Project Structure
 src/
-├── assets/                 # Website picture/video resources
-├── App.vue                 # Root component with global layout and video background
-├── main.js                 # Vue app entry point
+├── assets/                 // Website picture/video resources
+├── App.vue                 // Root component with global layout and video background
+├── main.js                 // Vue app entry point
 ├── router/
-│   └── index.js            # Router configuration
+│   └── index.js            // Router configuration
 ├── styles/
-│   └── theme.css           # Global theme variables and utilities
+│   └── theme.css           // Global theme variables and utilities
 ├── components/
-│   ├── TopNav.vue          # Top navigation bar
-│   ├── BreadcrumbNav.vue   # Breadcrumb Navigation bar
-│   ├── WheelSvg.vue        # Wheel of fortune (SVG)
-│   └── AvatarDoor.vue      # Avatar and door interaction
+│   ├── TopNav.vue          // Top navigation bar
+│   ├── BreadcrumbNav.vue   // Breadcrumb Navigation bar
+│   ├── WheelSvg.vue        // Wheel of fortune (SVG)
+│   └── AvatarDoor.vue      // Avatar and door interaction
 └── views/
-    ├── HomePage.vue        # Homepage (Hero + How It Works + Highlights + FAQ)
-    ├── GamePage.vue        # Game hub with wheel and avatar door
-    ├── WordleGameView.vue  # Wordle-style guessing game
-    ├── Match3View.vue      # Match-3 puzzle game
-    ├── FoodSwapView.vue    # Food swap page
-    ├── CalculatorView.vue  # Nutrient calculator
-    └── SupportView.vue     # Support & FAQ
+    ├── HomePage.vue        // Homepage (Hero + How It Works + Highlights + FAQ)
+    ├── GamePage.vue        // Game hub with wheel and avatar door
+    ├── WordleGameView.vue  // Wordle-style guessing game
+    ├── Match3View.vue      // Match-3 puzzle game
+    ├── FoodSwapView.vue    // Food swap page
+    ├── CalculatorView.vue  // Nutrient calculator
+    └── SupportView.vue     // Support & FAQ
 
 ---
 
