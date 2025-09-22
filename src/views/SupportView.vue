@@ -75,8 +75,8 @@ import Footer from '@/components/Footer.vue';
   object-fit: cover;
   object-position: center;
   z-index: -2;
-  filter: brightness(0.6) blur(4px); /* 适当调整亮度以配合黑色遮罩 */
-  transform: scale(1.05); /* 稍微放大以避免模糊边缘 */
+  filter: brightness(0.6) blur(4px); /* adjust brightness to match black overlay */
+  transform: scale(1.05); /* slightly enlarge to avoid blurry edges */
 }
 
 .main-title {
@@ -101,7 +101,7 @@ import Footer from '@/components/Footer.vue';
   padding: 20px;
 }
 
-/* 添加一个黑色遮罩层来增强文字可读性和视觉效果 */
+/* add a black overlay to enhance text readability and visual effect */
 .support-page::before {
   content: '';
   position: fixed;
@@ -109,7 +109,7 @@ import Footer from '@/components/Footer.vue';
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3); /* 黑色遮罩，透明度0.5 */
+  background: rgba(0, 0, 0, 0.3); /* black overlay with 0.3 opacity */
   z-index: -1;
 }
 
@@ -251,11 +251,11 @@ import Footer from '@/components/Footer.vue';
 
 .main-title {
   text-align: center;
-  color: #ffffff; /* 改为白色，在黑色遮罩上更醒目 */
+  color: #ffffff; /* change to white for better visibility on black overlay */
   font-size: 2.5rem;
   margin-bottom: 40px;
   font-family: 'Merriweather', serif;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 添加文字阴影增强可读性 */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* add text shadow for better readability */
 }
 
 .features-grid {
@@ -270,11 +270,11 @@ import Footer from '@/components/Footer.vue';
 .feature-section {
   display: flex;
   align-items: center;
-  gap: 100px; /* 增加间距从40px到100px */
+  gap: 100px; /* increase gap from 40px to 100px */
   position: relative;
   margin-bottom: 40px;
   z-index: 1;
-  padding: 0 40px; /* 添加左右内边距 */
+  padding: 0 40px; /* add horizontal padding */
 }
 
 .feature-card {
@@ -312,7 +312,7 @@ import Footer from '@/components/Footer.vue';
 }
 
 .feature-description {
-  color: #2A4D3E; /* 保持原来的颜色，因为feature-card有自己的背景色 */
+  color: #2A4D3E; /* keep original color, as feature-card has its own background color */
   line-height: 1.8;
   font-size: 1.1rem;
 }
@@ -325,8 +325,8 @@ import Footer from '@/components/Footer.vue';
 
 @media (max-width: 1024px) {
   .feature-section {
-    gap: 60px; /* 在中等屏幕上保持较大间距 */
-    padding: 0 30px; /* 适当减小左右内边距 */
+    gap: 60px; /* keep larger gap on medium screens */
+    padding: 0 30px; /* slightly reduce horizontal padding */
   }
 
   .feature-card {
@@ -373,7 +373,7 @@ import Footer from '@/components/Footer.vue';
   }
 }
 
-/* 特别处理小屏幕设备 */
+/* handle small screens */
 @media (max-width: 400px) {
   .feature-section:nth-child(odd) {
     flex-direction: column;

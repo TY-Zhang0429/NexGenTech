@@ -224,7 +224,7 @@ defineExpose({ reset, onSpin })
 </script>
 
 <style scoped>
-/* 更小，贴近设计图 */
+
 .wheel-svg-wrap { width: clamp(200px, 18vw, 300px); aspect-ratio: 1/1; margin: 30px auto; }
 
 /* wheel zoom */

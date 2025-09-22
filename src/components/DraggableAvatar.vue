@@ -19,25 +19,31 @@ const props = defineProps({
   }
 });
 
-// 头像状态和位置
+// avatar state
 const isVisible = ref(false);
-const position = ref({ x: 20, y: window.innerHeight - 120 }); // 左下角初始位置
+const position = ref({ x: 80, y: window.innerHeight / 2 - 75 }); // left 80px, vertically centered
 const avatarElement = ref(null);
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 
-// 根据localStorage中的avatarType动态计算头像图片路径
+// according to localStorage avatarType and evolutionLevel dynamically calculate avatar image path
 const currentAvatarSrc = computed(() => {
-  // 触发响应式更新
+  // trigger reactive update
   storageWatcher.value;
   
   const avatarType = localStorage.getItem('avatarType');
-  const avatarEvolved = localStorage.getItem('avatarEvolved') === 'true';
+  const evolutionLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
   
   switch (avatarType) {
     case 'avatara':
-      // 如果Sol头像已经进化，显示avatara2，否则显示avatara
-      return avatarEvolved ? '/assets/avatara2.png' : '/assets/avatara.png';
+      // use different Sol avatars: 1=avatara, 2=avatara2, 3=avatara3
+      if (evolutionLevel >= 3) {
+        return '/assets/avatara3.png';
+      } else if (evolutionLevel >= 2) {
+        return '/assets/avatara2.png';
+      } else {
+        return '/assets/avatara.png';
+      }
     case 'avatarb':
       return '/assets/avatarb.png';
     case 'avatarc':
@@ -47,15 +53,15 @@ const currentAvatarSrc = computed(() => {
   }
 });
 
-// 监听localStorage变化的响应式变量
+// watch localStorage changes
 const storageWatcher = ref(0);
 
-// 检查localStorage中的状态
+// check localStorage status
 onMounted(() => {
-  // 检查是否已选择头像
+  // check if avatar is selected
   checkAvatarSelected();
-  
-  // 从localStorage加载保存的位置
+
+  // load saved position from localStorage
   const savedPosition = localStorage.getItem('avatarPosition');
   if (savedPosition) {
     try {
@@ -64,8 +70,8 @@ onMounted(() => {
       console.error('Error parsing saved avatar position:', e);
     }
   }
-  
-  // 监听存储事件，以便在不同页面间保持同步
+
+  // listen for storage events to keep in sync across pages
   window.addEventListener('storage', handleStorageChange);
 });
 
@@ -73,15 +79,20 @@ onUnmounted(() => {
   window.removeEventListener('storage', handleStorageChange);
 });
 
-// 检查是否已选择头像
+// check if avatar is selected in localStorage
 function checkAvatarSelected() {
   const selected = localStorage.getItem('avatarSelected') === 'true';
   isVisible.value = selected;
-  // 触发头像图片更新
+  // trigger avatar image update
   storageWatcher.value++;
 }
 
-// 处理storage变化事件
+// trigger avatar image update
+function triggerAvatarUpdate() {
+  storageWatcher.value++;
+}
+
+// handle storage change events
 function handleStorageChange(event) {
   if (event.key === 'avatarSelected') {
     isVisible.value = event.newValue === 'true';
@@ -91,30 +102,30 @@ function handleStorageChange(event) {
     } catch (e) {
       console.error('Error parsing updated avatar position:', e);
     }
-  } else if (event.key === 'avatarType' || event.key === 'avatarEvolved') {
-    // 当头像类型或进化状态改变时，触发重新渲染
+  } else if (event.key === 'avatarType' || event.key === 'avatarEvolutionLevel') {
+    // when avatar type or evolution level changes, trigger re-render
     storageWatcher.value++;
   }
 }
 
-// 开始拖动
+// dragging logic
 const startDrag = (event) => {
-  // 只有鼠标左键点击才能拖动
+  // only left mouse button or touch events can drag
   if (event.touches || (event.button === 0)) {
     isDragging = true;
     
-    // 阻止默认行为和事件冒泡
+    // prevent default behavior and stop propagation
     event.preventDefault();
     event.stopPropagation();
     
-    // 判断是鼠标事件还是触摸事件
+    // check if touch event or mouse event
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
     
     dragOffset.x = clientX - position.value.x;
     dragOffset.y = clientY - position.value.y;
     
-    // 添加移动和结束拖动的事件监听器
+    // add event listeners for move and end
     if (event.touches) {
       document.addEventListener('touchmove', onDrag);
       document.addEventListener('touchend', stopDrag);
@@ -125,11 +136,11 @@ const startDrag = (event) => {
   }
 };
 
-// 拖动中
+// dragging
 const onDrag = (event) => {
   if (!isDragging) return;
-  
-  // 阻止默认行为和事件冒泡
+
+  // prevent default behavior and stop propagation
   event.preventDefault();
   
   const clientX = event.touches ? event.touches[0].clientX : event.clientX;
@@ -137,12 +148,12 @@ const onDrag = (event) => {
   
   position.value.x = clientX - dragOffset.x;
   position.value.y = clientY - dragOffset.y;
-  
-  // 保存位置到localStorage
+
+  // save position to localStorage
   localStorage.setItem('avatarPosition', JSON.stringify(position.value));
 };
 
-// 停止拖动
+// stop dragging
 const stopDrag = () => {
   if (!isDragging) return;
   
@@ -153,9 +164,10 @@ const stopDrag = () => {
   document.removeEventListener('touchend', stopDrag);
 };
 
-// 导出方法，使其可以被父组件调用
+// expose methods to parent components
 defineExpose({
-  checkAvatarSelected
+  checkAvatarSelected,
+  triggerAvatarUpdate
 });
 </script>
 
@@ -164,8 +176,8 @@ defineExpose({
   position: fixed;
   z-index: 1000;
   cursor: grab;
-  width: 100px; /* 放大尺寸 */
-  height: 100px; /* 放大尺寸 */
+  width: 170px; 
+  height: 170px; 
   overflow: hidden;
   user-select: none;
   touch-action: none;

@@ -1,9 +1,9 @@
 <template>
   <section class="avatar-page">
-    <!-- 引入可拖动头像组件 -->
+    <!-- import draggable avatar component -->
     <DraggableAvatar ref="avatarComponent" />
-    
-    <!-- 选择头像成功提示框和模糊遮罩 -->
+
+    <!-- selection success message -->
     <div v-if="showSuccessMessage" class="overlay-blur"></div>
     <div v-if="showSuccessMessage" class="success-message">
       {{ successMessage }}
@@ -67,7 +67,7 @@
         </div>
 
         <div v-else class="create-avatar-content">
-          <!-- 问卷前的介绍卡片 -->
+          <!-- before questionnaire -->
           <div v-if="!showQuestionnaire && !showAvatarComplete" class="avatar-intro-card">
             <h2 class="create-title">Create Your Own</h2>
             
@@ -92,8 +92,8 @@
               Fill Questionnaire
             </button>
           </div>
-          
-          <!-- 头像完成页面 -->
+
+          <!-- avatar completion -->
           <div v-else-if="showAvatarComplete" class="avatar-complete-container">
             <div class="avatar-complete-card">
               <h2 class="avatar-complete-title">Your Avatar</h2>
@@ -114,7 +114,7 @@
             </div>
           </div>
           
-          <!-- 问卷界面 -->
+          <!-- questionnaire -->
           <div v-else class="questionnaire-container">
             <div class="questionnaire-card">
               <div class="questionnaire-header">
@@ -182,27 +182,27 @@
 import { ref, onMounted } from 'vue';
 import DraggableAvatar from '../components/DraggableAvatar.vue';
 
-// 默认显示Default Sol标签页
+// default active tab
 const activeTab = ref('default');
 
-// 控制是否显示头像选择界面
+// control avatar selection display
 const showAvatarSelection = ref(false);
 
-// 成功消息提示控制
+// success message control
 const showSuccessMessage = ref(false);
 const successMessage = ref('Sol Selected!');
 
-// 控制问卷界面显示
+// control questionnaire display
 const showQuestionnaire = ref(false);
 
-// 控制头像完成页面显示
+// control avatar completion display
 const showAvatarComplete = ref(false);
 
-// 当前问题
+// current question index
 const currentQuestion = ref(1);
 const totalQuestions = ref(5);
 
-// 问卷的问题和选项
+// questionaire data
 const questions = ref([
   {
     question: "Does your daily meal consist of fruits and vegetables?",
@@ -226,69 +226,71 @@ const questions = ref([
   }
 ]);
 
-// 用户的回答
+// user answers
 const userAnswers = ref([]);
 
-// 引用头像组件
+// reference to avatar component
 const avatarComponent = ref(null);
 
-// 检查是否已经选择了头像
+// check if avatar is already selected
 const isAvatarAlreadySelected = ref(false);
 
-// 组件挂载时检查状态
+// computed property to get selected avatar image
 onMounted(() => {
-  // 检查localStorage中是否已经选择了头像
+  // check localStorage for avatar selection status
   checkAvatarSelectedState();
 });
 
-// 检查头像选择状态
+// check if avatar is already selected from localStorage
 const checkAvatarSelectedState = () => {
   const selected = localStorage.getItem('avatarSelected') === 'true';
   isAvatarAlreadySelected.value = selected;
 };
 
-// 选择Sol的处理函数
+// select Sol as avatar
 const selectSol = () => {
-  // 如果已经选择了头像，则不执行任何操作
+  // if user already selected, do nothing
   if (isAvatarAlreadySelected.value) return;
-  
-  // 设置选择状态并存储到localStorage
+
+  // set localStorage
   localStorage.setItem('avatarSelected', 'true');
   localStorage.setItem('avatarType', 'avatara');
+  localStorage.setItem('avatarEvolutionLevel', '1'); // initial level
   isAvatarAlreadySelected.value = true;
-  
-  // 设置并显示成功消息
+
+  // set and show success message
   successMessage.value = 'Sol Selected!';
   showSuccessMessage.value = true;
-  
-  // 设置提示消息2秒后消失
+
+  // set timeout to hide success message after 2 seconds
   setTimeout(() => {
     showSuccessMessage.value = false;
   }, 2000);
-  
-  // 通知DraggableAvatar组件更新状态
+
+  // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
     avatarComponent.value.checkAvatarSelected();
   }
 };
 
-// 重置头像的处理函数
+// reset avatar
 const resetAvatar = () => {
-  // 重置localStorage中的状态
+  // reset localStorage
   localStorage.removeItem('avatarSelected');
   localStorage.removeItem('avatarPosition');
   localStorage.removeItem('avatarType');
   localStorage.removeItem('avatarEvolved');
-  
-  // 更新当前状态
+  localStorage.removeItem('avatarEvolutionLevel');
+
+  // update current state
   isAvatarAlreadySelected.value = false;
-  
-  // 通知DraggableAvatar组件更新状态
+
+  // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
     avatarComponent.value.checkAvatarSelected();
   }
-  
-  // 设置并显示重置成功消息
+
+  // set and show reset success message
   successMessage.value = 'Avatar Reset!';
   showSuccessMessage.value = true;
   setTimeout(() => {
@@ -296,7 +298,7 @@ const resetAvatar = () => {
   }, 2000);
 };
 
-// 打开问卷
+// open questionnaire
 const openQuestionnaire = () => {
   showQuestionnaire.value = true;
   showAvatarComplete.value = false;
@@ -304,12 +306,12 @@ const openQuestionnaire = () => {
   userAnswers.value = [];
 };
 
-// 回答问题并前往下一题
+// answer question and go to next
 const answerAndNext = (answer) => {
-  // 保存当前问题的答案
+  // save answer for current question
   userAnswers.value[currentQuestion.value - 1] = answer;
-  
-  // 如果有下一题，前进到下一题，否则提交问卷
+
+  // if there is a next question, go to it, otherwise submit questionnaire
   if (currentQuestion.value < totalQuestions.value) {
     currentQuestion.value++;
   } else {
@@ -317,25 +319,25 @@ const answerAndNext = (answer) => {
   }
 };
 
-// 返回上一题
+// back to previous question
 const goToPrevious = () => {
   if (currentQuestion.value > 1) {
     currentQuestion.value--;
   }
 };
 
-// 获取选择的头像图片
+// get selected avatar based on answers
 const getSelectedAvatar = () => {
-  // 计算选择第一个选项(Always/0 times/Never等)的次数
+  // count how many times the first option (Always/0 times/Never, etc.) is selected
   const firstOptionCount = userAnswers.value.filter((answer, index) => {
     return answer === questions.value[index].options[0];
   }).length;
   
-  // 如果选择了2个或更多第一个选项，返回avatara，否则返回avatarb
+  // if 2 or more first options selected, return avatara, else randomly choose avatarb or avatarc
   return firstOptionCount >= 2 ? '/assets/avatarb.png' : '/assets/avatarc.png';
 };
 
-// 获取头像名字
+// get avatar name based on type
 const getAvatarName = () => {
   const avatarSrc = getSelectedAvatar();
   if (avatarSrc.includes('avatarb')) {
@@ -346,7 +348,7 @@ const getAvatarName = () => {
   return 'Sol';
 };
 
-// 获取头像类型（用于保存到localStorage）
+// get avatar type (for saving to localStorage)
 const getAvatarType = () => {
   const avatarSrc = getSelectedAvatar();
   if (avatarSrc.includes('avatarb')) {
@@ -357,37 +359,37 @@ const getAvatarType = () => {
   return 'avatara';
 };
 
-// 提交问卷
+// submit questionnaire
 const submitQuestionnaire = () => {
-  // 在这里处理用户的所有回答
+  // handle submission logic here (e.g., send to backend if needed)
   console.log('问卷已提交', userAnswers.value);
   
-  // 显示头像完成页面
+  // update display states
   showAvatarComplete.value = true;
 };
 
-// 选择创建的头像
+// select created avatar
 const selectCreatedAvatar = () => {
-  // 设置选择状态并存储到localStorage
+  // set selection state and store to localStorage
   localStorage.setItem('avatarSelected', 'true');
   localStorage.setItem('avatarType', getAvatarType());
   isAvatarAlreadySelected.value = true;
-  
-  // 设置并显示成功消息
+
+  // set and show success message
   successMessage.value = 'Avatar Selected!';
   showSuccessMessage.value = true;
-  
-  // 设置提示消息2秒后消失
+
+  // set timeout to hide success message after 2 seconds
   setTimeout(() => {
     showSuccessMessage.value = false;
-    
-    // 重置问卷状态
+
+    // reset questionnaire state
     showQuestionnaire.value = false;
     showAvatarComplete.value = false;
     
   }, 2000);
-  
-  // 通知DraggableAvatar组件更新状态
+
+  // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
     avatarComponent.value.checkAvatarSelected();
   }
@@ -404,7 +406,7 @@ const selectCreatedAvatar = () => {
   box-sizing: border-box;
 }
 
-/* 添加一个全屏背景覆盖层 */
+/* add fullscreen blur overlay */
 .avatar-page::before {
   content: '';
   position: fixed;
@@ -421,7 +423,7 @@ const selectCreatedAvatar = () => {
 
 .page-title {
   text-align: center;
-  color: #1a5536; /* 更深的绿色 */
+  color: #1a5536; /* darker green */
   font-size: 28px;
   margin-bottom: 20px;
   font-weight: 600;
@@ -473,7 +475,7 @@ const selectCreatedAvatar = () => {
 }
 
 .tab-item.active {
-  color: #1a5536; /* 更深的绿色 */
+  color: #1a5536; /* darker green */
   font-weight: 600;
 }
 
@@ -484,11 +486,11 @@ const selectCreatedAvatar = () => {
   left: 0;
   width: 100%;
   height: 3px;
-  background-color: #1a5536; /* 更深的绿色 */
+  background-color: #1a5536; /* darker green */
   transition: left 0.3s ease;
 }
 
-/* 全屏模糊遮罩 */
+/* add fullscreen blur overlay */
 .overlay-blur {
   position: fixed;
   top: 0;
@@ -502,13 +504,13 @@ const selectCreatedAvatar = () => {
   animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
 }
 
-/* 成功消息提示框 */
+/* success message box */
 .success-message {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #1a5536; /* 深绿色 */
+  color: #1a5536; /* darker green */
   font-size: 36px;
   font-weight: bold;
   z-index: 1001;
@@ -621,11 +623,11 @@ const selectCreatedAvatar = () => {
 .meet-title {
   font-size: 24px;
   margin-bottom: 20px;
-  color: #333333; /* 统一深色 */
+  color: #333333; /* darker gray */
 }
 
 .greeting {
-  color: #333333; /* 统一深色 */
+  color: #333333; /* darker gray */
   line-height: 1.6;
   margin-bottom: 20px;
 }
@@ -638,7 +640,7 @@ const selectCreatedAvatar = () => {
 
 .feature-list {
   padding-left: 20px;
-  color: #333333; /* 统一深色 */
+  color: #333333; /* darker gray */
 }
 
 .feature-list li {
@@ -646,7 +648,7 @@ const selectCreatedAvatar = () => {
   line-height: 1.5;
 }
 
-/* Create Avatar 样式 */
+/* Create Avatar style */
 .avatar-intro-card {
   background-color: #fffaeb;
   border-radius: 20px;
@@ -728,7 +730,7 @@ const selectCreatedAvatar = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 问卷部分的样式 */
+/* questionnaire section style */
 .questionnaire-container {
   display: flex;
   justify-content: center;
@@ -873,7 +875,7 @@ const selectCreatedAvatar = () => {
   opacity: 0.7;
 }
 
-/* 头像完成页面样式 */
+/* avatar completion page style */
 .avatar-complete-container {
   display: flex;
   justify-content: center;
@@ -959,7 +961,7 @@ const selectCreatedAvatar = () => {
   font-style: italic;
 }
 
-/* 响应式调整 */
+/* responsive adjustments */
 @media (max-width: 992px) {
   .questionnaire-card {
     flex-direction: column;
