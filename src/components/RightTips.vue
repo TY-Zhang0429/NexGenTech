@@ -19,7 +19,7 @@
         </ul>
 
         <div class="tip-actions">
-          <button class="btn" @click="markDone()/*; checkIn()*/">I’ll try it</button>
+          <!-- removed: I’ll try it -->
           <button class="btn ghost" @click="shuffleTip">Shuffle</button>
           <button
             class="heart"
@@ -96,7 +96,7 @@
         </ul>
 
         <div class="tip-actions">
-          <button class="btn" @click="markDone()/*; checkIn()*/">I’ll try it</button>
+          <!-- removed: I’ll try it -->
           <button class="btn ghost" @click="shuffleTip">Shuffle</button>
           <button
             class="heart"
@@ -147,7 +147,6 @@
           <div class="bar-fill" :style="{ width: (Math.min(weekCount, WEEK_GOAL)/WEEK_GOAL*100)+'%' }"></div>
         </div>
       </article> -->
-
 
       <!-- water times -->
       <!-- <article class="box">
@@ -347,7 +346,7 @@ onBeforeUnmount(() => {
   if (bc) try{ bc.close(); }catch{}
 });
 
-function markDone(){ /* with toast*/ }
+// removed: function markDone(){ /* with toast*/ }
 </script>
 
 <style scoped>
