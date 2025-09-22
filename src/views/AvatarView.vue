@@ -328,13 +328,29 @@ const goToPrevious = () => {
 
 // get selected avatar based on answers
 const getSelectedAvatar = () => {
-  // count how many times the first option (Always/0 times/Never, etc.) is selected
-  const firstOptionCount = userAnswers.value.filter((answer, index) => {
-    return answer === questions.value[index].options[0];
-  }).length;
+  // Count how many times each option position is selected
+  const optionCounts = [0, 0, 0, 0]; // For options a, b, c, d
   
-  // if 2 or more first options selected, return avatara, else randomly choose avatarb or avatarc
-  return firstOptionCount >= 2 ? '/assets/avatarb.png' : '/assets/avatarc.png';
+  userAnswers.value.forEach((answer, index) => {
+    const optionIndex = questions.value[index].options.indexOf(answer);
+    if (optionIndex >= 0 && optionIndex < 4) {
+      optionCounts[optionIndex]++;
+    }
+  });
+  
+  // Check which option has more than 2 selections
+  if (optionCounts[0] > 2) {
+    return '/assets/avatarb.png'; // First option (a)
+  } else if (optionCounts[1] > 2) {
+    return '/assets/avatarc.png'; // Second option (b)
+  } else if (optionCounts[2] > 2) {
+    return '/assets/avatard.png'; // Third option (c)
+  } else if (optionCounts[3] > 2) {
+    return '/assets/avatare.png'; // Fourth option (d)
+  } else {
+    // Default case if no option has more than 2 selections
+    return '/assets/avatarb.png';
+  }
 };
 
 // get avatar name based on type
@@ -344,6 +360,10 @@ const getAvatarName = () => {
     return 'Harry';
   } else if (avatarSrc.includes('avatarc')) {
     return 'David';
+  } else if (avatarSrc.includes('avatard')) {
+    return 'Emma';
+  } else if (avatarSrc.includes('avatare')) {
+    return 'Lily';
   }
   return 'Sol';
 };
@@ -355,6 +375,10 @@ const getAvatarType = () => {
     return 'avatarb';
   } else if (avatarSrc.includes('avatarc')) {
     return 'avatarc';
+  } else if (avatarSrc.includes('avatard')) {
+    return 'avatard';
+  } else if (avatarSrc.includes('avatare')) {
+    return 'avatare';
   }
   return 'avatara';
 };
