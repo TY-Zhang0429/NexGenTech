@@ -1415,7 +1415,7 @@ onMounted(() => {
 
 .recipes-section {
   position: relative;
-  padding: 10px;
+  padding: 30px 10px 10px 10px;
 }
 
 .recipes-container {
@@ -2336,7 +2336,7 @@ onMounted(() => {
 
 /* Pagination Styles */
 .pagination-container-top {
-  margin: 20px 0;
+  margin: 40px 0 20px 0;
   text-align: center;
   position: relative;
   z-index: 1;
