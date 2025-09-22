@@ -27,9 +27,9 @@ const spriteUrl = '/assets/walk-sprites.png'
 const frameW = ref(96)
 const frameH = ref(96)
 
-/* —— 可调参数 —— */
-const ENTER_EXTRA_PX = 16     // 再向门内推进的像素（按视觉可调 12~20）
-const ALIGN_PIVOT    = 0.38   // 以角色宽度的 38% 作为对齐点（更像以前脚对齐）
+
+const ENTER_EXTRA_PX = 16     // enter door extra px
+const ALIGN_PIVOT    = 0.38   // avatar width 38% as align pivot
 
 // DOM references
 const sceneRef = ref(null)
@@ -66,15 +66,14 @@ function reset() {
   avatarRef.value.style.transition = 'none'
   state.tx = 0
   state.ty = 0
-  // 强制重排
   // eslint-disable-next-line no-unused-expressions
   avatarRef.value.offsetHeight
   avatarRef.value.style.transition = ''
 }
 
-/** 计算从角色当前点到门的水平位移
- *  extraPx: 额外推进多少像素到门内
- *  align:   角色对齐点（0 左沿 ~ 1 右沿），默认 0.38 更贴近“前脚”
+/** calculate delta to move avatar to door
+ *  extraPx: extra px to push avatar closer to door
+ *  align:   avatar align point (0 left ~ 1 right), default 0.38 closer to "front foot"
  */
 function calcDelta(extraPx = 0, align = 0.5) {
   if (!sceneRef.value || !avatarRef.value || !doorRef.value) return { tx: 0, ty: 0 }
@@ -83,11 +82,11 @@ function calcDelta(extraPx = 0, align = 0.5) {
   const d = doorRef.value.getBoundingClientRect()
   const s = sceneRef.value.getBoundingClientRect()
 
-  // 以 align 作为角色的对齐参考，而不是几何中心
+  // use align point on avatar width
   const ax = a.left - s.left + a.width * align
   const ay = a.top - s.top + a.height / 2
 
-  // 门以几何中心 + 额外推进 px
+  // door use geographic centre + extra px
   const dx = d.left - s.left + d.width / 2 + extraPx
   const dy = d.top - s.top + d.height / 2
 
@@ -104,9 +103,9 @@ function runToDoor(opts = {}) {
   state.ty = 0
   state.doorGlow = false
   state.running = false
-  state.isDoorClosed = false // 打开门
+  state.isDoorClosed = false // open door
 
-  // 强制重排
+
   // eslint-disable-next-line no-unused-expressions
   avatarRef.value.offsetHeight
 
@@ -159,11 +158,11 @@ defineExpose({ runToDoor, reset })
   background: transparent;
   overflow: visible !important;
   isolation: isolate;
-  padding: 40px;  /* 为门光留空间 */
+  padding: 40px;  
   margin: -40px;
 }
 
-/* 门盖在小人之上，进门更自然 */
+
 .door {
   position: absolute;
   right: 15%;
@@ -209,7 +208,7 @@ defineExpose({ runToDoor, reset })
   overflow: hidden;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
   transform-origin: bottom center;
-  z-index: 2; /* 低于门 */
+  z-index: 2; 
 }
 
 .sprite-img {

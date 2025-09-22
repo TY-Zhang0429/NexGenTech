@@ -5,7 +5,7 @@
       <span class="brand-name">NexGenTech</span>
     </div>
 
-    <!-- 汉堡菜单按钮 -->
+    <!-- hamburger menu -->
     <button class="menu-toggle" @click="toggleMenu" :aria-expanded="isMenuOpen">
       <span class="menu-icon" :class="{ 'open': isMenuOpen }">
         <span></span>
@@ -14,7 +14,7 @@
       </span>
     </button>
 
-    <!-- 导航菜单 -->
+    <!-- navigation menu -->
     <nav class="nav__right" :class="{ 'show': isMenuOpen }">
       <RouterLink to="/" class="link" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/avatar" class="link" @click="closeMenu">Avatar</RouterLink>
@@ -83,7 +83,7 @@ const closeMenu = () => {
   gap: clamp(14px, 4vw, 26px);
 }
 
-/* 菜单按钮样式 */
+/* menu button styles */
 .menu-toggle {
   display: none;
   background: none;
@@ -111,7 +111,7 @@ const closeMenu = () => {
   transition: all 0.3s ease;
 }
 
-/* 菜单打开时的动画效果 */
+/* menu open animation */
 .menu-icon.open span:first-child {
   transform: translateY(8.5px) rotate(45deg);
 }
@@ -191,7 +191,7 @@ const closeMenu = () => {
   }
 }
 
-/* 额外的小屏幕优化 */
+/* extra small screen styles */
 @media (max-width: 480px) {
   .nav {
     padding: 8px 12px;

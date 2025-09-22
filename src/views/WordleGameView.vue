@@ -3,7 +3,7 @@
     <!-- Optional: draggable avatar -->
     <DraggableAvatar ref="avatarComponent" />
 
-    <!-- 游戏完成提示框和模糊遮罩 -->
+    <!-- game complete overlay -->
     <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
     <div v-if="showGameCompleteMessage" class="game-complete-message">
       {{ gameCompleteMessage }}
@@ -444,25 +444,25 @@ function afterReveal(guess) {
     statusMsg.value = '🎉 You Win!';
     launchConfetti();
     
-    // 检查头像进化逻辑
+    // check avatar evolution
     const avatarType = localStorage.getItem('avatarType');
     if (avatarType === 'avatara') {
       const currentLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
       if (currentLevel < 3) {
-        // 进化到下一级
+        // evolve to next level
         const newLevel = currentLevel + 1;
         localStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-        
-        // 立即触发头像更新
+
+        // immediately trigger avatar update
         if (avatarComponent.value) {
           avatarComponent.value.triggerAvatarUpdate();
         }
-        
-        // 显示进化消息overlay而不是alert
+
+        // Show evolution message overlay instead of alert
         gameCompleteMessage.value = `Congratulations! Your avatar evolved to level ${newLevel}`;
         showGameCompleteMessage.value = true;
-        
-        // 2秒后隐藏消息
+
+        // Hide message after 2 seconds
         setTimeout(() => {
           showGameCompleteMessage.value = false;
         }, 2000);
@@ -827,7 +827,7 @@ function triggerRowShake(r) {
   padding: 10px 12px; overflow: auto; flex: 1; color:#e6e6eb;
 }
 
-/* ===== 游戏完成提示样式 ===== */
+/* ===== game complete overlay ===== */
 .wordly .overlay-blur {
   position: fixed;
   top: 0;
@@ -846,8 +846,8 @@ function triggerRowShake(r) {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ffffff; /* 墨绿色 */
-  font-family: 'Merriweather', serif; /* Merriweather字体 */
+  color: #ffffff; /* dark green */
+  font-family: 'Merriweather', serif; /* Merriweather font */
   font-size: 36px;
   font-weight: bold;
   z-index: 1001;

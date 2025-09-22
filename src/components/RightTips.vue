@@ -1,5 +1,5 @@
 <template>
-  <!-- ===== DESKTOP：固定右栏，内部滚动，不遮挡键盘 ===== -->
+  <!-- ===== DESKTOP：fixed right panel ===== -->
   <aside v-if="mode === 'desktop'" class="tips-panel" aria-label="Health Tips (desktop)">
     <header class="tips-h">
       <strong>Health Tips</strong>
@@ -9,7 +9,7 @@
     </header>
 
     <section class="tips-body">
-      <!-- Tip 卡片 -->
+      <!-- Tip cards -->
       <article class="tip-card">
         <div class="tip-tag">{{ currentTip.tag }}</div>
         <h4 class="tip-title">{{ currentTip.title }}</h4>
@@ -30,7 +30,7 @@
         </div>
       </article>
 
-      <!-- Mini challenges（带倒计时进度条，不增加周累计） -->
+      <!-- Mini challenges (with countdown timer) -->
       <article class="box">
         <h5 class="box-title">Mini Challenges</h5>
 
@@ -53,7 +53,7 @@
         </div>
       </article>
 
-      <!-- 周目标 + streak + 倒计时 -->
+      <!-- weekly goals + streak + countdown -->
       <article class="box">
         <div class="row between">
           <h5 class="box-title">Weekly Theme: Colorful Week</h5>
@@ -71,7 +71,7 @@
         </div>
       </article>
 
-      <!-- 喝水计数 -->
+      <!-- water times -->
       <article class="box">
         <div class="row between">
           <h5 class="box-title">Water today</h5>
@@ -84,7 +84,7 @@
     </section>
   </aside>
 
-  <!-- ===== MOBILE：仅内容体（供抽屉使用） ===== -->
+  <!-- ===== MOBILE：only for content ===== -->
   <div v-else class="tips-mobile">
     <section class="tips-body">
       <article class="tip-card">
@@ -189,9 +189,9 @@ function shuffleTip(){ tipIndex.value = Math.floor(Math.random() * tipsList.valu
 const liked = reactive(JSON.parse(localStorage.getItem('ht_liked') || '{}'));
 function setLS(key, val){
   localStorage.setItem(key, val);
-  // 同页组件同步
+  // component still reactive update
   window.dispatchEvent(new CustomEvent('ht-sync', { detail: { key, value: val }}));
-  // 跨 Tab 同步（可选）
+  // over the air sync
   try{
     if ('BroadcastChannel' in window){
       bc?.postMessage({ key, value: val });
@@ -222,7 +222,7 @@ watchEffect(() => {
 
 function checkIn(){
   const today = new Date().toISOString().slice(0,10);
-  // 一天只能算一次：跨实例同步后也会立即生效
+  // only once per day
   if (lastCheckDate.value === today) return;
 
   if (lastCheckDate.value){
@@ -317,7 +317,7 @@ function applySync({key, value}){
 }
 
 onMounted(() => {
-  // 每日喝水计数重置（仅在首次加载时）
+  // reset daily water count (only on first load)
   const today = new Date().toISOString().slice(0,10);
   const savedDay = localStorage.getItem('ht_day');
   if (savedDay !== today){
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
   if (bc) try{ bc.close(); }catch{}
 });
 
-function markDone(){ /* 可加 toast，这里先省略 */ }
+function markDone(){ /* with toast*/ }
 </script>
 
 <style scoped>
@@ -392,6 +392,6 @@ function markDone(){ /* 可加 toast，这里先省略 */ }
 .mini-bar{ height:6px; background:#1c2030; border-radius:999px; overflow:hidden; margin-top:6px; }
 .mini-fill{ height:100%; background:#60a5fa; transition:width .1s linear; }
 
-/* Mobile wrapper（仅内容体） */
+/* Mobile wrapper（only for content） */
 .tips-mobile{ padding:0; }
 </style>

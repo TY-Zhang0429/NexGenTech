@@ -96,10 +96,10 @@ const navigateToCalculator = () => {
 .home {
   width: 100%;
   font-family: 'Merriweather', serif;
-  overflow-x: hidden;  /* 防止横向滚动 */
+  overflow-x: hidden;  /* prevent horizontal scrolling */
 }
 
-/* Hero Section 容器 */
+/* Hero Section */
 .hero {
   max-width: 1400px;
   margin: 0 auto;
@@ -147,11 +147,11 @@ const navigateToCalculator = () => {
 }
 
 .hero-content {
-  flex: 1.4; /* 增加中间内容区域的比例 */
+  flex: 1.4; /* increase the proportion of the middle content area */
   z-index: 1;
-  max-width: 700px; /* 增加最大宽度 */
+  max-width: 700px; /* increase maximum width */
   text-align: center;
-  padding: 0 2rem; /* 添加内边距 */
+  padding: 0 2rem; /* add padding */
 }
 
 .hero-title {
@@ -215,20 +215,20 @@ const navigateToCalculator = () => {
 
 .hero-avatar {
   position: relative;
-  flex: 0.8;  /* 减少两侧头像所占空间 */
+  flex: 0.8;  /* reduce the space occupied by the avatars on both sides */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .hero-avatar:first-child {
-  justify-content: flex-start; /* 左侧头像靠左 */
-  margin-left: -2rem; /* 向左移动 */
+  justify-content: flex-start; /* left avatar align left */
+  margin-left: -2rem; /* move left */
 }
 
 .hero-avatar:last-child {
-  justify-content: flex-end; /* 右侧头像靠右 */
-  margin-right: -2rem; /* 向右移动 */
+  justify-content: flex-end; /* right avatar align right */
+  margin-right: -2rem; /* move right */
 }
 
 .avatar-image {
@@ -494,22 +494,22 @@ const navigateToCalculator = () => {
 }
 
 .highlights-grid {
-  max-width: 100%;  /* 允许充分利用屏幕宽度 */
-  padding: 0 40px;  /* 增加左右边距 */
+  max-width: 100%;  /* allow full use of screen width */
+  padding: 0 40px;  /* increase left and right padding */
 }
 
 .highlight-card {
-  flex: 1;  /* 允许卡片平均分配空间 */
-  min-width: 240px;  /* 稍微增大最小宽度 */
-  max-width: 360px;  /* 增大最大宽度 */
-  height: 320px;  /* 稍微增大高度 */
+  flex: 1;  /* allow cards to evenly distribute space */
+  min-width: 240px;  /* slightly increase minimum width */
+  max-width: 360px;  /* increase maximum width */
+  height: 320px;  /* slightly increase height */
   background: var(--panel);
   border-radius: var(--radius);
   overflow: hidden;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.4s var(--ease);
-  margin: 0 12px;  /* 添加水平间距 */
+  margin: 0 12px;  /* add horizontal spacing */
 }
 
 .highlight-image-container {
@@ -541,7 +541,7 @@ const navigateToCalculator = () => {
     flex: 0 1 auto;
     width: 100%;
     max-width: 300px;
-    height: 280px;  /* 手机端稍微矮一点 */
+    height: 280px;  /* mobile is slightly shorter */
   }
 }
 
@@ -550,7 +550,7 @@ const navigateToCalculator = () => {
   font-size: 2.5rem;
   text-align: center;
   margin-bottom: 2rem;
-  color: #2C4F3E;  /* 墨绿色，与顶部导航栏颜色一致 */
+  color: #2C4F3E;  /* dark green, consistent with top navigation bar color */
 }
 
 .highlight-card:hover {
@@ -561,9 +561,9 @@ const navigateToCalculator = () => {
 .highlight-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;  /* 改为cover以更好地填充空间 */
+  object-fit: cover;  /* change to cover for better space filling */
   transition: transform 0.4s var(--ease);
-  padding: 10px;  /* 减小内边距 */
+  padding: 10px;  /* reduce padding */
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -595,18 +595,18 @@ const navigateToCalculator = () => {
 
 .highlight-overlay h3 {
   font-family: 'Merriweather', serif;
-  font-size: 1.3rem;  /* 稍微减小标题大小 */
+  font-size: 1.3rem;  /* slightly reduce title size */
   color: white;
-  margin-bottom: 0.8rem;  /* 减少下边距 */
+  margin-bottom: 0.8rem;  /* reduce bottom margin */
 }
 
 .highlight-overlay p {
   font-family: 'Merriweather', serif;
-  font-size: 0.9rem;  /* 稍微减小文字大小 */
+  font-size: 0.9rem;  /* slightly reduce text size */
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
-  padding: 0 10px;  /* 添加一些水平内边距 */
+  padding: 0 10px;  /* add some horizontal padding */
 }
 
 /* Responsive design for highlights */
@@ -766,7 +766,7 @@ const navigateToCalculator = () => {
   text-align: center;
   padding: 1rem;
   margin-top: 10rem;
-  margin-bottom: -8rem; /* 改为正值，确保有间距 */
+  margin-bottom: -8rem; /* change to positive value to ensure spacing */
   color: #ffffff;
   font-size: 3.5rem;
   font-weight: bold;

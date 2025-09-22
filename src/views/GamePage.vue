@@ -21,7 +21,7 @@
       <!-- center wheel + tips -->
       <div class="center-section">
         <div class="wheel-wrap">
-          <!-- 翅膀：左上两个、右上两个（桌面端显示，移动端隐藏） -->
+          <!-- wing style bubble -->
           <div class="tip tip-tl-outer">Spin the wheel to pick a game</div>
           <div class="tip tip-tl-inner">Watch Avatar run to reach chosen game</div>
           <div class="tip tip-tr-outer">Click “Spin Now” and press “Begin” to start the game.</div>
@@ -68,7 +68,7 @@
       </aside>
     </section>
 
-    <!-- ===== Game Previews (纯视觉交互) ===== -->
+    <!-- ===== Game Previews (vision only) ===== -->
     <section class="previews" aria-label="Game previews (visual only)">
       <article class="preview-card">
         <h3 class="preview-title">Wordle</h3>
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
 .center-section { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 80px; position: relative; z-index: 1; }
 .wheel-wrap { position: relative; display: inline-block; padding: 8px 16px; }
 
-/* —— tips（翅膀） —— */
+/* —— tips（wings） —— */
 .tip{
   position:absolute; left:50%; top:50%; --tx:0%; --ty:0%;
   transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)));
@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
 .boss-container:hover .bossguide-preview{ opacity:1; }
 .boss-preview:hover{ transform:scale(1.05); filter:drop-shadow(0 12px 24px rgba(0,0,0,.3)); }
 
-/* ===== Game Preview（图片居中 → hover 左移 + 文案淡入；移动端退化） ===== */
+/* ===== Game Preview（image centered → hover left shift + text fade in; mobile adaptation） ===== */
 .previews{
   max-width:1100px; margin:18px auto 60px; padding:0 8px;
   display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,28px);
@@ -278,42 +278,42 @@ onBeforeUnmount(() => {
 }
 .preview-card:hover .hover-text{ opacity:1; transform:translateX(0); }
 
-/* ===================== 移动端适配 ===================== */
-/* 触屏/窄屏：单列、隐藏翅膀提示、调整转盘和 AvatarDoor、Boss 隐藏、GamePreview 单列常显文案 */
+/* ===================== mobile adaptation ===================== */
+/* touch screen */
 @media (hover:none), (max-width: 900px){
   .content { grid-template-columns: 1fr; gap: 20px; }
   .left-section { order: 2; min-height: auto; }
   .center-section { order: 1; margin-top: 24px; }
-  .side-box { display: none; }                 /* 隐藏右侧 Boss */
-  .tip { display: none !important; }           /* 隐藏提示泡泡 */
+  .side-box { display: none; }                 /* hide right Boss */
+  .tip { display: none !important; }           /* hide tip bubble */
 
-  /* 让转盘更占宽（覆盖子组件的宽度定义） */
+  /* let wheel occupy more width (override child component's width definition) */
   .center-section :deep(.wheel-svg-wrap){ width: clamp(240px, 64vw, 340px) !important; }
 
-  /* AvatarDoor 改为流式居中显示 */
+  /* AvatarDoor change to fluid center display */
   .scene-container { position: relative; left: auto; bottom: auto; width: clamp(220px, 70vw, 340px); margin: 6px auto 0; }
   :deep(.scene){ height: clamp(160px, 28vh, 240px); transform: scale(0.9); transform-origin: center; }
   :deep(.avatar){ left: 0% !important; }
   :deep(.door){ right: 0% !important; }
 
-  /* 按钮更易点 */
+  /* button is easier to tap */
   .btn-row{ gap: 14px; margin-top: 0; }
   .btn{ padding: 14px 22px; border-radius: 10px; }
 
-  /* Game Preview 单列 & 文案常显 */
+  /* Game Preview single column & text always visible */
   .previews{ grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
   .stage{ height: auto; min-height: 140px; }
   .img-wrap{ left: 18px; transform: translate(0,-50%); }
   .hover-text{ opacity: 1; transform: none; }
 }
 
-/* 更小屏：标题字号、边距再收一档 */
+/* smaller screens: title font size and margins reduced */
 @media (max-width: 600px){
   .title-banner{ font-size: 1.6rem; margin-bottom: 28px; }
   .preview-title{ font-size: 22px; }
 }
 
-/* 悬停无效设备不启用 hover 态 */
+/* hover disabled on non-hover devices */
 @media (hover:none){
   .btn:hover{ transform: none; box-shadow: 0 4px 10px rgba(0,0,0,.1); filter: none; }
 }

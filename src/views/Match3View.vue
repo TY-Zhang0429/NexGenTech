@@ -1,10 +1,10 @@
 <template>
   <!-- root carries CSS vars like --topnav-h -->
   <div ref="pageRoot" class="match3 game-wrapper">
-    <!-- 引入可拖动头像组件 -->
+    <!-- import draggable avatar component -->
     <DraggableAvatar ref="avatarComponent" />
-    
-    <!-- 游戏完成提示框和模糊遮罩 -->
+
+    <!-- game complete overlay -->
     <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
     <div v-if="showGameCompleteMessage" class="game-complete-message">
       {{ gameCompleteMessage }}
@@ -36,8 +36,8 @@
 
 
 
-         <!-- 调试使用，用后删除！！！！！！！！！ -->
-        <!-- 调试用作弊按钮：一键胜利 -->
+         <!-- Debugging use, delete after use -->
+        <!-- Debug cheat button: One-click win -->
         <button class="btn cheat" @click="cheatWin">Cheat: Win Level</button>
 
 
@@ -120,7 +120,7 @@ export default {
       // Mobile drawer state
       tipsOpen: false,
 
-      // 游戏完成状态
+      // game complete state
       showGameCompleteMessage: false,
       gameCompleteMessage: '',
 
@@ -179,18 +179,18 @@ export default {
       this.selected=null;
       this.render();
       this.fxEl().innerHTML="";
-      // 检查并修复天然三连
+      // check and remove any initial matches
       let matches = this.findMatches();
       while (matches.size > 0) {
         for (const i of matches) {
-          // 随机换一个不同的元素
+          // randomly replace with a different element
           let newType;
           do {
             newType = this.randomType();
           } while (newType === this.grid[i]); 
           this.grid[i] = newType;
         }
-        matches = this.findMatches(); // 再检查一遍，直到没有天然匹配
+        matches = this.findMatches(); // check again until no initial matches
       }
 
       this.render();
@@ -258,13 +258,13 @@ export default {
       const a=i, b=this.selected;
       const isSpecial = v => v==="💥" || v==="🌈";
 
-      // 如果已经没有步数，直接判负
+      // if no moves left, just check win/lose
       if (this.moves <= 0) {
         this.checkWinLose();
         return;
       }
-      
-      // 玩家尝试交换就先扣步
+
+      // Player attempts to swap, deduct a move
       this.moves--;
 
       if(!isSpecial(this.grid[a]) && !isSpecial(this.grid[b]) && !this.wouldCreateMatch(a,b)){
@@ -548,8 +548,8 @@ export default {
 
 
     /** Win/Lose check with confetti */
-        //调试使用，用后删除！！！！！！！
-        // 调试用作弊按钮：一键胜利
+        //only for testing
+        // Debugging use, delete after use
     cheatWin() {
       this.score = this.levelGoals[this.level - 1];
       this.checkWinLose();
@@ -557,7 +557,7 @@ export default {
 
     checkWinLose(){
       if(this.score>=this.levelGoals[this.level-1]){
-        // 无论是否有avatar都显示礼花效果
+        // Show confetti effect regardless of avatar
         confetti({ particleCount:200, spread:120, origin:{ y:.6 } });
         setTimeout(()=>{
           alert("🎉 Level "+this.level+" Clear!");
@@ -575,20 +575,20 @@ export default {
       }
     },
 
-    // 处理游戏完成
+    // handle game complete
     handleGameComplete() {
       const avatarType = localStorage.getItem('avatarType');
       
       if (avatarType === 'avatara') {
-        // 如果用户选择的是Sol头像，检查当前进化等级并触发进化
+        // If user selected Sol avatar, check current evolution level and trigger evolution
         const currentLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
         
         if (currentLevel < 3) {
-          // 进化到下一级
+          // evolve to next level
           const newLevel = currentLevel + 1;
           localStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-          
-          // 立即触发头像更新
+
+          // immediately trigger avatar update
           if (this.$refs.avatarComponent) {
             this.$refs.avatarComponent.triggerAvatarUpdate();
           }
@@ -596,11 +596,11 @@ export default {
           this.gameCompleteMessage = `Congratulations! Your avatar evolved to level ${newLevel}`;
           this.showGameCompleteMessage = true;
           
-          // 2秒后隐藏消息并通知头像组件更新
+          // after 2 seconds, hide message and reset game
           setTimeout(() => {
             this.showGameCompleteMessage = false;
-            
-            // 通知DraggableAvatar组件检查状态
+
+            // Notify DraggableAvatar component to check status
             if (this.$refs.avatarComponent) {
               this.$refs.avatarComponent.checkAvatarSelected();
             }
@@ -609,12 +609,12 @@ export default {
             this.init();
           }, 2000);
         } else {
-          // 已经是最高等级，只显示完成消息
+          // Already at max level, just show complete message
           alert("🏆 All Levels Complete!");
           this.init();
         }
       } else {
-        // 如果用户选择的是自定义头像，只显示胜利效果
+        // If user selected custom avatar, just show win effect
         alert("🏆 All Levels Complete!");
         this.init();
       }
@@ -856,7 +856,7 @@ export default {
   .match3 .bar{ width:min(260px,56vw); }
 }
 
-/* ===== 游戏完成提示样式 ===== */
+/* ===== game completion ===== */
 .match3 .overlay-blur {
   position: fixed;
   top: 0;
@@ -875,8 +875,8 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ffffff; /* 墨绿色 */
-  font-family: 'Merriweather', serif; /* Merriweather字体 */
+  color: #ffffff; /* dark green */
+  font-family: 'Merriweather', serif; /* Merriweather font */
   font-size: 36px;
   font-weight: bold;
   z-index: 1001;
