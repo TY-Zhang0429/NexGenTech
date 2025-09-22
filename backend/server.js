@@ -38,12 +38,27 @@ const DB = process.env.DB_NAME; // reuse everywhere
 // Log the DB we actually connected to (sanity check)
 (async () => {
   try {
+    console.log("[DB] Attempting connection with:", {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME
+    });
+    
     const [[info]] = await pool.query(
       "SELECT DATABASE() AS db, CURRENT_USER() AS user, @@version AS version"
     );
     console.log("[DB] connected to:", info.db, "as", info.user, "mysql", info.version);
   } catch (e) {
     console.error("[DB] startup check failed:", e.message);
+    console.error("[DB] Error details:", e);
+    console.error("[DB] Environment check:", {
+      DB_HOST: process.env.DB_HOST ? "SET" : "MISSING",
+      DB_PORT: process.env.DB_PORT ? "SET" : "MISSING", 
+      DB_USER: process.env.DB_USER ? "SET" : "MISSING",
+      DB_NAME: process.env.DB_NAME ? "SET" : "MISSING",
+      DB_PASS: process.env.DB_PASS ? "SET" : "MISSING"
+    });
   }
 })();
 

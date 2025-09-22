@@ -59,13 +59,16 @@
               />
               <div v-if="filteredIngredients.length > 0" class="ingredients-dropdown">
                 <button 
-                  v-for="ingredient in filteredIngredients.slice(0, 8)" 
+                  v-for="ingredient in filteredIngredients.slice(0, 3)" 
                   :key="ingredient"
                   class="ingredient-option"
                   @click="addIngredient(ingredient)"
                 >
                   {{ ingredient }}
                 </button>
+                <div v-if="filteredIngredients.length > 3" class="ingredient-more">
+                  +{{ filteredIngredients.length - 3 }} more...
+                </div>
               </div>
             </div>
             <div v-if="selectedIngredients.length > 0" class="selected-ingredients">
@@ -202,19 +205,75 @@
             </div>
             <div class="measurement-item">
               <span class="measurement-label">Category</span>
-              <span class="measurement-value">{{ selectedRecipe.category }}</span>
+              <span class="measurement-value">{{ capitalizeFirst(selectedRecipe.category) }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Ingredients List -->
+        <!-- Nutrition Summary (Moved to top) -->
+        <div class="nutrition-summary">
+          <h3 class="section-title">Nutrition Summary</h3>
+          <div class="nutrition-grid">
+            <div class="nutrition-item">
+              <span class="nutrition-label">Calories</span>
+              <span class="nutrition-value">{{ calculatedNutrition.Calories }}</span>
+            </div>
+            <div class="nutrition-item">
+              <span class="nutrition-label">Protein</span>
+              <span class="nutrition-value">{{ calculatedNutrition.Protein }}</span>
+            </div>
+            <div class="nutrition-item">
+              <span class="nutrition-label">Carbs</span>
+              <span class="nutrition-value">{{ calculatedNutrition.Carbs }}</span>
+            </div>
+            <div class="nutrition-item">
+              <span class="nutrition-label">Fat</span>
+              <span class="nutrition-value">{{ calculatedNutrition.Fat }}</span>
+            </div>
+            <div class="nutrition-item">
+              <span class="nutrition-label">Fiber</span>
+              <span class="nutrition-value">{{ calculatedNutrition.Fiber }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ingredients List with Interactive Measurements -->
         <div v-if="selectedRecipe.ingredients" class="ingredients-section">
           <h3 class="section-title">Ingredients</h3>
-          <ul class="ingredients-list">
-            <li v-for="(ingredient, index) in selectedRecipe.ingredients" :key="index" class="ingredient-item">
-              {{ capitalizeFirst(ingredient.name || ingredient) }}
-            </li>
-          </ul>
+          <div class="ingredients-list">
+            <div 
+              v-for="(ingredient, index) in ingredientsWithMeasurements" 
+              :key="index" 
+              class="ingredient-item"
+            >
+              <div class="ingredient-info">
+                <span class="ingredient-name">{{ capitalizeFirst(ingredient.name || ingredient) }}</span>
+                <div class="measurement-controls">
+                  <select 
+                    v-model="ingredient.unit" 
+                    @change="updateNutrition(ingredient)"
+                    class="unit-dropdown"
+                  >
+                    <option value="cup">Cup</option>
+                    <option value="grams">Grams</option>
+                    <option value="oz">Oz</option>
+                    <option value="tbsp">Tablespoon</option>
+                    <option value="tsp">Teaspoon</option>
+                    <option value="piece">Piece</option>
+                  </select>
+                  <input 
+                    v-model.number="ingredient.quantity" 
+                    @input="updateNutrition"
+                    type="number" 
+                    min="0" 
+                    step="0.1"
+                    class="quantity-input"
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Directions -->
@@ -227,29 +286,212 @@
           </ol>
         </div>
 
-        <!-- Nutrition Summary -->
-        <div class="nutrition-summary">
-          <h3 class="section-title">Nutrition Summary</h3>
-          <div class="nutrition-grid">
-            <div class="nutrition-item">
-              <span class="nutrition-label">Calories</span>
-              <span class="nutrition-value">{{ selectedRecipe.calories }}</span>
+        <!-- Combined Visualizations -->
+        <div class="combined-visualizations">
+          <h3 class="section-title">Nutrition Analysis</h3>
+          <p class="analysis-description">Comprehensive view of food groups and health benefits in your recipe.</p>
+          
+          <div class="visualizations-container">
+            <!-- Food Groups Analysis (Left) -->
+            <div class="food-groups-analysis">
+              <h4 class="subsection-title">Food Groups in This Recipe</h4>
+              <div class="food-groups-list">
+                <div class="legend-item" v-for="group in foodGroups" :key="group.name">
+                  <div class="legend-color" :class="group.name"></div>
+                  <span class="legend-label">{{ group.label }}</span>
+                  <span class="legend-status" :class="{ present: group.present, missing: !group.present }">
+                    {{ group.present ? '✓ Present' : '✗ Missing' }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Protein</span>
-              <span class="nutrition-value">{{ selectedRecipe.protein_g }}g</span>
+
+            <!-- Nutrition Radar Chart (Right) -->
+            <div class="nutrition-radar">
+              <h4 class="subsection-title">Health Benefits Radar</h4>
+              <div class="radar-chart">
+                <svg viewBox="0 0 300 300" class="radar-svg">
+                  <!-- Background circles -->
+                  <circle cx="150" cy="150" r="120" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                  <circle cx="150" cy="150" r="90" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                  <circle cx="150" cy="150" r="60" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                  <circle cx="150" cy="150" r="30" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                  
+                  <!-- Axis lines -->
+                  <line x1="150" y1="30" x2="150" y2="270" stroke="#e0e0e0" stroke-width="1"/>
+                  <line x1="30" y1="150" x2="270" y2="150" stroke="#e0e0e0" stroke-width="1"/>
+                  <line x1="60" y1="60" x2="240" y2="240" stroke="#e0e0e0" stroke-width="1"/>
+                  <line x1="240" y1="60" x2="60" y2="240" stroke="#e0e0e0" stroke-width="1"/>
+                  
+                  <!-- Data polygon -->
+                  <polygon 
+                    :points="radarPoints" 
+                    fill="rgba(26, 85, 54, 0.3)" 
+                    stroke="#1a5536" 
+                    stroke-width="2"
+                    class="radar-polygon"
+                  />
+                  
+                  <!-- Data points with hover -->
+                  <circle 
+                    v-for="(point, index) in radarDataPoints" 
+                    :key="index"
+                    :cx="point.x" 
+                    :cy="point.y" 
+                    r="6" 
+                    fill="#1a5536"
+                    class="radar-point"
+                    @mouseenter="showTooltip($event, radarCategories[index])"
+                    @mouseleave="hideTooltip"
+                  />
+                  
+                  <!-- Labels - Order must match radarCategories array -->
+                  <text x="150" y="20" text-anchor="middle" class="radar-label">Energy</text>
+                  <text x="220" y="80" text-anchor="middle" class="radar-label">Heart</text>
+                  <text x="280" y="150" text-anchor="middle" class="radar-label">Muscle</text>
+                  <text x="280" y="160" text-anchor="middle" class="radar-label">Power</text>
+                  <text x="220" y="220" text-anchor="middle" class="radar-label">Skin</text>
+                  <text x="150" y="280" text-anchor="middle" class="radar-label">Brain</text>
+                  <text x="80" y="220" text-anchor="middle" class="radar-label">Immune</text>
+                  <text x="20" y="150" text-anchor="middle" class="radar-label">Gut</text>
+                  <text x="20" y="160" text-anchor="middle" class="radar-label">Health</text>
+                  <text x="80" y="80" text-anchor="middle" class="radar-label">Bone</text>
+                </svg>
+                
+                <!-- Tooltip -->
+                <div v-if="tooltip.visible" class="radar-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+                  <div class="tooltip-content">
+                    <strong>{{ tooltip.category }}</strong>
+                    <div class="tooltip-score">{{ Math.round(tooltip.score) }}%</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Carbs</span>
-              <span class="nutrition-value">{{ selectedRecipe.carbs_g }}g</span>
+          </div>
+        </div>
+
+        <!-- Nutrition Comparison Visualization -->
+        <div class="nutrition-comparison">
+          <h3 class="section-title">Nutrition vs Australian Guidelines (15-19 years)</h3>
+          <div class="comparison-container">
+            <div class="comparison-chart">
+              <div class="chart-header">
+                <h4>Daily Intake Comparison</h4>
+                <p class="chart-subtitle">How this meal contributes to your daily needs</p>
+              </div>
+              
+              <!-- Calories Comparison -->
+              <div class="nutrient-comparison">
+                <div class="nutrient-label">
+                  <span class="nutrient-name">Calories</span>
+                  <span class="current-value">{{ calculatedNutrition.Calories }}</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill calories" 
+                      :style="{ width: caloriesPercentage + '%' }"
+                    ></div>
+                  </div>
+                  <div class="progress-labels">
+                    <span class="current">{{ Math.round(caloriesPercentage) }}%</span>
+                    <span class="recommended">Recommended: {{ australianGuidelines.calories }} cal</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Protein Comparison -->
+              <div class="nutrient-comparison">
+                <div class="nutrient-label">
+                  <span class="nutrient-name">Protein</span>
+                  <span class="current-value">{{ calculatedNutrition.Protein }}</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill protein" 
+                      :style="{ width: proteinPercentage + '%' }"
+                    ></div>
+                  </div>
+                  <div class="progress-labels">
+                    <span class="current">{{ Math.round(proteinPercentage) }}%</span>
+                    <span class="recommended">Recommended: {{ australianGuidelines.protein }}g</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Carbs Comparison -->
+              <div class="nutrient-comparison">
+                <div class="nutrient-label">
+                  <span class="nutrient-name">Carbs</span>
+                  <span class="current-value">{{ calculatedNutrition.Carbs }}</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill carbs" 
+                      :style="{ width: carbsPercentage + '%' }"
+                    ></div>
+                  </div>
+                  <div class="progress-labels">
+                    <span class="current">{{ Math.round(carbsPercentage) }}%</span>
+                    <span class="recommended">Recommended: {{ australianGuidelines.carbs }}g</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fat Comparison -->
+              <div class="nutrient-comparison">
+                <div class="nutrient-label">
+                  <span class="nutrient-name">Fat</span>
+                  <span class="current-value">{{ calculatedNutrition.Fat }}</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill fat" 
+                      :style="{ width: fatPercentage + '%' }"
+                    ></div>
+                  </div>
+                  <div class="progress-labels">
+                    <span class="current">{{ Math.round(fatPercentage) }}%</span>
+                    <span class="recommended">Recommended: {{ australianGuidelines.fat }}g</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Fat</span>
-              <span class="nutrition-value">{{ selectedRecipe.fat_g }}g</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Fiber</span>
-              <span class="nutrition-value">{{ selectedRecipe.fiber_g }}g</span>
+
+            <!-- Summary Card -->
+            <div class="summary-card">
+              <h4>Nutrition Summary</h4>
+              <div class="summary-stats">
+                <div class="stat-item" :class="getNutritionStatus('calories')">
+                  <span class="stat-icon">🔥</span>
+                  <span class="stat-text">Calories</span>
+                  <span class="stat-value">{{ Math.round(caloriesPercentage) }}%</span>
+                </div>
+                <div class="stat-item" :class="getNutritionStatus('protein')">
+                  <span class="stat-icon">💪</span>
+                  <span class="stat-text">Protein</span>
+                  <span class="stat-value">{{ Math.round(proteinPercentage) }}%</span>
+                </div>
+                <div class="stat-item" :class="getNutritionStatus('carbs')">
+                  <span class="stat-icon">⚡</span>
+                  <span class="stat-text">Carbs</span>
+                  <span class="stat-value">{{ Math.round(carbsPercentage) }}%</span>
+                </div>
+                <div class="stat-item" :class="getNutritionStatus('fat')">
+                  <span class="stat-icon">🥑</span>
+                  <span class="stat-text">Fat</span>
+                  <span class="stat-value">{{ Math.round(fatPercentage) }}%</span>
+                </div>
+              </div>
+              <div class="recommendation">
+                <p v-if="overallStatus === 'excellent'">🌟 Excellent! This meal provides great nutrition for your age group.</p>
+                <p v-else-if="overallStatus === 'good'">👍 Good choice! This meal contributes well to your daily nutrition needs.</p>
+                <p v-else-if="overallStatus === 'moderate'">⚠️ Moderate nutrition. Consider adding more variety to your meal.</p>
+                <p v-else>💡 Consider balancing this meal with other nutritious foods throughout the day.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -267,6 +509,23 @@ const recipes = ref([]);
 const selectedRecipe = ref(null);
 const ingredientSearch = ref('');
 const filteredIngredients = ref([]);
+const ingredientsWithMeasurements = ref([]);
+const baseNutrition = ref({
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+  fiber: 0
+});
+
+// Australian Dietary Guidelines for teenagers (15-19 years)
+const australianGuidelines = ref({
+  calories: 2200, // Average for 15-19 years
+  protein: 65,    // grams per day
+  carbs: 300,     // grams per day (45-65% of calories)
+  fat: 73,        // grams per day (25-35% of calories)
+  fiber: 25       // grams per day
+});
 
 // Filter state
 const selectedTimeRange = ref('');
@@ -378,6 +637,187 @@ const paginatedRecipes = computed(() => {
   return filteredRecipes.value.slice(start, end);
 });
 
+// Computed nutrition that updates based on measurements
+const calculatedNutrition = computed(() => {
+  const multiplier = calculateTotalMultiplier();
+  return {
+    'Calories': Math.round(baseNutrition.value.calories * multiplier),
+    'Protein': (baseNutrition.value.protein * multiplier).toFixed(1) + 'g',
+    'Carbs': (baseNutrition.value.carbs * multiplier).toFixed(1) + 'g',
+    'Fat': (baseNutrition.value.fat * multiplier).toFixed(1) + 'g',
+    'Fiber': (baseNutrition.value.fiber * multiplier).toFixed(1) + 'g'
+  }
+});
+
+// Percentage calculations for Australian guidelines comparison
+const caloriesPercentage = computed(() => {
+  const current = parseInt(calculatedNutrition.value.Calories);
+  return Math.min((current / australianGuidelines.value.calories) * 100, 100);
+});
+
+const proteinPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Protein);
+  return Math.min((current / australianGuidelines.value.protein) * 100, 100);
+});
+
+const carbsPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Carbs);
+  return Math.min((current / australianGuidelines.value.carbs) * 100, 100);
+});
+
+const fatPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Fat);
+  return Math.min((current / australianGuidelines.value.fat) * 100, 100);
+});
+
+// Overall nutrition status
+const overallStatus = computed(() => {
+  const avgPercentage = (caloriesPercentage.value + proteinPercentage.value + carbsPercentage.value + fatPercentage.value) / 4;
+  if (avgPercentage >= 80) return 'excellent';
+  if (avgPercentage >= 60) return 'good';
+  if (avgPercentage >= 40) return 'moderate';
+  return 'needs-improvement';
+});
+
+// My Plate Visual - Food Groups Analysis
+const foodGroups = computed(() => {
+  if (!selectedRecipe.value?.ingredients) return [];
+  
+  const ingredients = selectedRecipe.value.ingredients.map(ing => ing.toLowerCase());
+  
+  return [
+    {
+      name: 'vegetables',
+      label: 'Veggies',
+      present: ingredients.some(ing => 
+        ing.includes('vegetable') || ing.includes('broccoli') || ing.includes('carrot') || 
+        ing.includes('spinach') || ing.includes('lettuce') || ing.includes('tomato') ||
+        ing.includes('onion') || ing.includes('pepper') || ing.includes('cucumber')
+      )
+    },
+    {
+      name: 'fruits',
+      label: 'Fruits',
+      present: ingredients.some(ing => 
+        ing.includes('fruit') || ing.includes('apple') || ing.includes('banana') || 
+        ing.includes('berry') || ing.includes('orange') || ing.includes('grape') ||
+        ing.includes('strawberry') || ing.includes('blueberry')
+      )
+    },
+    {
+      name: 'grains',
+      label: 'Grains',
+      present: ingredients.some(ing => 
+        ing.includes('bread') || ing.includes('rice') || ing.includes('pasta') || 
+        ing.includes('wheat') || ing.includes('oats') || ing.includes('quinoa') ||
+        ing.includes('cereal') || ing.includes('flour')
+      )
+    },
+    {
+      name: 'protein',
+      label: 'Protein',
+      present: ingredients.some(ing => 
+        ing.includes('meat') || ing.includes('chicken') || ing.includes('beef') || 
+        ing.includes('fish') || ing.includes('egg') || ing.includes('bean') ||
+        ing.includes('lentil') || ing.includes('tofu') || ing.includes('cheese')
+      )
+    },
+    {
+      name: 'dairy',
+      label: 'Dairy',
+      present: ingredients.some(ing => 
+        ing.includes('milk') || ing.includes('cheese') || ing.includes('yogurt') || 
+        ing.includes('butter') || ing.includes('cream') || ing.includes('dairy')
+      )
+    }
+  ];
+});
+
+// My Plate percentages (simplified calculation)
+const vegetablesPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'vegetables')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.3, 100) : 0;
+});
+
+const fruitsPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'fruits')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.2, 100) : 0;
+});
+
+const grainsPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'grains')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.25, 100) : 0;
+});
+
+const proteinPlatePercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'protein')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.15, 100) : 0;
+});
+
+const dairyPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'dairy')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.1, 100) : 0;
+});
+
+// My Plate presence checks
+const hasVegetables = computed(() => foodGroups.value.find(g => g.name === 'vegetables')?.present || false);
+const hasFruits = computed(() => foodGroups.value.find(g => g.name === 'fruits')?.present || false);
+const hasGrains = computed(() => foodGroups.value.find(g => g.name === 'grains')?.present || false);
+const hasProtein = computed(() => foodGroups.value.find(g => g.name === 'protein')?.present || false);
+const hasDairy = computed(() => foodGroups.value.find(g => g.name === 'dairy')?.present || false);
+
+// Overall plate score (percentage of food groups present)
+const overallPlateScore = computed(() => {
+  const presentGroups = foodGroups.value.filter(group => group.present).length;
+  return (presentGroups / foodGroups.value.length) * 100;
+});
+
+// Number of present food groups
+const presentFoodGroups = computed(() => {
+  return foodGroups.value.filter(group => group.present).length;
+});
+
+// Tooltip for radar chart
+const tooltip = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  category: '',
+  score: 0
+});
+
+// Radar Chart Data - Order must match the SVG labels
+const radarCategories = computed(() => [
+  { name: 'Energy Boost', score: Math.min(caloriesPercentage.value * 0.8, 100), color: '#ff6b6b' },
+  { name: 'Heart Health', score: Math.min(fatPercentage.value * 0.8, 100), color: '#ff9ff3' },
+  { name: 'Muscle Power', score: Math.min(proteinPercentage.value * 1.2, 100), color: '#4ecdc4' },
+  { name: 'Skin Glow', score: Math.min(proteinPercentage.value * 0.4, 100), color: '#5f27cd' },
+  { name: 'Brain Fuel', score: Math.min(carbsPercentage.value * 0.9, 100), color: '#45b7d1' },
+  { name: 'Immune Boost', score: Math.min(caloriesPercentage.value * 0.5, 100), color: '#54a0ff' },
+  { name: 'Gut Health', score: Math.min(fatPercentage.value * 0.7, 100), color: '#96ceb4' },
+  { name: 'Bone Strength', score: Math.min(proteinPercentage.value * 0.6, 100), color: '#feca57' }
+]);
+
+// Radar Chart Points Calculation
+const radarDataPoints = computed(() => {
+  const centerX = 150;
+  const centerY = 150;
+  const maxRadius = 120;
+  
+  return radarCategories.value.map((category, index) => {
+    const angle = (index * Math.PI * 2) / radarCategories.value.length - Math.PI / 2;
+    const radius = (category.score / 100) * maxRadius;
+    return {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius
+    };
+  });
+});
+
+const radarPoints = computed(() => {
+  return radarDataPoints.value.map(point => `${point.x},${point.y}`).join(' ');
+});
+
 // Methods
 const selectTimeRange = (range) => {
   selectedTimeRange.value = selectedTimeRange.value === range ? '' : range;
@@ -448,6 +888,144 @@ const prevPage = () => {
 
 const selectRecipe = (recipe) => {
   selectedRecipe.value = recipe;
+  setupIngredientsWithMeasurements();
+  setBaseNutrition();
+};
+
+const setupIngredientsWithMeasurements = () => {
+  if (!selectedRecipe.value?.ingredients) return;
+  
+  let ingredients = [];
+  try {
+    if (typeof selectedRecipe.value.ingredients === 'string') {
+      ingredients = JSON.parse(selectedRecipe.value.ingredients);
+    } else if (Array.isArray(selectedRecipe.value.ingredients)) {
+      ingredients = selectedRecipe.value.ingredients;
+    }
+  } catch (e) {
+    console.error('Error parsing ingredients:', e);
+    return;
+  }
+  
+  ingredientsWithMeasurements.value = ingredients.map(ing => ({
+    name: typeof ing === 'string' ? ing : ing.name,
+    unit: 'grams', // Default to grams
+    quantity: 100, // Default quantity for grams
+    originalQuantity: extractQuantity(ing),
+    originalUnit: extractUnit(ing)
+  }));
+};
+
+const getDefaultQuantity = (unit) => {
+  const defaults = {
+    'cup': 1,
+    'grams': 100,
+    'oz': 3.5,
+    'tbsp': 1,
+    'tsp': 1,
+    'piece': 1
+  };
+  return defaults[unit] || 1;
+};
+
+const setBaseNutrition = () => {
+  if (selectedRecipe.value) {
+    baseNutrition.value = {
+      calories: selectedRecipe.value.calories || 0,
+      protein: selectedRecipe.value.protein_g || 0,
+      carbs: selectedRecipe.value.carbs_g || 0,
+      fat: selectedRecipe.value.fat_g || 0,
+      fiber: selectedRecipe.value.fiber_g || 0
+    };
+  }
+};
+
+const extractQuantity = (ingredient) => {
+  if (typeof ingredient === 'string') {
+    const match = ingredient.match(/(\d+(?:\.\d+)?(?:\/\d+)?)/);
+    return match ? parseFloat(match[1]) : 1;
+  }
+  return 1;
+};
+
+const extractUnit = (ingredient) => {
+  if (typeof ingredient === 'string') {
+    const unitMatch = ingredient.match(/(cup|tbsp|tsp|gram|oz|piece)/i);
+    return unitMatch ? unitMatch[1].toLowerCase() : 'piece';
+  }
+  return 'piece';
+};
+
+const calculateTotalMultiplier = () => {
+  // Simple calculation - in real app, you'd have a proper nutrition database
+  let totalMultiplier = 0;
+  ingredientsWithMeasurements.value.forEach(ing => {
+    const quantity = ing.quantity || 0;
+    const unitMultiplier = getUnitMultiplier(ing.unit);
+    totalMultiplier += (quantity * unitMultiplier) / 100; // Normalize to 100g base
+  });
+  return Math.max(totalMultiplier, 0.1); // Minimum 0.1 to avoid zero
+};
+
+const getUnitMultiplier = (unit) => {
+  const multipliers = {
+    'cup': 240, // grams
+    'grams': 1,
+    'oz': 28.35,
+    'tbsp': 15,
+    'tsp': 5,
+    'piece': 50 // average piece weight
+  };
+  return multipliers[unit] || 1;
+};
+
+const updateNutrition = (ingredient) => {
+  // Update quantity to default when unit changes
+  if (ingredient) {
+    ingredient.quantity = getDefaultQuantity(ingredient.unit);
+  }
+  // Trigger reactivity update
+  console.log('Nutrition updated based on measurements');
+};
+
+const getNutritionStatus = (nutrient) => {
+  let percentage;
+  switch (nutrient) {
+    case 'calories':
+      percentage = caloriesPercentage.value;
+      break;
+    case 'protein':
+      percentage = proteinPercentage.value;
+      break;
+    case 'carbs':
+      percentage = carbsPercentage.value;
+      break;
+    case 'fat':
+      percentage = fatPercentage.value;
+      break;
+    default:
+      return 'moderate';
+  }
+  
+  if (percentage >= 80) return 'excellent';
+  if (percentage >= 60) return 'good';
+  if (percentage >= 40) return 'moderate';
+  return 'needs-improvement';
+};
+
+const showTooltip = (event, category) => {
+  const rect = event.target.getBoundingClientRect();
+  tooltip.value = {
+    visible: true,
+    x: rect.left + rect.width / 2,
+    y: rect.top - 10,
+    category: category.name,
+    score: category.score
+  };
+};
+
+const hideTooltip = () => {
+  tooltip.value.visible = false;
 };
 
 const closeModal = () => {
@@ -763,6 +1341,16 @@ onMounted(() => {
   background: #f0f0f0;
 }
 
+.ingredient-more {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
 .selected-ingredients {
   display: flex;
   gap: 8px;
@@ -1027,10 +1615,11 @@ onMounted(() => {
 }
 
 .measurements-card {
-  background: #f8f9fa;
+  background: white;
   padding: 30px;
-  border-radius: 15px 15px 0 0;
+  border-radius: 20px 20px 0 0;
   margin-bottom: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .measurements-title {
@@ -1049,25 +1638,55 @@ onMounted(() => {
 
 .measurement-item {
   text-align: center;
-  padding: 15px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  background: linear-gradient(135deg, #ff9a56 0%, #ffad7a 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(255, 154, 86, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.measurement-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.measurement-item:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(255, 154, 86, 0.4);
+}
+
+.measurement-item:hover::before {
+  opacity: 1;
 }
 
 .measurement-label {
   display: block;
-  color: #8b7765;
+  color: white;
   font-size: 0.9rem;
-  margin-bottom: 5px;
-  font-weight: 500;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .measurement-value {
   display: block;
-  color: #1a5536;
-  font-size: 1.1rem;
-  font-weight: 600;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .ingredients-section,
@@ -1098,6 +1717,48 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.ingredient-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ingredient-name {
+  font-weight: 500;
+  color: #8b7765;
+  flex: 1;
+}
+
+.measurement-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.unit-dropdown, .quantity-input {
+  padding: 8px 12px;
+  border: 2px solid #d4c4a8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Merriweather', serif;
+  color: #8b7765;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.unit-dropdown:focus, .quantity-input:focus {
+  outline: none;
+  border-color: #1a5536;
+  box-shadow: 0 0 0 3px rgba(26, 85, 54, 0.1);
+}
+
+.quantity-input {
+  width: 80px;
+  text-align: center;
+}
+
 .direction-item {
   counter-increment: step-counter;
   position: relative;
@@ -1125,6 +1786,18 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.nutrition-summary {
+  background: white;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-summary .section-title {
+  color: #8b7765;
+  margin-bottom: 25px;
+}
+
 .nutrition-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -1133,24 +1806,450 @@ onMounted(() => {
 
 .nutrition-item {
   text-align: center;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 10px;
+  padding: 18px;
+  background: linear-gradient(135deg, #ff7f50 0%, #ffa07a 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(255, 127, 80, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.nutrition-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.nutrition-item:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 127, 80, 0.4);
+}
+
+.nutrition-item:hover::before {
+  opacity: 1;
 }
 
 .nutrition-label {
   display: block;
-  color: #8b7765;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  font-weight: 500;
+  color: white;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .nutrition-value {
   display: block;
-  color: #1a5536;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Combined Visualizations */
+.combined-visualizations {
+  background: white;
+  padding: 30px;
+  border-radius: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-description {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.visualizations-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.subsection-title {
+  color: #8b7765;
   font-size: 1.2rem;
+  margin-bottom: 15px;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+}
+
+/* Food Groups Analysis */
+.food-groups-analysis {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.food-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.legend-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.legend-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.legend-color.vegetables { background: linear-gradient(135deg, #4caf50, #66bb6a); }
+.legend-color.fruits { background: linear-gradient(135deg, #ff9800, #ffb74d); }
+.legend-color.grains { background: linear-gradient(135deg, #8d6e63, #a1887f); }
+.legend-color.protein { background: linear-gradient(135deg, #f44336, #ef5350); }
+.legend-color.dairy { background: linear-gradient(135deg, #2196f3, #42a5f5); }
+
+.legend-label {
+  flex: 1;
   font-weight: 600;
+  color: #8b7765;
+  font-size: 1rem;
+}
+
+.legend-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.legend-status.present {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.legend-status.missing {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* Nutrition Radar Chart */
+.nutrition-radar {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.radar-chart {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.radar-svg {
+  width: 100%;
+  height: 300px;
+  max-width: 300px;
+}
+
+.radar-polygon {
+  animation: drawPolygon 1s ease-in-out;
+}
+
+.radar-point {
+  animation: pulse 2s infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.radar-point:hover {
+  r: 8;
+  fill: #ff6b6b;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.radar-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #8b7765;
+  font-family: 'Merriweather', serif;
+}
+
+/* Radar Tooltip */
+.radar-tooltip {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+.tooltip-content {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+.tooltip-content strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.tooltip-score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4ecdc4;
+}
+
+@keyframes drawPolygon {
+  from {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    r: 4;
+    opacity: 1;
+  }
+  50% {
+    r: 6;
+    opacity: 0.7;
+  }
+}
+
+/* Nutrition Comparison Visualization */
+.nutrition-comparison {
+  background: white;
+  padding: 30px;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.comparison-chart {
+  background: #f8f9fa;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.chart-header h4 {
+  color: #8b7765;
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  font-family: 'Merriweather', serif;
+}
+
+.chart-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.nutrient-comparison {
+  margin-bottom: 20px;
+}
+
+.nutrient-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.nutrient-name {
+  font-weight: 600;
+  color: #8b7765;
+  font-size: 1rem;
+}
+
+.current-value {
+  font-weight: 700;
+  color: #1a5536;
+  font-size: 1.1rem;
+}
+
+.progress-container {
+  position: relative;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.progress-fill.calories {
+  background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+}
+
+.progress-fill.protein {
+  background: linear-gradient(90deg, #4ecdc4, #6ed5cd);
+}
+
+.progress-fill.carbs {
+  background: linear-gradient(90deg, #45b7d1, #6bc5d8);
+}
+
+.progress-fill.fat {
+  background: linear-gradient(90deg, #f9ca24, #fbd54a);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.current {
+  font-weight: 600;
+  color: #1a5536;
+}
+
+.recommended {
+  color: #666;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 25px;
+  border-radius: 15px;
+  color: white;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.summary-card h4 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.stat-item.excellent {
+  background: rgba(76, 175, 80, 0.3);
+  border: 2px solid rgba(76, 175, 80, 0.5);
+}
+
+.stat-item.good {
+  background: rgba(33, 150, 243, 0.3);
+  border: 2px solid rgba(33, 150, 243, 0.5);
+}
+
+.stat-item.moderate {
+  background: rgba(255, 193, 7, 0.3);
+  border: 2px solid rgba(255, 193, 7, 0.5);
+}
+
+.stat-item.needs-improvement {
+  background: rgba(244, 67, 54, 0.3);
+  border: 2px solid rgba(244, 67, 54, 0.5);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.stat-text {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.recommendation {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.recommendation p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 /* Responsive Design */
@@ -1341,6 +2440,39 @@ onMounted(() => {
   
   .pagination-info {
     font-size: 0.8rem;
+  }
+  
+  .comparison-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .plate-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .plate-circle {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .radar-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .radar-svg {
+    height: 250px;
+  }
+  
+  .visualizations-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 </style>
