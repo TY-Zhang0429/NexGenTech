@@ -20,7 +20,6 @@
         <h3 class="footer-title">Support</h3>
         <ul class="footer-list">
           <li><router-link to="/support">How it Works</router-link></li>
-          <li><router-link to="/faq">FAQ</router-link></li>
         </ul>
       </div>
     </div>
