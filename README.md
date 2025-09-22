@@ -26,6 +26,7 @@ This project combines nutrition education with interactive entertainment, design
 ---
 
 ## 📂 Project Structure
+```
 src/
 ├── assets/                 // Website picture/video resources
 ├── App.vue                 // Root component with global layout and video background
@@ -47,7 +48,7 @@ src/
     ├── FoodSwapView.vue    // Food swap page
     ├── CalculatorView.vue  // Nutrient calculator
     └── SupportView.vue     // Support & FAQ
-
+```
 ---
 
 ## 🚀 Setup & Run
