@@ -48,6 +48,10 @@ const currentAvatarSrc = computed(() => {
       return '/assets/avatarb.png';
     case 'avatarc':
       return '/assets/avatarc.png';
+    case 'avatard':
+      return '/assets/avatard.png';
+    case 'avatare':
+      return '/assets/avatare.png';
     default:
       return props.avatarSrc;
   }
@@ -177,7 +181,7 @@ defineExpose({
   z-index: 1000;
   cursor: grab;
   width: 170px; 
-  height: 170px; 
+  height: 200px; 
   overflow: hidden;
   user-select: none;
   touch-action: none;
