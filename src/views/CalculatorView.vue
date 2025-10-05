@@ -6,49 +6,8 @@
     <div class="content-container">
       <h1 class="main-title">Mix, Match, Make It Yours</h1>
       <p class="subtitle">Use the filters below to discover recipes that fit your vibe. Pick your prep time, choose your category, search ingredients - Find exactly what you're craving.</p>
-
-      <!-- ============ NEW: Image → Recipe/Nutrition Analyzer (Front-end only) ============ -->
-      <div class="filters-section" style="margin-bottom: 28px;">
-        <div class="white-overlay"></div>
-        <div class="filters-container">
-          <label class="filter-label">Image Recognition (Beta)</label>
-
-          <div class="image-analyze-row">
-            <input
-              class="image-input"
-              type="file"
-              accept="image/png,image/jpeg"
-              @change="onImagePicked"
-            />
-            <button
-              class="analyze-btn"
-              :disabled="!pickedFile || analyzing"
-              @click="analyzePickedImage"
-            >
-              {{ analyzing ? 'Analyzing…' : 'Analyze Image → Recipe & Nutrition' }}
-            </button>
-          </div>
-
-          <div class="image-preview-wrap" v-if="previewUrl || analyzeError || analyzeTips.length">
-            <div v-if="previewUrl" class="image-preview">
-              <img :src="previewUrl" alt="preview"/>
-            </div>
-
-            <div v-if="analyzeError" class="analyze-error">⚠️ {{ analyzeError }}</div>
-
-            <ul v-if="analyzeTips.length" class="analyze-tips">
-              <li v-for="(t,i) in analyzeTips" :key="i">💡 {{ t }}</li>
-            </ul>
-
-            <p class="disclaimer" style="margin-top:8px">
-              For learning purposes only, not medical advice.
-            </p>
-          </div>
-        </div>
-      </div>
-      <!-- ========================== /NEW block ========================== -->
-
-      <!-- Filter Section (original) -->
+      
+      <!-- Filter Section -->
       <div class="filters-section">
         <div class="white-overlay"></div>
         <div class="filters-container">
@@ -251,7 +210,7 @@
           </div>
         </div>
 
-        <!-- Nutrition Summary -->
+        <!-- Nutrition Summary (Moved to top) -->
         <div class="nutrition-summary">
           <h3 class="section-title">Nutrition Summary</h3>
           <div class="nutrition-grid">
@@ -278,7 +237,7 @@
           </div>
         </div>
 
-        <!-- Ingredients List -->
+        <!-- Ingredients List with Interactive Measurements -->
         <div v-if="selectedRecipe.ingredients" class="ingredients-section">
           <h3 class="section-title">Ingredients</h3>
           <div class="ingredients-list">
@@ -333,7 +292,7 @@
           <p class="analysis-description">Comprehensive view of food groups and health benefits in your recipe.</p>
           
           <div class="visualizations-container">
-            <!-- Food Groups Analysis -->
+            <!-- Food Groups Analysis (Left) -->
             <div class="food-groups-analysis">
               <h4 class="subsection-title">Food Groups in This Recipe</h4>
               <div class="food-groups-list">
@@ -347,19 +306,24 @@
               </div>
             </div>
 
-            <!-- Nutrition Radar Chart -->
+            <!-- Nutrition Radar Chart (Right) -->
             <div class="nutrition-radar">
               <h4 class="subsection-title">Health Benefits Radar</h4>
               <div class="radar-chart">
                 <svg viewBox="0 0 300 300" class="radar-svg">
+                  <!-- Background circles -->
                   <circle cx="150" cy="150" r="120" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                   <circle cx="150" cy="150" r="90" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                   <circle cx="150" cy="150" r="60" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                   <circle cx="150" cy="150" r="30" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                  
+                  <!-- Axis lines -->
                   <line x1="150" y1="30" x2="150" y2="270" stroke="#e0e0e0" stroke-width="1"/>
                   <line x1="30" y1="150" x2="270" y2="150" stroke="#e0e0e0" stroke-width="1"/>
                   <line x1="60" y1="60" x2="240" y2="240" stroke="#e0e0e0" stroke-width="1"/>
                   <line x1="240" y1="60" x2="60" y2="240" stroke="#e0e0e0" stroke-width="1"/>
+                  
+                  <!-- Data polygon -->
                   <polygon 
                     :points="radarPoints" 
                     fill="rgba(26, 85, 54, 0.3)" 
@@ -367,6 +331,8 @@
                     stroke-width="2"
                     class="radar-polygon"
                   />
+                  
+                  <!-- Data points with hover -->
                   <circle 
                     v-for="(point, index) in radarDataPoints" 
                     :key="index"
@@ -378,6 +344,8 @@
                     @mouseenter="showTooltip($event, radarCategories[index])"
                     @mouseleave="hideTooltip"
                   />
+                  
+                  <!-- Labels - Order must match radarCategories array -->
                   <text x="150" y="20" text-anchor="middle" class="radar-label">Energy</text>
                   <text x="220" y="80" text-anchor="middle" class="radar-label">Heart</text>
                   <text x="280" y="150" text-anchor="middle" class="radar-label">Muscle</text>
@@ -389,6 +357,8 @@
                   <text x="20" y="160" text-anchor="middle" class="radar-label">Health</text>
                   <text x="80" y="80" text-anchor="middle" class="radar-label">Bone</text>
                 </svg>
+                
+                <!-- Tooltip -->
                 <div v-if="tooltip.visible" class="radar-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
                   <div class="tooltip-content">
                     <strong>{{ tooltip.category }}</strong>
@@ -525,111 +495,44 @@
             </div>
           </div>
         </div>
-      </div> <!-- /modal-content -->
-    </div> <!-- /modal-overlay -->
-    <!-- Candidate Picker Modal (outside of the existing Recipe Detail Modal) -->
-    <div v-if="showCandidateModal" class="candidate-overlay" @click="showCandidateModal=false">
-      <div class="candidate-panel" @click.stop>
-        <h3 class="section-title">Pick a recipe</h3>
-        <div class="candidate-grid">
-          <div class="candidate-card" v-for="c in candidateRecipes" :key="c.id"
-              @click="() => { selectRecipe(c); showCandidateModal=false; }">
-            <img :src="c.image_url || (`/food_icons/${encodeURIComponent(c.image_filename || '')}.png`)" alt="">
-            <div class="title">{{ c.recipe_name }}</div>
-            <div class="meta">{{ c.calories }} cal · {{ c.protein_g }}g protein</div>
-          </div>
-        </div>
-        <button class="close-btn" @click="showCandidateModal=false">Cancel</button>
       </div>
     </div>
-
-  </div> <!-- /calculator-page -->
+  </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 
-const candidateRecipes = ref([]);
-const showCandidateModal = ref(false);
-
-
-
-const pickedFile = ref(null);
-const previewUrl = ref('');
-const analyzing = ref(false);
-const analyzeError = ref('');
-const analyzeTips = ref([]);
-
-// label → canonical dish → ingredients (expandable)
-const LABEL_TO_ING = {
-  burger: ['bun','beef patty','cheddar','lettuce','tomato','ketchup'],
-  cheeseburger: ['bun','beef patty','cheddar','lettuce','tomato'],
-  pizza: ['pizza base','tomato sauce','mozzarella','olive oil'],
-  salad: ['lettuce','tomato','cucumber','olive oil'],
-  pasta: ['spaghetti','olive oil','garlic','parmesan'],
-  sushi: ['rice','nori','salmon','soy sauce'],
-  sandwich: ['bread','ham','cheddar','lettuce'],
-  cereal: ['cereal','milk'],
-  oatmeal: ['oats','milk'],
-  pancake: ['flour','milk','egg','butter']
-};
-
-// very small per-100g nutrition DB (kcal/protein/carbs/fat/fiber)
-const NUTRITION_100G = {
-  'bun': {kcal: 260, p:9, c:49, f:3, fi:2.5},
-  'beef patty': {kcal: 250, p:26, c:0, f:17, fi:0},
-  'cheddar': {kcal: 402, p:25, c:1.3, f:33, fi:0},
-  'lettuce': {kcal: 15, p:1.4, c:2.9, f:0.2, fi:1.3},
-  'tomato': {kcal: 18, p:0.9, c:3.9, f:0.2, fi:1.2},
-  'ketchup': {kcal: 112, p:1.3, c:26, f:0.2, fi:0.3},
-  'pizza base': {kcal: 265, p:9, c:52, f:3.2, fi:2.7},
-  'tomato sauce': {kcal: 80, p:2, c:14, f:1, fi:2},
-  'mozzarella': {kcal: 280, p:28, c:3, f:17, fi:0},
-  'olive oil': {kcal: 884, p:0, c:0, f:100, fi:0},
-  'cucumber': {kcal: 16, p:0.7, c:3.6, f:0.1, fi:0.5},
-  'spaghetti': {kcal: 158, p:5.8, c:30, f:0.9, fi:1.8},
-  'garlic': {kcal: 149, p:6.4, c:33, f:0.5, fi:2.1},
-  'parmesan': {kcal: 431, p:38, c:4.1, f:29, fi:0},
-  'rice': {kcal: 130, p:2.4, c:28, f:0.3, fi:0.4},
-  'nori': {kcal: 35, p:5.8, c:5.1, f:0.3, fi:0.3},
-  'salmon': {kcal: 208, p:20, c:0, f:13, fi:0},
-  'soy sauce': {kcal: 53, p:8, c:4.9, f:0.6, fi:0.8},
-  'bread': {kcal: 265, p:9, c:49, f:3.2, fi:2.7},
-  'ham': {kcal: 145, p:20, c:1.5, f:6, fi:0},
-  'cereal': {kcal: 380, p:7, c:84, f:2, fi:9},
-  'milk': {kcal: 64, p:3.4, c:5, f:3.6, fi:0},
-  'oats': {kcal: 389, p:17, c:66, f:7, fi:10},
-  'flour': {kcal: 364, p:10, c:76, f:1, fi:2.7},
-  'egg': {kcal: 155, p:13, c:1.1, f:11, fi:0},
-  'butter': {kcal: 717, p:0.9, c:0.1, f:81, fi:0}
-};
-
-// default grams per ingredient (simple assumptions)
-const DEFAULT_QTY = {
-  grams: 100, cup: 240, oz: 28.35, tbsp: 15, tsp: 5, piece: 50
-};
-// ================= /NEW =================
-
-// --------- existing states ---------
+// Reactive data
 const loading = ref(false);
 const recipes = ref([]);
 const selectedRecipe = ref(null);
 const ingredientSearch = ref('');
 const filteredIngredients = ref([]);
 const ingredientsWithMeasurements = ref([]);
-const baseNutrition = ref({ calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
-
-// Australian Dietary Guidelines
-const australianGuidelines = ref({
-  calories: 2200, protein: 65, carbs: 300, fat: 73, fiber: 25
+const baseNutrition = ref({
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+  fiber: 0
 });
 
-// Filters
+// Australian Dietary Guidelines for teenagers (15-19 years)
+const australianGuidelines = ref({
+  calories: 2200, // Average for 15-19 years
+  protein: 65,    // grams per day
+  carbs: 300,     // grams per day (45-65% of calories)
+  fat: 73,        // grams per day (25-35% of calories)
+  fiber: 25       // grams per day
+});
+
+// Filter state
 const selectedTimeRange = ref('');
 const selectedCategories = ref([]);
 const selectedIngredients = ref([]);
 
-// Pagination
+// Pagination state
 const currentPage = ref(1);
 const recipesPerPage = 9;
 
@@ -644,130 +547,41 @@ const timeRanges = ref([
 const categories = ref([]);
 const allIngredients = ref([]);
 
-// -------------- NEW: image handlers --------------
-function onImagePicked(e) {
-  analyzeError.value = '';
-  analyzeTips.value = [];
-  const f = e.target.files?.[0];
-  pickedFile.value = f || null;
-  previewUrl.value = f ? URL.createObjectURL(f) : '';
-}
-
-async function analyzePickedImage() {
-  const LAMBDA_URL = 'https://ujfitbo3467ezuajq4ahqlup2u0iaasm.lambda-url.us-east-1.on.aws/';
-  if (!pickedFile.value) return;
-
-  analyzeError.value = '';
-  analyzeTips.value = [];
-  analyzing.value = true;
-
-  try {
-    const resp = await fetch(LAMBDA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': pickedFile.value.type || 'application/octet-stream' },
-      body: pickedFile.value
-    });
-
-    // Debug output
-    console.log('[vision] status:', resp.status, resp.statusText);
-    const text = await resp.text();
-    console.log('[vision] raw body:', text);
-
-    let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-    if (!resp.ok) { analyzeError.value = data?.error || `${resp.status} ${resp.statusText}`; return; }
-
-    analyzeTips.value.push(`Detected: ${data.label} (${data.score}%)`);
-
-    if (Array.isArray(data.candidates) && data.candidates.length) {
-      candidateRecipes.value = data.candidates;
-      showCandidateModal.value = true;          // pop up 3 candidates
-    } else {
-      // use synthetic recipe
-      const key = data.label;
-      const ings = LABEL_TO_ING[key] || [key];
-      const s = buildSyntheticRecipe(key, ings);
-      const n = computeNutritionFromIngredients(ings);
-      Object.assign(s, {
-        calories: Math.round(n.kcal),
-        protein_g: round1(n.p), carbs_g: round1(n.c),
-        fat_g: round1(n.f), fiber_g: round1(n.fi)
-      });
-      selectRecipe(s);
-    }
-  } catch (err) {
-    console.error('[vision] fetch error:', err);
-    analyzeError.value = err.message || 'Network error';
-  } finally {
-    analyzing.value = false;
-  }
-}
-
-function buildSyntheticRecipe(title, ingredients) {
-  const stepsMap = {
-    burger: ['Toast bun','Pan-fry patty','Layer cheese & veg','Assemble'],
-    pizza: ['Preheat oven','Spread sauce','Add cheese','Bake 10–12 min'],
-    salad: ['Chop veggies','Toss with oil & salt','Serve']
-  };
-  const lower = title.toLowerCase();
-  const timeText = (lower.includes('salad') ? '5-15 min' :
-                   lower.includes('pizza') ? '15-30 min' : '5-15 min');
-  return {
-    unique_id: `ai_${Date.now()}`,
-    source_table: 'ai_generated',
-    id: 0,
-    recipe_name: title[0].toUpperCase() + title.slice(1),
-    category: 'lunch',
-    serving_size: '1 serving',
-    prep_time_minutes: null,
-    cook_time_minutes: null,
-    total_time: null,
-    time_display: timeText,
-    // nutrition will be filled after compute
-    calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0,
-    // these fields will be parsed in your UI
-    ingredients: ingredients,
-    measurements: null,
-    directions: stepsMap[lower] || ['Prepare ingredients','Assemble and serve'],
-    image_filename: title.toLowerCase().replace(/\s+/g,'-')
-  };
-}
-
-function computeNutritionFromIngredients(ings) {
-  // assume each ingredient ~100g as default
-  let kcal=0, p=0, c=0, f=0, fi=0;
-  ings.forEach(name=>{
-    const row = NUTRITION_100G[name];
-    if (row) { kcal+=row.kcal; p+=row.p; c+=row.c; f+=row.f; fi+=row.fi; }
-  });
-  // prevent zero nutrition
-  if ((kcal+p+c+f+fi)===0 && ings.length>0) {
-    // 80kcal for unknown item
-    kcal = 80*ings.length;
-  }
-  return {kcal, p, c, f, fi};
-}
-
-function round1(n){ return Math.round(n*10)/10; }
-// -------------- /NEW --------------
-
-// ----------------- filters & list -----------------
+// Computed properties
 const filteredRecipes = computed(() => {
+  
   const filtered = recipes.value.filter(recipe => {
+    // Time filter
     if (selectedTimeRange.value) {
       const totalTime = recipe.total_time || 0;
       const timeRange = selectedTimeRange.value;
+      
       switch (timeRange) {
-        case '0-5': if (totalTime > 5) return false; break;
-        case '5-15': if (totalTime <= 5 || totalTime > 15) return false; break;
-        case '15-30': if (totalTime <= 15 || totalTime > 30) return false; break;
-        case '30+': if (totalTime <= 30) return false; break;
+        case '0-5':
+          if (totalTime > 5) return false;
+          break;
+        case '5-15':
+          if (totalTime <= 5 || totalTime > 15) return false;
+          break;
+        case '15-30':
+          if (totalTime <= 15 || totalTime > 30) return false;
+          break;
+        case '30+':
+          if (totalTime <= 30) return false;
+          break;
       }
     }
+
+    // Category filter
     if (selectedCategories.value.length > 0) {
       if (!selectedCategories.value.includes(recipe.category)) return false;
     }
+
+    // Ingredients filter - Only apply if ingredients are selected
     if (selectedIngredients.value.length > 0) {
       if (!recipe.ingredients) return false;
+      
+      // Parse ingredients from JSON
       let recipeIngredients = [];
       try {
         if (typeof recipe.ingredients === 'string') {
@@ -775,33 +589,55 @@ const filteredRecipes = computed(() => {
         } else if (Array.isArray(recipe.ingredients)) {
           recipeIngredients = recipe.ingredients;
         }
-      } catch { return false; }
+      } catch (e) {
+        return false;
+      }
+      
+      // Extract ingredient names
       const ingredientNames = recipeIngredients.map(ing => {
         if (typeof ing === 'string') return ing.toLowerCase();
         if (ing && ing.name) return ing.name.toLowerCase();
         return '';
-      }).filter(Boolean);
-      const hasMatch = selectedIngredients.value.some(sel =>
-        ingredientNames.some(r => new RegExp(`\\b${sel.toLowerCase()}\\b`).test(r))
+      }).filter(name => name.length > 0);
+      
+      
+      // Check for ingredient matches - recipe must contain ANY selected ingredient (OR logic)
+      // Use word boundary matching to avoid partial matches (e.g., "ice" matching "lime juice")
+      const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
+        ingredientNames.some(recipeIng => {
+          // Create word boundary regex for exact word matching
+          const regex = new RegExp(`\\b${selectedIng.toLowerCase()}\\b`);
+          return regex.test(recipeIng);
+        })
       );
-      if (!hasMatch) return false;
+      
+      if (!hasMatchingIngredient) return false;
     }
+
     return true;
   });
+  
   return filtered;
 });
 
 const hasActiveFilters = computed(() => {
-  return selectedTimeRange.value || selectedCategories.value.length > 0 || selectedIngredients.value.length > 0;
+  return selectedTimeRange.value || 
+         selectedCategories.value.length > 0 || 
+         selectedIngredients.value.length > 0;
 });
 
-const totalPages = computed(() => Math.ceil(filteredRecipes.value.length / recipesPerPage));
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredRecipes.value.length / recipesPerPage);
+});
+
 const paginatedRecipes = computed(() => {
   const start = (currentPage.value - 1) * recipesPerPage;
-  return filteredRecipes.value.slice(start, start + recipesPerPage);
+  const end = start + recipesPerPage;
+  return filteredRecipes.value.slice(start, end);
 });
 
-// ----------------- nutrition & modal -----------------
+// Computed nutrition that updates based on measurements
 const calculatedNutrition = computed(() => {
   const multiplier = calculateTotalMultiplier();
   return {
@@ -813,86 +649,252 @@ const calculatedNutrition = computed(() => {
   }
 });
 
-const caloriesPercentage = computed(() => Math.min((parseInt(calculatedNutrition.value.Calories) / australianGuidelines.value.calories) * 100, 100));
-const proteinPercentage = computed(() => Math.min((parseFloat(calculatedNutrition.value.Protein) / australianGuidelines.value.protein) * 100, 100));
-const carbsPercentage = computed(() => Math.min((parseFloat(calculatedNutrition.value.Carbs) / australianGuidelines.value.carbs) * 100, 100));
-const fatPercentage = computed(() => Math.min((parseFloat(calculatedNutrition.value.Fat) / australianGuidelines.value.fat) * 100, 100));
+// Percentage calculations for Australian guidelines comparison
+const caloriesPercentage = computed(() => {
+  const current = parseInt(calculatedNutrition.value.Calories);
+  return Math.min((current / australianGuidelines.value.calories) * 100, 100);
+});
 
+const proteinPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Protein);
+  return Math.min((current / australianGuidelines.value.protein) * 100, 100);
+});
+
+const carbsPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Carbs);
+  return Math.min((current / australianGuidelines.value.carbs) * 100, 100);
+});
+
+const fatPercentage = computed(() => {
+  const current = parseFloat(calculatedNutrition.value.Fat);
+  return Math.min((current / australianGuidelines.value.fat) * 100, 100);
+});
+
+// Overall nutrition status
 const overallStatus = computed(() => {
-  const avg = (caloriesPercentage.value + proteinPercentage.value + carbsPercentage.value + fatPercentage.value) / 4;
-  if (avg >= 80) return 'excellent';
-  if (avg >= 60) return 'good';
-  if (avg >= 40) return 'moderate';
+  const avgPercentage = (caloriesPercentage.value + proteinPercentage.value + carbsPercentage.value + fatPercentage.value) / 4;
+  if (avgPercentage >= 80) return 'excellent';
+  if (avgPercentage >= 60) return 'good';
+  if (avgPercentage >= 40) return 'moderate';
   return 'needs-improvement';
 });
 
-// Food group analysis (reuses your logic)
+// My Plate Visual - Food Groups Analysis
 const foodGroups = computed(() => {
   if (!selectedRecipe.value?.ingredients) return [];
-  const ingredients = (Array.isArray(selectedRecipe.value.ingredients) ? selectedRecipe.value.ingredients : []).map(ing => ing.toLowerCase());
+  
+  const ingredients = selectedRecipe.value.ingredients.map(ing => ing.toLowerCase());
+  
   return [
-    { name:'vegetables', label:'Veggies',
-      present: ingredients.some(ing=>/vegetable|broccoli|carrot|spinach|lettuce|tomato|onion|pepper|cucumber/.test(ing)) },
-    { name:'fruits', label:'Fruits',
-      present: ingredients.some(ing=>/fruit|apple|banana|berry|orange|grape|strawberry|blueberry/.test(ing)) },
-    { name:'grains', label:'Grains',
-      present: ingredients.some(ing=>/bread|rice|pasta|wheat|oats|quinoa|cereal|flour/.test(ing)) },
-    { name:'protein', label:'Protein',
-      present: ingredients.some(ing=>/meat|chicken|beef|fish|egg|bean|lentil|tofu|cheese/.test(ing)) },
-    { name:'dairy', label:'Dairy',
-      present: ingredients.some(ing=>/milk|cheese|yogurt|butter|cream|dairy/.test(ing)) }
+    {
+      name: 'vegetables',
+      label: 'Veggies',
+      present: ingredients.some(ing => 
+        ing.includes('vegetable') || ing.includes('broccoli') || ing.includes('carrot') || 
+        ing.includes('spinach') || ing.includes('lettuce') || ing.includes('tomato') ||
+        ing.includes('onion') || ing.includes('pepper') || ing.includes('cucumber')
+      )
+    },
+    {
+      name: 'fruits',
+      label: 'Fruits',
+      present: ingredients.some(ing => 
+        ing.includes('fruit') || ing.includes('apple') || ing.includes('banana') || 
+        ing.includes('berry') || ing.includes('orange') || ing.includes('grape') ||
+        ing.includes('strawberry') || ing.includes('blueberry')
+      )
+    },
+    {
+      name: 'grains',
+      label: 'Grains',
+      present: ingredients.some(ing => 
+        ing.includes('bread') || ing.includes('rice') || ing.includes('pasta') || 
+        ing.includes('wheat') || ing.includes('oats') || ing.includes('quinoa') ||
+        ing.includes('cereal') || ing.includes('flour')
+      )
+    },
+    {
+      name: 'protein',
+      label: 'Protein',
+      present: ingredients.some(ing => 
+        ing.includes('meat') || ing.includes('chicken') || ing.includes('beef') || 
+        ing.includes('fish') || ing.includes('egg') || ing.includes('bean') ||
+        ing.includes('lentil') || ing.includes('tofu') || ing.includes('cheese')
+      )
+    },
+    {
+      name: 'dairy',
+      label: 'Dairy',
+      present: ingredients.some(ing => 
+        ing.includes('milk') || ing.includes('cheese') || ing.includes('yogurt') || 
+        ing.includes('butter') || ing.includes('cream') || ing.includes('dairy')
+      )
+    }
   ];
 });
 
-// Radar data (reuses your logic)
-const tooltip = ref({ visible:false, x:0, y:0, category:'', score:0 });
+// My Plate percentages (simplified calculation)
+const vegetablesPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'vegetables')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.3, 100) : 0;
+});
+
+const fruitsPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'fruits')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.2, 100) : 0;
+});
+
+const grainsPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'grains')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.25, 100) : 0;
+});
+
+const proteinPlatePercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'protein')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.15, 100) : 0;
+});
+
+const dairyPercentage = computed(() => {
+  const present = foodGroups.value.find(g => g.name === 'dairy')?.present;
+  return present ? Math.min(caloriesPercentage.value * 0.1, 100) : 0;
+});
+
+// My Plate presence checks
+const hasVegetables = computed(() => foodGroups.value.find(g => g.name === 'vegetables')?.present || false);
+const hasFruits = computed(() => foodGroups.value.find(g => g.name === 'fruits')?.present || false);
+const hasGrains = computed(() => foodGroups.value.find(g => g.name === 'grains')?.present || false);
+const hasProtein = computed(() => foodGroups.value.find(g => g.name === 'protein')?.present || false);
+const hasDairy = computed(() => foodGroups.value.find(g => g.name === 'dairy')?.present || false);
+
+// Overall plate score (percentage of food groups present)
+const overallPlateScore = computed(() => {
+  const presentGroups = foodGroups.value.filter(group => group.present).length;
+  return (presentGroups / foodGroups.value.length) * 100;
+});
+
+// Number of present food groups
+const presentFoodGroups = computed(() => {
+  return foodGroups.value.filter(group => group.present).length;
+});
+
+// Tooltip for radar chart
+const tooltip = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  category: '',
+  score: 0
+});
+
+// Radar Chart Data - Order must match the SVG labels
 const radarCategories = computed(() => [
-  { name: 'Energy Boost', score: Math.min(caloriesPercentage.value * 0.8, 100) },
-  { name: 'Heart Health', score: Math.min(fatPercentage.value * 0.8, 100) },
-  { name: 'Muscle Power', score: Math.min(proteinPercentage.value * 1.2, 100) },
-  { name: 'Skin Glow', score: Math.min(proteinPercentage.value * 0.4, 100) },
-  { name: 'Brain Fuel', score: Math.min(carbsPercentage.value * 0.9, 100) },
-  { name: 'Immune Boost', score: Math.min(caloriesPercentage.value * 0.5, 100) },
-  { name: 'Gut Health', score: Math.min(fatPercentage.value * 0.7, 100) },
-  { name: 'Bone Strength', score: Math.min(proteinPercentage.value * 0.6, 100) }
+  { name: 'Energy Boost', score: Math.min(caloriesPercentage.value * 0.8, 100), color: '#ff6b6b' },
+  { name: 'Heart Health', score: Math.min(fatPercentage.value * 0.8, 100), color: '#ff9ff3' },
+  { name: 'Muscle Power', score: Math.min(proteinPercentage.value * 1.2, 100), color: '#4ecdc4' },
+  { name: 'Skin Glow', score: Math.min(proteinPercentage.value * 0.4, 100), color: '#5f27cd' },
+  { name: 'Brain Fuel', score: Math.min(carbsPercentage.value * 0.9, 100), color: '#45b7d1' },
+  { name: 'Immune Boost', score: Math.min(caloriesPercentage.value * 0.5, 100), color: '#54a0ff' },
+  { name: 'Gut Health', score: Math.min(fatPercentage.value * 0.7, 100), color: '#96ceb4' },
+  { name: 'Bone Strength', score: Math.min(proteinPercentage.value * 0.6, 100), color: '#feca57' }
 ]);
+
+// Radar Chart Points Calculation
 const radarDataPoints = computed(() => {
-  const centerX = 150, centerY = 150, maxRadius = 120;
-  return radarCategories.value.map((category, i) => {
-    const angle = (i * Math.PI * 2) / radarCategories.value.length - Math.PI / 2;
+  const centerX = 150;
+  const centerY = 150;
+  const maxRadius = 120;
+  
+  return radarCategories.value.map((category, index) => {
+    const angle = (index * Math.PI * 2) / radarCategories.value.length - Math.PI / 2;
     const radius = (category.score / 100) * maxRadius;
-    return { x: centerX + Math.cos(angle)*radius, y: centerY + Math.sin(angle)*radius };
+    return {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius
+    };
   });
 });
-const radarPoints = computed(() => radarDataPoints.value.map(p => `${p.x},${p.y}`).join(' '));
 
-// ------------ methods reused/kept ------------
-const selectTimeRange = (range) => { selectedTimeRange.value = selectedTimeRange.value === range ? '' : range; };
-const toggleCategory = (category) => {
-  const i = selectedCategories.value.indexOf(category);
-  if (i > -1) selectedCategories.value.splice(i, 1);
-  else selectedCategories.value.push(category);
+const radarPoints = computed(() => {
+  return radarDataPoints.value.map(point => `${point.x},${point.y}`).join(' ');
+});
+
+// Methods
+const selectTimeRange = (range) => {
+  selectedTimeRange.value = selectedTimeRange.value === range ? '' : range;
 };
+
+const toggleCategory = (category) => {
+  const index = selectedCategories.value.indexOf(category);
+  if (index > -1) {
+    selectedCategories.value.splice(index, 1);
+  } else {
+    selectedCategories.value.push(category);
+  }
+};
+
 const onIngredientSearch = () => {
-  if (ingredientSearch.value.length < 2) { filteredIngredients.value = []; return; }
-  filteredIngredients.value = allIngredients.value.filter(ing =>
-    ing.toLowerCase().includes(ingredientSearch.value.toLowerCase())
+  if (ingredientSearch.value.length < 2) {
+    filteredIngredients.value = [];
+    return;
+  }
+  
+  filteredIngredients.value = allIngredients.value.filter(ingredient =>
+    ingredient.toLowerCase().includes(ingredientSearch.value.toLowerCase())
   );
 };
-const addIngredient = (ingredient) => { if (!selectedIngredients.value.includes(ingredient)) selectedIngredients.value.push(ingredient); ingredientSearch.value=''; filteredIngredients.value=[]; };
-const removeIngredient = (ingredient) => { const i = selectedIngredients.value.indexOf(ingredient); if (i>-1) selectedIngredients.value.splice(i,1); };
-const clearFilters = () => { selectedTimeRange.value=''; selectedCategories.value=[]; selectedIngredients.value=[]; ingredientSearch.value=''; filteredIngredients.value=[]; currentPage.value=1; };
-const goToPage = (p) => { if (p>=1 && p<=totalPages.value) currentPage.value=p; };
-const nextPage = () => { if (currentPage.value<totalPages.value) currentPage.value++; };
-const prevPage = () => { if (currentPage.value>1) currentPage.value--; };
+
+const addIngredient = (ingredient) => {
+  if (!selectedIngredients.value.includes(ingredient)) {
+    selectedIngredients.value.push(ingredient);
+  }
+  ingredientSearch.value = '';
+  filteredIngredients.value = [];
+};
+
+const removeIngredient = (ingredient) => {
+  const index = selectedIngredients.value.indexOf(ingredient);
+  if (index > -1) {
+    selectedIngredients.value.splice(index, 1);
+  }
+};
+
+const clearFilters = () => {
+  selectedTimeRange.value = '';
+  selectedCategories.value = [];
+  selectedIngredients.value = [];
+  ingredientSearch.value = '';
+  filteredIngredients.value = [];
+  currentPage.value = 1; // Reset to first page when clearing filters
+};
+
+// Pagination methods
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
 
 const selectRecipe = (recipe) => {
   selectedRecipe.value = recipe;
   setupIngredientsWithMeasurements();
   setBaseNutrition();
 };
+
 const setupIngredientsWithMeasurements = () => {
   if (!selectedRecipe.value?.ingredients) return;
+  
   let ingredients = [];
   try {
     if (typeof selectedRecipe.value.ingredients === 'string') {
@@ -900,16 +902,32 @@ const setupIngredientsWithMeasurements = () => {
     } else if (Array.isArray(selectedRecipe.value.ingredients)) {
       ingredients = selectedRecipe.value.ingredients;
     }
-  } catch { return; }
+  } catch (e) {
+    console.error('Error parsing ingredients:', e);
+    return;
+  }
+  
   ingredientsWithMeasurements.value = ingredients.map(ing => ({
     name: typeof ing === 'string' ? ing : ing.name,
-    unit: 'grams',
-    quantity: 100,
-    originalQuantity: 100,
-    originalUnit: 'grams'
+    unit: 'grams', // Default to grams
+    quantity: 100, // Default quantity for grams
+    originalQuantity: extractQuantity(ing),
+    originalUnit: extractUnit(ing)
   }));
 };
-const getDefaultQuantity = (unit) => DEFAULT_QTY[unit] || 1;
+
+const getDefaultQuantity = (unit) => {
+  const defaults = {
+    'cup': 1,
+    'grams': 100,
+    'oz': 3.5,
+    'tbsp': 1,
+    'tsp': 1,
+    'piece': 1
+  };
+  return defaults[unit] || 1;
+};
+
 const setBaseNutrition = () => {
   if (selectedRecipe.value) {
     baseNutrition.value = {
@@ -921,29 +939,74 @@ const setBaseNutrition = () => {
     };
   }
 };
+
+const extractQuantity = (ingredient) => {
+  if (typeof ingredient === 'string') {
+    const match = ingredient.match(/(\d+(?:\.\d+)?(?:\/\d+)?)/);
+    return match ? parseFloat(match[1]) : 1;
+  }
+  return 1;
+};
+
+const extractUnit = (ingredient) => {
+  if (typeof ingredient === 'string') {
+    const unitMatch = ingredient.match(/(cup|tbsp|tsp|gram|oz|piece)/i);
+    return unitMatch ? unitMatch[1].toLowerCase() : 'piece';
+  }
+  return 'piece';
+};
+
 const calculateTotalMultiplier = () => {
+  // Simple calculation - in real app, you'd have a proper nutrition database
   let totalMultiplier = 0;
   ingredientsWithMeasurements.value.forEach(ing => {
     const quantity = ing.quantity || 0;
     const unitMultiplier = getUnitMultiplier(ing.unit);
-    totalMultiplier += (quantity * unitMultiplier) / 100; // normalize to 100g
+    totalMultiplier += (quantity * unitMultiplier) / 100; // Normalize to 100g base
   });
-  return Math.max(totalMultiplier, 0.1);
+  return Math.max(totalMultiplier, 0.1); // Minimum 0.1 to avoid zero
 };
+
 const getUnitMultiplier = (unit) => {
-  const multipliers = { cup:240, grams:1, oz:28.35, tbsp:15, tsp:5, piece:50 };
+  const multipliers = {
+    'cup': 240, // grams
+    'grams': 1,
+    'oz': 28.35,
+    'tbsp': 15,
+    'tsp': 5,
+    'piece': 50 // average piece weight
+  };
   return multipliers[unit] || 1;
 };
+
 const updateNutrition = (ingredient) => {
-  if (ingredient) ingredient.quantity = getDefaultQuantity(ingredient.unit);
+  // Update quantity to default when unit changes
+  if (ingredient) {
+    ingredient.quantity = getDefaultQuantity(ingredient.unit);
+  }
+  // Trigger reactivity update
+  console.log('Nutrition updated based on measurements');
 };
 
 const getNutritionStatus = (nutrient) => {
-  let percentage = 0;
-  if (nutrient==='calories') percentage = caloriesPercentage.value;
-  else if (nutrient==='protein') percentage = proteinPercentage.value;
-  else if (nutrient==='carbs') percentage = carbsPercentage.value;
-  else if (nutrient==='fat') percentage = fatPercentage.value;
+  let percentage;
+  switch (nutrient) {
+    case 'calories':
+      percentage = caloriesPercentage.value;
+      break;
+    case 'protein':
+      percentage = proteinPercentage.value;
+      break;
+    case 'carbs':
+      percentage = carbsPercentage.value;
+      break;
+    case 'fat':
+      percentage = fatPercentage.value;
+      break;
+    default:
+      return 'moderate';
+  }
+  
   if (percentage >= 80) return 'excellent';
   if (percentage >= 60) return 'good';
   if (percentage >= 40) return 'moderate';
@@ -952,30 +1015,67 @@ const getNutritionStatus = (nutrient) => {
 
 const showTooltip = (event, category) => {
   const rect = event.target.getBoundingClientRect();
-  tooltip.value = { visible:true, x: rect.left + rect.width/2, y: rect.top - 10, category: category.name, score: category.score };
+  tooltip.value = {
+    visible: true,
+    x: rect.left + rect.width / 2,
+    y: rect.top - 10,
+    category: category.name,
+    score: category.score
+  };
 };
-const hideTooltip = () => { tooltip.value.visible = false; };
-const closeModal = () => { selectedRecipe.value = null; };
-const toggleFavorite = (_r) => { /* demo only */ };
+
+const hideTooltip = () => {
+  tooltip.value.visible = false;
+};
+
+const closeModal = () => {
+  selectedRecipe.value = null;
+};
+
+const toggleFavorite = (recipe) => {
+  // TODO: Implement favorite functionality
+};
+
+// Removed handleImageError to prevent repeated placeholder calls
 
 const getCategoryEmoji = (category) => {
-  const emoji = { breakfast:'🌅', snacks:'🍿', snack:'🍿', lunch:'🥙', 'main-meals':'🍽️', dinner:'🍽️', desserts:'🍰', dessert:'🍰', beverages:'🥤', beverage:'🥤', drink:'🥤' };
-  return emoji[category?.toLowerCase()] || '🍽️';
+  const emojiMap = {
+    'breakfast': '🌅',
+    'snacks': '🍿',
+    'snack': '🍿',
+    'lunch': '🥙',
+    'main-meals': '🍽️',
+    'dinner': '🍽️',
+    'desserts': '🍰',
+    'dessert': '🍰',
+    'beverages': '🥤',
+    'beverage': '🥤',
+    'drink': '🥤'
+  };
+  return emojiMap[category?.toLowerCase()] || '🍽️';
 };
-const capitalizeFirst = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+
+// Function to capitalize first letter
+const capitalizeFirst = (str) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
 // API calls
-const API_BASE = 'https://nexgentech-api.onrender.com';
+const API_BASE = 'https://nexgentech-api.onrender.com'; // Use the working API
 
 const fetchRecipes = async () => {
   loading.value = true;
   try {
-    const res = await fetch(`${API_BASE}/api/recipes/search?limit=50`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const response = await fetch(`${API_BASE}/api/recipes/search?limit=50`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
     recipes.value = data.recipes || [];
-  } catch (e) {
-    console.error('Error fetching recipes:', e);
+  } catch (error) {
+    console.error('Error fetching recipes:', error);
     recipes.value = [];
   } finally {
     loading.value = false;
@@ -984,13 +1084,16 @@ const fetchRecipes = async () => {
 
 const fetchFilterOptions = async () => {
   try {
-    const res = await fetch(`${API_BASE}/api/recipes/filters`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const response = await fetch(`${API_BASE}/api/recipes/filters`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
     categories.value = data.categories || [];
     allIngredients.value = data.ingredients || [];
-  } catch (e) {
-    console.error('Error fetching filter options:', e);
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    // Set some default data for development
     categories.value = [
       { name: 'breakfast', count: 0, emoji: '🌅' },
       { name: 'lunch', count: 0, emoji: '🥙' },
@@ -1002,6 +1105,7 @@ const fetchFilterOptions = async () => {
   }
 };
 
+// Lifecycle
 onMounted(() => {
   fetchFilterOptions();
   fetchRecipes();
@@ -1009,96 +1113,1366 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* --- keep your original styles, plus tiny additions for the new uploader --- */
-.calculator-page { position: relative; min-height: 100vh; width: 100%; overflow-x: hidden; padding-top: 40px; display: flex; flex-direction: column; }
-.background-image { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: -2; filter: brightness(0.6) blur(4px); transform: scale(1.05); }
-.calculator-page::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); z-index: -1; }
-.content-container { max-width: 1400px; margin: 0 auto; padding: 20px; font-family: 'Merriweather', serif; position: relative; z-index: 1; }
-.main-title { text-align: center; color: white; font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); position: relative; z-index: 1; }
-.subtitle { text-align: center; color: white; font-size: 1.2rem; margin-bottom: 3rem; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); position: relative; z-index: 1; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+.calculator-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  padding-top: 40px;
+  display: flex;
+  flex-direction: column;
+}
 
-.filters-section { position: relative; padding: 10px; margin-bottom: 2rem; }
-.white-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(253, 235, 208, 0.9); border-radius: 15px; backdrop-filter: blur(4px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); }
-.filters-container { position: relative; padding: 30px; z-index: 1; }
-.filter-label { display: block; color: #8b7765; font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; font-family: 'Merriweather', serif; }
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: -2;
+  filter: brightness(0.6) blur(4px);
+  transform: scale(1.05);
+}
 
-/* new uploader */
-.image-analyze-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom: 10px; }
-.image-input { padding: 10px 12px; border: 2px solid #d4c4a8; border-radius: 12px; background: white; color: #8b7765; font-family: 'Merriweather', serif; }
-.analyze-btn { padding: 10px 16px; background:#1a5536; color:#fff; border:none; border-radius: 12px; cursor:pointer; font-family:'Merriweather', serif; transition:.2s; }
-.analyze-btn:disabled { background:#999; cursor:not-allowed; }
-.analyze-btn:hover:not(:disabled){ background:#2d7a4a; transform: translateY(-1px); }
-.image-preview-wrap { margin-top: 10px; }
-.image-preview img { max-width: 220px; border-radius: 12px; border:1px solid rgba(0,0,0,.1); }
-.analyze-error { color:#b00020; margin-top: 6px; }
-.analyze-tips { margin:8px 0 0; padding-left: 1.1rem; color:#8b7765; }
+.calculator-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+}
 
-.time-options { display: flex; gap: 10px; flex-wrap: wrap; }
-.time-option { padding: 10px 20px; border: 2px solid #d4c4a8; background: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-family: 'Merriweather', serif; font-size: 0.9rem; color: #8b7765; }
-.time-option:hover { border-color: #1a5536; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-.time-option.active { background: #1a5536; color: white; border-color: #1a5536; }
+.content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Merriweather', serif;
+  position: relative;
+  z-index: 1;
+}
 
-.category-pills { display: flex; gap: 10px; flex-wrap: wrap; }
-.category-pill { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border: 2px solid #d4c4a8; background: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-family: 'Merriweather', serif; font-size: 0.9rem; color: #8b7765; }
-.category-pill:hover { border-color: #1a5536; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-.category-pill.active { background: #1a5536; color: white; border-color: #1a5536; }
-.category-emoji { font-size: 1.1rem; }
+.main-title {
+  text-align: center;
+  color: white;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
 
-.ingredients-search { position: relative; }
-.ingredients-input { width: 100%; padding: 12px 20px; border: 2px solid #d4c4a8; border-radius: 25px; font-family: 'Merriweather', serif; font-size: 1rem; color: #8b7765; background: white; transition: border-color 0.3s ease; }
-.ingredients-input:focus { outline: none; border-color: #1a5536; }
-.ingredients-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #d4c4a8; border-top: none; border-radius: 0 0 15px 15px; max-height: 200px; overflow-y: auto; z-index: 10; }
-.ingredient-option { width: 100%; padding: 10px 20px; text-align: left; border: none; background: white; cursor: pointer; transition: background-color 0.2s ease; font-family: 'Merriweather', serif; color: #8b7765; }
-.ingredient-option:hover { background: #f0f0f0; }
-.ingredient-more { padding: 8px 12px; font-size: 0.8rem; color: #666; text-align: center; font-style: italic; background: #f8f9fa; border-top: 1px solid #e0e0e0; }
+.subtitle {
+  text-align: center;
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
 
-.selected-ingredients { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.selected-ingredient { display: flex; align-items: center; gap: 5px; padding: 6px 12px; background: #1a5536; color: white; border-radius: 15px; font-size: 0.9rem; font-family: 'Merriweather', serif; }
-.remove-ingredient { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 0; margin-left: 5px; }
+.filters-section {
+  position: relative;
+  padding: 10px;
+  margin-bottom: 2rem;
+}
 
-.results-counter { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #d4c4a8; }
-.counter-text { color: #8b7765; font-weight: 600; font-size: 1.1rem; }
-.clear-filters-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 20px; cursor: pointer; font-family: 'Merriweather', serif; font-size: 0.9rem; transition: all 0.3s ease; }
-.clear-filters-btn:hover { background: #f44336; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+.white-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(253, 235, 208, 0.9);
+  border-radius: 15px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
-.recipes-section { position: relative; padding: 30px 10px 10px 10px; }
-.recipes-container { position: relative; z-index: 1; }
-.loading-state { text-align: center; padding: 60px 20px; color: white; }
-.loading-spinner { width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.filters-container {
+  position: relative;
+  padding: 30px;
+  z-index: 1;
+}
 
-.no-results { text-align: center; padding: 60px 20px; color: white; }
-.no-results-icon { font-size: 4rem; margin-bottom: 20px; }
-.no-results h3 { font-size: 1.8rem; margin-bottom: 10px; }
-.no-results p { font-size: 1.1rem; margin-bottom: 30px; opacity: 0.9; }
+.filter-group {
+  margin-bottom: 25px;
+}
 
-.recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 20px 0; }
-.recipe-card { background: rgba(253, 235, 208, 0.9); border-radius: 15px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(4px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); }
-.recipe-card:hover { transform: translateY(-8px); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2); }
-.recipe-image-container { position: relative; height: 200px; overflow: hidden; }
-.recipe-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
-.recipe-card:hover .recipe-image { transform: scale(1.05); }
-.recipe-overlay { position: absolute; top: 10px; right: 10px; }
-.favorite-btn { width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.9); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; backdrop-filter: blur(4px); }
-.favorite-btn:hover { background: #ff6b6b; transform: scale(1.1); }
-.heart-icon { font-size: 1.2rem; color: #ff6b6b; }
-.recipe-info { padding: 20px; }
-.recipe-title { font-size: 1.3rem; font-weight: 600; color: #8b7765; margin-bottom: 10px; font-family: 'Merriweather', serif; line-height: 1.3; }
-.recipe-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem; color: #8b7765; }
-.recipe-category { font-weight: 500; }
-.recipe-time { opacity: 0.8; }
-.recipe-nutrition { display: flex; gap: 15px; font-size: 0.9rem; color: #8b7765; }
-.nutrition-item { font-weight: 500; }
+.filter-label {
+  display: block;
+  color: #8b7765;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  font-family: 'Merriweather', serif;
+}
 
-/* Modal & rest of your original styles kept as-is… (truncated for brevity above) */
-.candidate-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;}
-.candidate-panel{background:#fff;max-width:760px;width:92%;border-radius:16px;padding:20px;}
-.candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;}
-.candidate-card{border:1px solid #eee;border-radius:12px;overflow:hidden;cursor:pointer;transition:.2s;background:#fff;}
-.candidate-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.08);}
-.candidate-card img{width:100%;height:120px;object-fit:cover;}
-.candidate-card .title{font-weight:600;padding:8px 10px;}
-.candidate-card .meta{font-size:.9rem;color:#666;padding:0 10px 12px;}
-.close-btn{margin-top:10px}
+.time-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
+.time-option {
+  padding: 10px 20px;
+  border: 2px solid #d4c4a8;
+  background: white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  color: #8b7765;
+}
+
+.time-option:hover {
+  border-color: #1a5536;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.time-option.active {
+  background: #1a5536;
+  color: white;
+  border-color: #1a5536;
+}
+
+.category-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.category-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 2px solid #d4c4a8;
+  background: white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  color: #8b7765;
+}
+
+.category-pill:hover {
+  border-color: #1a5536;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.category-pill.active {
+  background: #1a5536;
+  color: white;
+  border-color: #1a5536;
+}
+
+.category-emoji {
+  font-size: 1.1rem;
+}
+
+.category-count {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.ingredients-search {
+  position: relative;
+}
+
+.ingredients-input {
+  width: 100%;
+  padding: 12px 20px;
+  border: 2px solid #d4c4a8;
+  border-radius: 25px;
+  font-family: 'Merriweather', serif;
+  font-size: 1rem;
+  color: #8b7765;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.ingredients-input:focus {
+  outline: none;
+  border-color: #1a5536;
+}
+
+.ingredients-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #d4c4a8;
+  border-top: none;
+  border-radius: 0 0 15px 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.ingredient-option {
+  width: 100%;
+  padding: 10px 20px;
+  text-align: left;
+  border: none;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: 'Merriweather', serif;
+  color: #8b7765;
+}
+
+.ingredient-option:hover {
+  background: #f0f0f0;
+}
+
+.ingredient-more {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.selected-ingredients {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.selected-ingredient {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #1a5536;
+  color: white;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-family: 'Merriweather', serif;
+}
+
+.remove-ingredient {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  margin-left: 5px;
+}
+
+.results-counter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #d4c4a8;
+}
+
+.counter-text {
+  color: #8b7765;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.clear-filters-btn {
+  padding: 8px 16px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.clear-filters-btn:hover {
+  background: #f44336;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.recipes-section {
+  position: relative;
+  padding: 30px 10px 10px 10px;
+}
+
+.recipes-container {
+  position: relative;
+  z-index: 1;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: white;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: white;
+}
+
+.no-results-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.no-results h3 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.no-results p {
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  opacity: 0.9;
+}
+
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  padding: 20px 0;
+}
+
+.recipe-card {
+  background: rgba(253, 235, 208, 0.9);
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.recipe-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+}
+
+.recipe-image-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.recipe-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.recipe-card:hover .recipe-image {
+  transform: scale(1.05);
+}
+
+.recipe-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.favorite-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.favorite-btn:hover {
+  background: #ff6b6b;
+  transform: scale(1.1);
+}
+
+.heart-icon {
+  font-size: 1.2rem;
+  color: #ff6b6b;
+}
+
+.recipe-info {
+  padding: 20px;
+}
+
+.recipe-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #8b7765;
+  margin-bottom: 10px;
+  font-family: 'Merriweather', serif;
+  line-height: 1.3;
+}
+
+.recipe-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #8b7765;
+}
+
+.recipe-category {
+  font-weight: 500;
+}
+
+.recipe-time {
+  opacity: 0.8;
+}
+
+.recipe-nutrition {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+  color: #8b7765;
+}
+
+.nutrition-item {
+  font-weight: 500;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  width: 100%;
+}
+
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #8b7765;
+  z-index: 10;
+}
+
+.measurements-card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px 20px 0 0;
+  margin-bottom: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.measurements-title {
+  color: #8b7765;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+}
+
+.measurements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.measurement-item {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #ff9a56 0%, #ffad7a 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(255, 154, 86, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.measurement-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.measurement-item:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(255, 154, 86, 0.4);
+}
+
+.measurement-item:hover::before {
+  opacity: 1;
+}
+
+.measurement-label {
+  display: block;
+  color: white;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.measurement-value {
+  display: block;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.ingredients-section,
+.directions-section,
+.nutrition-summary {
+  padding: 30px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section-title {
+  color: #8b7765;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  font-family: 'Merriweather', serif;
+}
+
+.ingredients-list,
+.directions-list {
+  list-style: none;
+  padding: 0;
+}
+
+.ingredient-item,
+.direction-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  color: #8b7765;
+  line-height: 1.6;
+}
+
+.ingredient-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ingredient-name {
+  font-weight: 500;
+  color: #8b7765;
+  flex: 1;
+}
+
+.measurement-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.unit-dropdown, .quantity-input {
+  padding: 8px 12px;
+  border: 2px solid #d4c4a8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Merriweather', serif;
+  color: #8b7765;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.unit-dropdown:focus, .quantity-input:focus {
+  outline: none;
+  border-color: #1a5536;
+  box-shadow: 0 0 0 3px rgba(26, 85, 54, 0.1);
+}
+
+.quantity-input {
+  width: 80px;
+  text-align: center;
+}
+
+.direction-item {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 30px;
+}
+
+.directions-list {
+  counter-reset: step-counter;
+}
+
+.direction-item::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  background: #1a5536;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.nutrition-summary {
+  background: white;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-summary .section-title {
+  color: #8b7765;
+  margin-bottom: 25px;
+}
+
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.nutrition-item {
+  text-align: center;
+  padding: 18px;
+  background: linear-gradient(135deg, #ff7f50 0%, #ffa07a 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(255, 127, 80, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.nutrition-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.nutrition-item:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 127, 80, 0.4);
+}
+
+.nutrition-item:hover::before {
+  opacity: 1;
+}
+
+.nutrition-label {
+  display: block;
+  color: white;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nutrition-value {
+  display: block;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Combined Visualizations */
+.combined-visualizations {
+  background: white;
+  padding: 30px;
+  border-radius: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-description {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.visualizations-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.subsection-title {
+  color: #8b7765;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+}
+
+/* Food Groups Analysis */
+.food-groups-analysis {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.food-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.legend-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.legend-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.legend-color.vegetables { background: linear-gradient(135deg, #4caf50, #66bb6a); }
+.legend-color.fruits { background: linear-gradient(135deg, #ff9800, #ffb74d); }
+.legend-color.grains { background: linear-gradient(135deg, #8d6e63, #a1887f); }
+.legend-color.protein { background: linear-gradient(135deg, #f44336, #ef5350); }
+.legend-color.dairy { background: linear-gradient(135deg, #2196f3, #42a5f5); }
+
+.legend-label {
+  flex: 1;
+  font-weight: 600;
+  color: #8b7765;
+  font-size: 1rem;
+}
+
+.legend-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.legend-status.present {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.legend-status.missing {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* Nutrition Radar Chart */
+.nutrition-radar {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.radar-chart {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.radar-svg {
+  width: 100%;
+  height: 300px;
+  max-width: 300px;
+}
+
+.radar-polygon {
+  animation: drawPolygon 1s ease-in-out;
+}
+
+.radar-point {
+  animation: pulse 2s infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.radar-point:hover {
+  r: 8;
+  fill: #ff6b6b;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.radar-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #8b7765;
+  font-family: 'Merriweather', serif;
+}
+
+/* Radar Tooltip */
+.radar-tooltip {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+.tooltip-content {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+.tooltip-content strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.tooltip-score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4ecdc4;
+}
+
+@keyframes drawPolygon {
+  from {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    r: 4;
+    opacity: 1;
+  }
+  50% {
+    r: 6;
+    opacity: 0.7;
+  }
+}
+
+/* Nutrition Comparison Visualization */
+.nutrition-comparison {
+  background: white;
+  padding: 30px;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.comparison-chart {
+  background: #f8f9fa;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.chart-header h4 {
+  color: #8b7765;
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  font-family: 'Merriweather', serif;
+}
+
+.chart-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.nutrient-comparison {
+  margin-bottom: 20px;
+}
+
+.nutrient-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.nutrient-name {
+  font-weight: 600;
+  color: #8b7765;
+  font-size: 1rem;
+}
+
+.current-value {
+  font-weight: 700;
+  color: #1a5536;
+  font-size: 1.1rem;
+}
+
+.progress-container {
+  position: relative;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.progress-fill.calories {
+  background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+}
+
+.progress-fill.protein {
+  background: linear-gradient(90deg, #4ecdc4, #6ed5cd);
+}
+
+.progress-fill.carbs {
+  background: linear-gradient(90deg, #45b7d1, #6bc5d8);
+}
+
+.progress-fill.fat {
+  background: linear-gradient(90deg, #f9ca24, #fbd54a);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.current {
+  font-weight: 600;
+  color: #1a5536;
+}
+
+.recommended {
+  color: #666;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 25px;
+  border-radius: 15px;
+  color: white;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.summary-card h4 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.stat-item.excellent {
+  background: rgba(76, 175, 80, 0.3);
+  border: 2px solid rgba(76, 175, 80, 0.5);
+}
+
+.stat-item.good {
+  background: rgba(33, 150, 243, 0.3);
+  border: 2px solid rgba(33, 150, 243, 0.5);
+}
+
+.stat-item.moderate {
+  background: rgba(255, 193, 7, 0.3);
+  border: 2px solid rgba(255, 193, 7, 0.5);
+}
+
+.stat-item.needs-improvement {
+  background: rgba(244, 67, 54, 0.3);
+  border: 2px solid rgba(244, 67, 54, 0.5);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.stat-text {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.recommendation {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.recommendation p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .recipes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .filters-container {
+    padding: 25px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .recipes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+  }
+  
+  .time-options,
+  .category-pills {
+    gap: 8px;
+  }
+  
+  .time-option,
+  .category-pill {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .filters-container {
+    padding: 20px;
+  }
+  
+  .modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .measurements-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .content-container {
+    padding: 10px;
+  }
+  
+  .main-title {
+    font-size: 1.8rem;
+  }
+  
+  .recipes-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .time-options {
+    flex-direction: column;
+  }
+  
+  .category-pills {
+    flex-direction: column;
+  }
+  
+  .time-option,
+  .category-pill {
+    text-align: center;
+  }
+  
+  .results-counter {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+}
+
+/* Pagination Styles */
+.pagination-container-top {
+  margin: 40px 0 20px 0;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-container {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  background: #1a5536;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #2d7a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 5px;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #d4c4a8;
+  background: white;
+  color: #8b7765;
+  border-radius: 50%;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover {
+  border-color: #1a5536;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-btn.active {
+  background: #1a5536;
+  color: white;
+  border-color: #1a5536;
+}
+
+.pagination-info {
+  color: white;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-family: 'Merriweather', serif;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .pagination-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .page-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 0.8rem;
+  }
+  
+  .pagination-info {
+    font-size: 0.8rem;
+  }
+  
+  .comparison-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .plate-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .plate-circle {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .radar-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .radar-svg {
+    height: 250px;
+  }
+  
+  .visualizations-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
 </style>
