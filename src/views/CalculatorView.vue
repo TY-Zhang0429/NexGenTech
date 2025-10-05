@@ -6,6 +6,46 @@
     <div class="content-container">
       <h1 class="main-title">Mix, Match, Make It Yours</h1>
       <p class="subtitle">Use the filters below to discover recipes that fit your vibe. Pick your prep time, choose your category, search ingredients - Find exactly what you're craving.</p>
+
+      <!-- ============ NEW: Image → Recipe/Nutrition Analyzer (Front-end only) ============ -->
+      <div class="filters-section" style="margin-bottom: 28px;">
+        <div class="white-overlay"></div>
+        <div class="filters-container">
+          <label class="filter-label">Image Recognition (Beta)</label>
+
+          <div class="image-analyze-row">
+            <input
+              class="image-input"
+              type="file"
+              accept="image/png,image/jpeg"
+              @change="onImagePicked"
+            />
+            <button
+              class="analyze-btn"
+              :disabled="!pickedFile || analyzing"
+              @click="analyzePickedImage"
+            >
+              {{ analyzing ? 'Analyzing…' : 'Analyze Image → Recipe & Nutrition' }}
+            </button>
+          </div>
+
+          <div class="image-preview-wrap" v-if="previewUrl || analyzeError || analyzeTips.length">
+            <div v-if="previewUrl" class="image-preview">
+              <img :src="previewUrl" alt="preview"/>
+            </div>
+
+            <div v-if="analyzeError" class="analyze-error">⚠️ {{ analyzeError }}</div>
+
+            <ul v-if="analyzeTips.length" class="analyze-tips">
+              <li v-for="(t,i) in analyzeTips" :key="i">💡 {{ t }}</li>
+            </ul>
+
+            <p class="disclaimer" style="margin-top:8px">
+              For learning purposes only, not medical advice.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <!-- Filter Section -->
       <div class="filters-section">
@@ -497,11 +537,36 @@
         </div>
       </div>
     </div>
+    <div v-if="showCandidateModal" class="candidate-overlay" @click="showCandidateModal=false">
+      <div class="candidate-panel" @click.stop>
+        <h3 class="section-title">Pick a recipe</h3>
+        <div class="candidate-grid">
+          <div class="candidate-card" v-for="c in candidateRecipes" :key="c.id"
+              @click="() => { selectRecipe(c); showCandidateModal=false; }">
+            <img :src="recipeImg(c)" alt="">
+            <div class="title">{{ c.recipe_name }}</div>
+            <div class="meta">{{ c.calories }} cal · {{ c.protein_g }}g protein</div>
+          </div>
+        </div>
+        <button class="close-btn" @click="showCandidateModal=false">Cancel</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
+
+const candidateRecipes = ref([]);
+const showCandidateModal = ref(false);
+
+
+
+const pickedFile = ref(null);
+const previewUrl = ref('');
+const analyzing = ref(false);
+const analyzeError = ref('');
+const analyzeTips = ref([]);
 
 // Reactive data
 const loading = ref(false);
@@ -517,6 +582,7 @@ const baseNutrition = ref({
   fat: 0,
   fiber: 0
 });
+
 
 // Australian Dietary Guidelines for teenagers (15-19 years)
 const australianGuidelines = ref({
@@ -535,6 +601,52 @@ const selectedIngredients = ref([]);
 // Pagination state
 const currentPage = ref(1);
 const recipesPerPage = 9;
+
+const LABEL_TO_ING = {
+  burger: ['bun','beef patty','cheddar','lettuce','tomato','ketchup'],
+  cheeseburger: ['bun','beef patty','cheddar','lettuce','tomato'],
+  pizza: ['pizza base','tomato sauce','mozzarella','olive oil'],
+  salad: ['lettuce','tomato','cucumber','olive oil'],
+  pasta: ['spaghetti','olive oil','garlic','parmesan'],
+  sushi: ['rice','nori','salmon','soy sauce'],
+  sandwich: ['bread','ham','cheddar','lettuce'],
+  cereal: ['cereal','milk'],
+  oatmeal: ['oats','milk'],
+  pancake: ['flour','milk','egg','butter']
+};
+
+const NUTRITION_100G = {
+  'bun': {kcal: 260, p:9, c:49, f:3, fi:2.5},
+  'beef patty': {kcal: 250, p:26, c:0, f:17, fi:0},
+  'cheddar': {kcal: 402, p:25, c:1.3, f:33, fi:0},
+  'lettuce': {kcal: 15, p:1.4, c:2.9, f:0.2, fi:1.3},
+  'tomato': {kcal: 18, p:0.9, c:3.9, f:0.2, fi:1.2},
+  'ketchup': {kcal: 112, p:1.3, c:26, f:0.2, fi:0.3},
+  'pizza base': {kcal: 265, p:9, c:52, f:3.2, fi:2.7},
+  'tomato sauce': {kcal: 80, p:2, c:14, f:1, fi:2},
+  'mozzarella': {kcal: 280, p:28, c:3, f:17, fi:0},
+  'olive oil': {kcal: 884, p:0, c:0, f:100, fi:0},
+  'cucumber': {kcal: 16, p:0.7, c:3.6, f:0.1, fi:0.5},
+  'spaghetti': {kcal: 158, p:5.8, c:30, f:0.9, fi:1.8},
+  'garlic': {kcal: 149, p:6.4, c:33, f:0.5, fi:2.1},
+  'parmesan': {kcal: 431, p:38, c:4.1, f:29, fi:0},
+  'rice': {kcal: 130, p:2.4, c:28, f:0.3, fi:0.4},
+  'nori': {kcal: 35, p:5.8, c:5.1, f:0.3, fi:0.3},
+  'salmon': {kcal: 208, p:20, c:0, f:13, fi:0},
+  'soy sauce': {kcal: 53, p:8, c:4.9, f:0.6, fi:0.8},
+  'bread': {kcal: 265, p:9, c:49, f:3.2, fi:2.7},
+  'ham': {kcal: 145, p:20, c:1.5, f:6, fi:0},
+  'cereal': {kcal: 380, p:7, c:84, f:2, fi:9},
+  'milk': {kcal: 64, p:3.4, c:5, f:3.6, fi:0},
+  'oats': {kcal: 389, p:17, c:66, f:7, fi:10},
+  'flour': {kcal: 364, p:10, c:76, f:1, fi:2.7},
+  'egg': {kcal: 155, p:13, c:1.1, f:11, fi:0},
+  'butter': {kcal: 717, p:0.9, c:0.1, f:81, fi:0}
+};
+
+const DEFAULT_QTY = {
+  grams: 100, cup: 240, oz: 28.35, tbsp: 15, tsp: 5, piece: 50
+};
 
 // Filter options
 const timeRanges = ref([
@@ -1110,6 +1222,135 @@ onMounted(() => {
   fetchFilterOptions();
   fetchRecipes();
 });
+
+function onImagePicked(e) {
+  analyzeError.value = '';
+  analyzeTips.value = [];
+  const f = e.target.files?.[0];
+  pickedFile.value = f || null;
+  previewUrl.value = f ? URL.createObjectURL(f) : '';
+}
+
+async function analyzePickedImage() {
+  const LAMBDA_URL = 'https://ujfitbo3467ezuajq4ahqlup2u0iaasm.lambda-url.us-east-1.on.aws/';
+  if (!pickedFile.value) return;
+
+  analyzeError.value = '';
+  analyzeTips.value = [];
+  analyzing.value = true;
+
+  try {
+    const resp = await fetch(LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': pickedFile.value.type || 'application/octet-stream' },
+      body: pickedFile.value
+    });
+
+    // Debug output
+    console.log('[vision] status:', resp.status, resp.statusText);
+    const text = await resp.text();
+    console.log('[vision] raw body:', text);
+
+    let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    if (!resp.ok) { analyzeError.value = data?.error || `${resp.status} ${resp.statusText}`; return; }
+
+    analyzeTips.value.push(`Detected: ${data.label} (${data.score}%)`);
+
+    if (Array.isArray(data.candidates) && data.candidates.length) {
+      candidateRecipes.value = data.candidates;
+      showCandidateModal.value = true;          // pop up 3 candidates
+    } else {
+      // use synthetic recipe
+      const key = data.label;
+      const ings = LABEL_TO_ING[key] || [key];
+      const s = buildSyntheticRecipe(key, ings);
+      const n = computeNutritionFromIngredients(ings);
+      Object.assign(s, {
+        calories: Math.round(n.kcal),
+        protein_g: round1(n.p), carbs_g: round1(n.c),
+        fat_g: round1(n.f), fiber_g: round1(n.fi)
+      });
+      selectRecipe(s);
+    }
+  } catch (err) {
+    console.error('[vision] fetch error:', err);
+    analyzeError.value = err.message || 'Network error';
+  } finally {
+    analyzing.value = false;
+  }
+}
+
+function buildSyntheticRecipe(title, ingredients) {
+  const stepsMap = {
+    burger: ['Toast bun','Pan-fry patty','Layer cheese & veg','Assemble'],
+    pizza: ['Preheat oven','Spread sauce','Add cheese','Bake 10–12 min'],
+    salad: ['Chop veggies','Toss with oil & salt','Serve']
+  };
+  const lower = title.toLowerCase();
+  const timeText = (lower.includes('salad') ? '5-15 min' :
+                   lower.includes('pizza') ? '15-30 min' : '5-15 min');
+  return {
+    unique_id: `ai_${Date.now()}`,
+    source_table: 'ai_generated',
+    id: 0,
+    recipe_name: title[0].toUpperCase() + title.slice(1),
+    category: 'lunch',
+    serving_size: '1 serving',
+    prep_time_minutes: null,
+    cook_time_minutes: null,
+    total_time: null,
+    time_display: timeText,
+    // nutrition will be filled after compute
+    calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0,
+    // these fields will be parsed in your UI
+    ingredients: ingredients,
+    measurements: null,
+    directions: stepsMap[lower] || ['Prepare ingredients','Assemble and serve'],
+    image_filename: title.toLowerCase().replace(/\s+/g,'-')
+  };
+}
+
+function computeNutritionFromIngredients(ings) {
+  // assume each ingredient ~100g as default
+  let kcal=0, p=0, c=0, f=0, fi=0;
+  ings.forEach(name=>{
+    const row = NUTRITION_100G[name];
+    if (row) { kcal+=row.kcal; p+=row.p; c+=row.c; f+=row.f; fi+=row.fi; }
+  });
+  // prevent zero nutrition
+  if ((kcal+p+c+f+fi)===0 && ings.length>0) {
+    // 80kcal for unknown item
+    kcal = 80*ings.length;
+  }
+  return {kcal, p, c, f, fi};
+}
+
+function round1(n){ return Math.round(n*10)/10; }
+
+const recipeImg = (c) => {
+  // 1) image_filename first
+  if (c?.image_filename) {
+    const name = encodeURIComponent(String(c.image_filename));
+    return `/food_icons/${name}.png`;
+  }
+
+  // 2) fallback to image_url (may not have extension, may contain spaces)
+  let url = String(c?.image_url || '');
+
+  if (!url) return '/food_icons/placeholder.png'; // placeholder
+
+  // only keep base + filename
+  // e.g. https://example.com/images/food name.jpg?size=large
+  const i = url.lastIndexOf('/');
+  const base = i >= 0 ? url.slice(0, i + 1) : '';
+  let file = i >= 0 ? url.slice(i + 1) : url;
+  file = encodeURIComponent(file);
+
+  // if no extension, add .png
+  if (!/\.(png|jpe?g|webp|gif)$/i.test(file)) file += '.png';
+
+  return base + file;
+};
 </script>
 
 <style scoped>
@@ -2475,4 +2716,25 @@ onMounted(() => {
     gap: 20px;
   }
 }
+
+.candidate-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.candidate-panel{background:#fff;max-width:760px;width:92%;border-radius:16px;padding:20px;}
+.candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;}
+.candidate-card{border:1px solid #eee;border-radius:12px;overflow:hidden;cursor:pointer;transition:.2s;background:#fff;}
+.candidate-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.08);}
+.candidate-card img{width:100%;height:120px;object-fit:cover;}
+.candidate-card .title{font-weight:600;padding:8px 10px;}
+.candidate-card .meta{font-size:.9rem;color:#666;padding:0 10px 12px;}
+.close-btn{margin-top:10px}
+
+.image-analyze-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom: 10px; }
+.image-input { padding: 10px 12px; border: 2px solid #d4c4a8; border-radius: 12px; background: white; color: #8b7765; font-family: 'Merriweather', serif; }
+.analyze-btn { padding: 10px 16px; background:#1a5536; color:#fff; border:none; border-radius: 12px; cursor:pointer; font-family:'Merriweather', serif; transition:.2s; }
+.analyze-btn:disabled { background:#999; cursor:not-allowed; }
+.analyze-btn:hover:not(:disabled){ background:#2d7a4a; transform: translateY(-1px); }
+.image-preview-wrap { margin-top: 10px; }
+.image-preview img { max-width: 220px; border-radius: 12px; border:1px solid rgba(0,0,0,.1); }
+.analyze-error { color:#b00020; margin-top: 6px; }
+.analyze-tips { margin:8px 0 0; padding-left: 1.1rem; color:#8b7765; }
+
 </style>
