@@ -1223,13 +1223,71 @@ onMounted(() => {
   fetchRecipes();
 });
 
-function onImagePicked(e) {
+async function ensureJpegOrPng(file) {
+  if (!file) return null;
+  if (/^image\/(jpeg|png)$/i.test(file.type)) return file;
+
+  // convert WebP/GIF etc. to PNG
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width; canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0);
+  return new Promise(resolve => {
+    canvas.toBlob(b => {
+      resolve(new File([b], (file.name || 'image') + '.png', { type: 'image/png' }));
+    }, 'image/png', 0.92);
+  });
+}
+
+async function onImagePicked(e) {
   analyzeError.value = '';
   analyzeTips.value = [];
+
   const f = e.target.files?.[0];
-  pickedFile.value = f || null;
-  previewUrl.value = f ? URL.createObjectURL(f) : '';
+  if (!f) {
+    pickedFile.value = null;
+    previewUrl.value = '';
+    return;
+  }
+
+  // --- front check file size ---
+  if (f.size > 5 * 1024 * 1024) {
+    analyzeError.value = 'picture is too large (>5MB), please compress and try again!';
+    pickedFile.value = null;
+    previewUrl.value = '';
+    return;
+  }
+
+  // --- preview original file ---
+  pickedFile.value = f;
+  previewUrl.value = URL.createObjectURL(f);
+
+  // --- if webp/gif，convert to png（ensure Rekognition support） ---
+  if (!/^image\/(jpeg|png)$/i.test(f.type)) {
+    try {
+      const bitmap = await createImageBitmap(f);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0);
+      const blob = await new Promise(resolve =>
+        canvas.toBlob(b => resolve(b), 'image/png', 0.92)
+      );
+      const newFile = new File([blob], f.name.replace(/\.[^.]+$/, '') + '.png', {
+        type: 'image/png',
+      });
+      pickedFile.value = newFile;
+      console.log('[vision] converted', f.type, '→ image/png');
+    } catch (err) {
+      console.warn('[vision] convert to PNG failed:', err);
+    }
+  }
 }
+
+
+const detectedLabels = ref([]); 
 
 async function analyzePickedImage() {
   const LAMBDA_URL = 'https://ujfitbo3467ezuajq4ahqlup2u0iaasm.lambda-url.us-east-1.on.aws/';
@@ -1237,31 +1295,64 @@ async function analyzePickedImage() {
 
   analyzeError.value = '';
   analyzeTips.value = [];
+  detectedLabels.value = [];
   analyzing.value = true;
 
   try {
+    // 1) convert jpg/png（convert webp/gif to png）
+    const uploadFile = await ensureJpegOrPng(pickedFile.value);
+    if (!uploadFile) {
+      analyzeError.value = 'please select a valid image file';
+      return;
+    }
+    if (uploadFile.size > 5 * 1024 * 1024) {
+      analyzeError.value = 'picture is too large (>5MB), please compress and try again!';
+      return;
+    }
+
+    // 2) send request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s
     const resp = await fetch(LAMBDA_URL, {
       method: 'POST',
-      headers: { 'Content-Type': pickedFile.value.type || 'application/octet-stream' },
-      body: pickedFile.value
-    });
+      headers: { 'Content-Type': uploadFile.type || 'application/octet-stream' },
+      body: uploadFile,
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
 
-    // Debug output
+    // 3) parse response
     console.log('[vision] status:', resp.status, resp.statusText);
     const text = await resp.text();
     console.log('[vision] raw body:', text);
 
     let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-    if (!resp.ok) { analyzeError.value = data?.error || `${resp.status} ${resp.statusText}`; return; }
 
-    analyzeTips.value.push(`Detected: ${data.label} (${data.score}%)`);
+    // error handling
+    if (!resp.ok) {
+      const map = {
+        413: 'picture too large!(>5MB)',
+        415: 'only JPG/PNG images are supported!',
+        422: 'no usable ingredients found!'
+      };
+      analyzeError.value = data?.error || map[resp.status] || `${resp.status} ${resp.statusText}`;
+      return;
+    }
+
+    // 4) align with new API response format
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    detectedLabels.value = labels; // for chips
+    if (labels.length) {
+      analyzeTips.value.push('Detected: ' + labels.map(x => x.label).join(', '));
+    }
 
     if (Array.isArray(data.candidates) && data.candidates.length) {
+      // card shows _matched_label(highest confidence)
       candidateRecipes.value = data.candidates;
-      showCandidateModal.value = true;          // pop up 3 candidates
+      showCandidateModal.value = true;
     } else {
-      // use synthetic recipe
-      const key = data.label;
+      // 5) no candidates: generate a "synthetic recipe" using the highest confidence label
+      const top = labels.sort((a, b) => (b.conf || 0) - (a.conf || 0))[0];
+      const key = top?.label || 'salad';
       const ings = LABEL_TO_ING[key] || [key];
       const s = buildSyntheticRecipe(key, ings);
       const n = computeNutritionFromIngredients(ings);
@@ -1274,11 +1365,12 @@ async function analyzePickedImage() {
     }
   } catch (err) {
     console.error('[vision] fetch error:', err);
-    analyzeError.value = err.message || 'Network error';
+    analyzeError.value = (err && err.name === 'AbortError') ? 'request timed out, please try again' : (err.message || 'Network error');
   } finally {
     analyzing.value = false;
   }
 }
+
 
 function buildSyntheticRecipe(title, ingredients) {
   const stepsMap = {
@@ -1328,29 +1420,30 @@ function computeNutritionFromIngredients(ings) {
 function round1(n){ return Math.round(n*10)/10; }
 
 const recipeImg = (c) => {
-  // 1) image_filename first
+  // 1)  image_filename first
   if (c?.image_filename) {
-    const name = encodeURIComponent(String(c.image_filename));
-    return `/food_icons/${name}.png`;
+    let name = String(c.image_filename);
+    // make sure there's a valid extension, otherwise add .png
+    if (!/\.(png|jpe?g|webp|gif)$/i.test(name)) name += '.png';
+    return `/food_icons/${encodeURIComponent(name)}`;
   }
 
-  // 2) fallback to image_url (may not have extension, may contain spaces)
+  // 2) fallback to image_url
   let url = String(c?.image_url || '');
+  if (!url) return '/food_icons/placeholder.png'; // default placeholder
 
-  if (!url) return '/food_icons/placeholder.png'; // placeholder
-
-  // only keep base + filename
-  // e.g. https://example.com/images/food name.jpg?size=large
+  // Check the last segment of the file
   const i = url.lastIndexOf('/');
   const base = i >= 0 ? url.slice(0, i + 1) : '';
   let file = i >= 0 ? url.slice(i + 1) : url;
-  file = encodeURIComponent(file);
 
-  // if no extension, add .png
+  // If no valid extension, add .png
   if (!/\.(png|jpe?g|webp|gif)$/i.test(file)) file += '.png';
 
-  return base + file;
+  return base + encodeURIComponent(file);
 };
+
+
 </script>
 
 <style scoped>
