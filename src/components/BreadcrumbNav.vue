@@ -31,25 +31,36 @@ const breadcrumbs = computed(() => {
   ]
 
   // Map route paths to display names
-  const routeNames = {
+  const nameMap = {
+    'avatar': 'Avatar',
+    'calculator': 'Nutrient Calculator',
+    'support': 'How it Works',
     'game': 'Discover Games',
     'wordle-game': 'Wordle Game',
+    'match3': 'Match-3',
+    'catcher': 'Healthier Catcher',
     'food-swap': 'Healthier Swaps'
-  }
-
-  // Build breadcrumb trail based on current route
+  }  // Build breadcrumb trail based on current route
   if (pathSegments.length === 0) {
     return [{ name: 'Home', path: '/' }]
   }
 
   // Add intermediate breadcrumbs
-  if (pathSegments.includes('game') && !pathSegments.includes('wordle-game') && !pathSegments.includes('food-swap')) {
+  if (pathSegments.includes('game') && !pathSegments.includes('wordle-game') && !pathSegments.includes('match3') && !pathSegments.includes('catcher') && !pathSegments.includes('food-swap')) {
     // This is the Discover Games page itself
     breadcrumbItems.push({ name: 'Discover Games', path: '/game' })
   } else if (pathSegments.includes('wordle-game')) {
     // This is Wordle Game page - add Discover Games as intermediate
     breadcrumbItems.push({ name: 'Discover Games', path: '/game' })
     breadcrumbItems.push({ name: 'Wordle Game', path: '/wordle-game' })
+  } else if (pathSegments.includes('match3')) {
+    // This is Match-3 Game page - add Discover Games as intermediate
+    breadcrumbItems.push({ name: 'Discover Games', path: '/game' })
+    breadcrumbItems.push({ name: 'Match-3', path: '/match3' })
+  } else if (pathSegments.includes('catcher')) {
+    // This is Healthier Catcher Game page - add Discover Games as intermediate
+    breadcrumbItems.push({ name: 'Discover Games', path: '/game' })
+    breadcrumbItems.push({ name: 'Healthier Catcher', path: '/catcher' })
   } else if (pathSegments.includes('food-swap')) {
     // This is Food Swap page - direct from Home
     breadcrumbItems.push({ name: 'Healthier Swaps', path: '/food-swap' })

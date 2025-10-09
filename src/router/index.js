@@ -7,6 +7,7 @@ import CalculatorView from '@/views/CalculatorView.vue'
 import AvatarView from '@/views/AvatarView.vue'
 import SupportView from '@/views/SupportView.vue'
 import Match3View from '@/views/Match3View.vue'
+import CatcherView from '@/views/CatcherView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomePage },
@@ -17,6 +18,7 @@ const routes = [
   { path: '/support', name: 'support', component: SupportView },
   { path: '/wordle-game', name: 'wordle-game', component: WordleGameView },
   { path: '/match3', name: 'match3', component: Match3View },
+  { path: '/catcher', name: 'catcher', component: CatcherView },
 ]
 
 // Use hash history for archived versions to avoid 404 on refresh
