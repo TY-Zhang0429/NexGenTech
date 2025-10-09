@@ -10,8 +10,10 @@
       {{ gameCompleteMessage }}
     </div>
 
-    <!-- Breadcrumb Navigation -->
-    <BreadcrumbNav />
+    <!-- ===== Topbar: Back ===== -->
+    <div class="catcher-topbar">
+      <button class="back-btn" @click="goBack">← Back</button>
+    </div>
     
     <!-- Top Navigation -->
     <div class="top-nav">
@@ -242,12 +244,12 @@
 
 <script>
 import confetti from "canvas-confetti";
-import BreadcrumbNav from "@/components/BreadcrumbNav.vue";
 import DraggableAvatar from "@/components/DraggableAvatar.vue";
+import { useRouter } from 'vue-router';
 
 export default {
   name: "CatcherView",
-  components: { BreadcrumbNav, DraggableAvatar },
+  components: { DraggableAvatar },
   data() {
     return {
       // Game state
@@ -394,6 +396,16 @@ export default {
   },
   
   methods: {
+    // Navigation method
+    goBack() {
+      // If history exists → go back; otherwise go to games list route
+      if (window.history.length > 1) {
+        this.$router.back();
+      } else {
+        this.$router.push('/game');
+      }
+    },
+    
     // Game control methods
     startGame() {
       if (this.gameState === 'playing') return;
@@ -654,6 +666,56 @@ export default {
   background: url('/assets/catcherback1.png') center/cover no-repeat, linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #333;
   position: relative;
+}
+
+.catcher-game::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/assets/catcherback1.png') center/cover no-repeat;
+  filter: blur(2px);
+  z-index: -2;
+}
+
+.catcher-game::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: -1;
+}
+
+/* Topbar styles */
+.catcher-topbar {
+  position: relative;
+  z-index: 10;
+  padding: 15px 20px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Navigation styles */
