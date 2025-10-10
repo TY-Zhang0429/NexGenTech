@@ -14,7 +14,7 @@
       <div class="hero-content">
         <p class="hero-subtitle">“Play, Learn and make smarter food choices while the avatar evolves with your progress.”</p>
         <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
-        <button class="avatar-btn" @click="navigateToAvatar">Create Your Avatar</button>
+        <button class="avatar-btn" @click="navigateToAvatar">Start Your Journey!</button>
       </div>
       <div class="hero-avatar">
         <img src="../assets/homefruit.png" alt="Sol Avatar" class="avatar-image" />

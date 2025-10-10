@@ -38,6 +38,9 @@
           <RouterLink to="/match3" class="sub-link" @click="closeAllMenus">
             Match-3
           </RouterLink>
+          <RouterLink to="/catcher" class="sub-link" @click="closeAllMenus">
+            Healthier Catcher
+          </RouterLink>
         </div>
       </div>
       <RouterLink to="/calculator" class="link" @click="closeMenu">Nutrient Calculator</RouterLink>

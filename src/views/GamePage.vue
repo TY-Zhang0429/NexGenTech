@@ -93,6 +93,21 @@
           </div>
         </div>
       </article>
+
+      <article class="preview-card">
+        <h3 class="preview-title">Catcher</h3>
+        <div class="stage">
+          <div class="img-wrap">
+            <div class="catcher-preview">
+              <div class="preview-foods">🍎🥕🍟🍔</div>
+              <div class="preview-bowl">🥣</div>
+            </div>
+          </div>
+          <div class="hover-text">
+            Control your bowl to catch healthy foods and avoid unhealthy ones. Reach 20 points to win!
+          </div>
+        </div>
+      </article>
     </section>
   </main>
 </template>
@@ -106,8 +121,8 @@ import BreadcrumbNav from '@/components/BreadcrumbNav.vue'
 
 const router = useRouter()
 
-const sectorTitles = ['Wordle', '3 Match']
-const sectorRoutes = ['/wordle-game', '/match3']
+const sectorTitles = ['Wordle', '3 Match', 'Catcher']
+const sectorRoutes = ['/wordle-game', '/match3', '/catcher']
 
 const selectedTitle = ref('')
 const wheelRef = ref(null)
@@ -270,6 +285,43 @@ onBeforeUnmount(() => {
 }
 .img-wrap img{ width:100%; height:100%; object-fit:cover; }
 .preview-card:hover .img-wrap{ left:18px; transform: translate(0,-50%) scale(1.02); }
+
+/* Catcher game preview styles */
+.catcher-preview {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #87CEEB, #98FB98);
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 10px;
+}
+
+.preview-foods {
+  font-size: 20px;
+  letter-spacing: 8px;
+  animation: float 2s ease-in-out infinite;
+}
+
+.preview-bowl {
+  font-size: 24px;
+  animation: wobble 1.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
 .hover-text{
   position:absolute; inset:0; display:flex; align-items:center;
   padding-left: calc(18px + 160px + 18px); padding-right:6px;
