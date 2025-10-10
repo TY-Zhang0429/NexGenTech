@@ -214,9 +214,8 @@ import RightTips from '@/components/RightTips.vue';
 /* Router back helper */
 const router = useRouter();
 function goBack() {
-  // If history exists → go back; otherwise go to your games list route
-  if (window.history.length > 1) router.back();
-  else router.push('/discover-games');
+  // Always go to games page (wheel page)
+  router.push('/game');
 }
 
 /* ===== API base (adjust if needed) ===== */
@@ -571,6 +570,11 @@ function triggerRowShake(r) {
   padding: 0 16px 48px;
   color: #e6e6eb;
   position: relative;
+  font-family: 'Merriweather', serif;
+}
+
+.wordly * {
+  font-family: 'Merriweather', serif;
 }
 
 .wd-title {

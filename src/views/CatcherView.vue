@@ -9,14 +9,10 @@
     <div v-if="showGameCompleteMessage" class="game-complete-message">
       {{ gameCompleteMessage }}
     </div>
-
-    <!-- ===== Topbar: Back ===== -->
-    <div class="catcher-topbar">
-      <button class="back-btn" @click="goBack">← Back</button>
-    </div>
     
     <!-- Top Navigation -->
     <div class="top-nav">
+      <button class="back-btn" @click="goBack">← Back</button>
       <h1>Healthier Catcher</h1>
     </div>
 
@@ -398,12 +394,8 @@ export default {
   methods: {
     // Navigation method
     goBack() {
-      // If history exists → go back; otherwise go to games list route
-      if (window.history.length > 1) {
-        this.$router.back();
-      } else {
-        this.$router.push('/game');
-      }
+      // Always go to games page (wheel page)
+      this.$router.push('/game');
     },
     
     // Game control methods
@@ -691,18 +683,23 @@ export default {
   z-index: -1;
 }
 
-/* Topbar styles */
-.catcher-topbar {
+/* Navigation styles */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  z-index: 10;
-  padding: 15px 20px;
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
-.back-btn {
+.top-nav .back-btn {
+  position: absolute;
+  left: 20px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   font-family: 'Merriweather', serif;
   font-size: 0.9rem;
   font-weight: 600;
@@ -712,17 +709,10 @@ export default {
   backdrop-filter: blur(10px);
 }
 
-.back-btn:hover {
+.top-nav .back-btn:hover {
   background: rgba(255, 255, 255, 1);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Navigation styles */
-.top-nav {
-  text-align: center;
-  padding: 20px;
-  margin-bottom: 20px;
 }
 
 .top-nav h1 {
@@ -1192,6 +1182,16 @@ export default {
 }
 
 @media (max-width: 640px) {
+  .top-nav {
+    padding: 15px;
+  }
+  
+  .top-nav .back-btn {
+    left: 15px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
   .top-nav h1 {
     font-size: 2rem;
   }
