@@ -18,7 +18,7 @@
     <nav class="nav__right" :class="{ 'show': isMenuOpen }">
       <RouterLink to="/" class="link" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/avatar" class="link" @click="closeMenu">Avatar</RouterLink>
-      <div class="menu-group" @mouseenter="openGames(true)" @mouseleave="openGames(false)">
+      <div class="menu-group" @mouseenter="openGames(true)" @mouseleave="scheduleCloseGames">
         <!-- parent item: clickable, goes to /game -->
         <RouterLink
           to="/game"
@@ -31,7 +31,7 @@
         </RouterLink>
 
         <!-- submenu -->
-        <div class="submenu" :class="{ show: isGamesOpen }">
+        <div class="submenu" :class="{ show: isGamesOpen }" @mouseenter="cancelCloseGames" @mouseleave="scheduleCloseGames">
           <RouterLink to="/wordle-game" class="sub-link" @click="closeAllMenus">
             Wordle Game
           </RouterLink>
@@ -55,6 +55,7 @@ import { ref } from 'vue'
 
 const isMenuOpen = ref(false)
 const isGamesOpen = ref(false)
+let closeGamesTimeout = null
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -68,13 +69,37 @@ const closeMenu = () => {
   isGamesOpen.value = false
 }
 
-// destop hover；mobile click
+// desktop hover；mobile click
 const openGames = (val) => {
   // only use hover
   if (window.matchMedia('(min-width: 1001px)').matches) {
+    // Clear any pending close timeout
+    if (closeGamesTimeout) {
+      clearTimeout(closeGamesTimeout)
+      closeGamesTimeout = null
+    }
     isGamesOpen.value = val
   }
 }
+
+// Schedule closing with delay
+const scheduleCloseGames = () => {
+  if (window.matchMedia('(min-width: 1001px)').matches) {
+    closeGamesTimeout = setTimeout(() => {
+      isGamesOpen.value = false
+      closeGamesTimeout = null
+    }, 300) // 300ms delay before closing
+  }
+}
+
+// Cancel the scheduled close
+const cancelCloseGames = () => {
+  if (closeGamesTimeout) {
+    clearTimeout(closeGamesTimeout)
+    closeGamesTimeout = null
+  }
+}
+
 const toggleGames = (e) => {
   // mobile folder click
   e?.preventDefault?.()
@@ -82,6 +107,11 @@ const toggleGames = (e) => {
 }
 
 const closeAllMenus = () => {
+  // Clear any pending timeouts
+  if (closeGamesTimeout) {
+    clearTimeout(closeGamesTimeout)
+    closeGamesTimeout = null
+  }
   isGamesOpen.value = false
   closeMenu()
 }
@@ -344,6 +374,7 @@ const closeAllMenus = () => {
   border-radius: 8px;
   transition: background .2s, transform .15s;
   font-weight: 600;
+  font-family: 'Merriweather', serif;
 }
 .sub-link:hover {
   background: rgba(208, 227, 212, 0.35);
@@ -380,6 +411,7 @@ const closeAllMenus = () => {
     margin: 6px auto 0;
     text-align: center;
     background: rgba(255,255,255,0.08);
+    font-family: 'Merriweather', serif;
   }
   .sub-link:hover { background: rgba(255,255,255,0.18); }
 }

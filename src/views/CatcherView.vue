@@ -86,9 +86,21 @@
           <div 
             class="player-bowl" 
             :style="{ left: playerPosition + 'px' }"
+            :class="{ 
+              'bowl-glow': showBowlGlow, 
+              'bowl-scale': showBowlScale 
+            }"
             ref="playerBowl"
           >
             <img src="/assets/bowl.png" alt="Player Bowl" class="bowl-image" />
+            <!-- Score Animation -->
+            <div 
+              v-if="showScoreAnimation" 
+              class="score-animation"
+              :class="{ 'positive': lastScoreChange > 0, 'negative': lastScoreChange < 0 }"
+            >
+              {{ lastScoreChange > 0 ? '+' + lastScoreChange : lastScoreChange }}
+            </div>
           </div>
 
           <!-- Falling Foods -->
@@ -305,7 +317,13 @@ export default {
         right: false,
         a: false,
         d: false
-      }
+      },
+      
+      // Visual effects
+      showBowlGlow: false,
+      showBowlScale: false,
+      showScoreAnimation: false,
+      lastScoreChange: 0
     };
   },
   
@@ -572,8 +590,28 @@ export default {
     },
     
     showScoreChange(scoreChange) {
-      // This could be enhanced with visual effects
-      console.log(`Score changed by: ${scoreChange}`);
+      this.lastScoreChange = scoreChange;
+      this.showScoreAnimation = true;
+      this.showBowlScale = true;
+      
+      // Show glow effect only for positive scores
+      if (scoreChange > 0) {
+        this.showBowlGlow = true;
+        // Remove glow after animation
+        setTimeout(() => {
+          this.showBowlGlow = false;
+        }, 800);
+      }
+      
+      // Remove scale effect after short duration
+      setTimeout(() => {
+        this.showBowlScale = false;
+      }, 300);
+      
+      // Remove score animation after it completes
+      setTimeout(() => {
+        this.showScoreAnimation = false;
+      }, 800);
     },
     
     checkWinCondition() {
@@ -918,11 +956,82 @@ export default {
   z-index: 15;
 }
 
+/* Glow effect for positive scores */
+.player-bowl.bowl-glow .bowl-image {
+  animation: glowEffect 0.6s ease-out;
+}
+
+@keyframes glowEffect {
+  0% {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 8px rgba(254, 250, 11, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 30px rgba(255, 234, 0, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 8px rgba(116, 105, 42, 0.6));
+  }
+}
+
+/* Scale effect for both positive and negative scores */
+.player-bowl.bowl-scale {
+  animation: scaleEffect 0.3s ease-out;
+}
+
+@keyframes scaleEffect {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .bowl-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Score animation */
+.score-animation {
+  position: absolute;
+  top: -15px;
+  left: -5px;
+  font-size: 18px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 20;
+  animation: scoreFloat 0.8s ease-out forwards;
+}
+
+.score-animation.positive {
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.score-animation.negative {
+  color: #f44336;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes scoreFloat {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(1);
+  }
 }
 
 .falling-food {
