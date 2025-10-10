@@ -95,7 +95,7 @@
  *   --topnav-h and --topnav-h-safe (with safe-area inset).
  * - Mobile drawer & mask are offset from the TopNav height, so they won't be covered.
  */
-import confetti from "canvas-confetti";
+// import confetti from "canvas-confetti";
 import RightTips from "@/components/RightTips.vue";
 import DraggableAvatar from "@/components/DraggableAvatar.vue";
 
