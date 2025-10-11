@@ -24,7 +24,7 @@
         <div class="guide-steps">
           <div class="guide-step">
             <div class="step-image">
-              <img src="/assets/sol.png" alt="Get Avatar" class="step-icon" />
+              <img src="/assets/avapage1.png" alt="Get Avatar" class="step-icon" />
             </div>
             <div class="step-number">1</div>
             <div class="step-content">
@@ -34,7 +34,7 @@
           </div>
           <div class="guide-step">
             <div class="step-image">
-              <img src="/assets/sol.png" alt="Play Games" class="step-icon" />
+              <img src="/assets/avapage2.png" alt="Play Games" class="step-icon" />
             </div>
             <div class="step-number">2</div>
             <div class="step-content">
@@ -44,7 +44,7 @@
           </div>
           <div class="guide-step">
             <div class="step-image">
-              <img src="/assets/sol.png" alt="Follow Guidance" class="step-icon" />
+              <img src="/assets/avapage3.png" alt="Follow Guidance" class="step-icon" />
             </div>
             <div class="step-number">3</div>
             <div class="step-content">
@@ -558,8 +558,8 @@ const selectCreatedAvatar = () => {
 }
 
 .step-icon {
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #1a5536;
@@ -615,8 +615,8 @@ const selectCreatedAvatar = () => {
   }
   
   .step-icon {
-    width: 50px;
-    height: 50px;
+    width: 65px;
+    height: 65px;
   }
   
   .step-number {
