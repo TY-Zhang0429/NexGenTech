@@ -14,10 +14,45 @@
       
       <div class="info-banner">
         <p>Select Sol or create your own personalized companion for your health journey</p>
-        <p>Every activity you complete makes your avatar evolve</p>
         <button class="get-avatar-button" @click="showAvatarSelection = true" v-if="!showAvatarSelection">
           Get Avatar
         </button>
+      </div>
+
+      <!-- Guide Section -->
+      <div v-if="!showAvatarSelection" class="guide-section">
+        <div class="guide-steps">
+          <div class="guide-step">
+            <div class="step-image">
+              <img src="/assets/sol.png" alt="Get Avatar" class="step-icon" />
+            </div>
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Get Your Avatar</h3>
+              <p>Click "Get Avatar" to choose Sol or create your personalized companion</p>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="step-image">
+              <img src="/assets/sol.png" alt="Play Games" class="step-icon" />
+            </div>
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>Play & Grow Strong</h3>
+              <p>Engage in health games and activities to make your avatar evolve</p>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="step-image">
+              <img src="/assets/sol.png" alt="Follow Guidance" class="step-icon" />
+            </div>
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>Follow the Guidance</h3>
+              <p>Let your avatar guide you with personalized health advice and tips</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="showAvatarSelection" class="tab-navigation">
@@ -479,6 +514,124 @@ const selectCreatedAvatar = () => {
   background-color: #2c8a56;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Guide Section Styles */
+.guide-section {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 30px 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e8f1e9;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+
+.guide-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 15px;
+  background-color: #f8fdf9;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.guide-step:hover {
+  transform: translateY(-5px);
+  border-color: #1a5536;
+  box-shadow: 0 8px 20px rgba(26, 85, 54, 0.15);
+}
+
+.step-image {
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.step-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #1a5536;
+  background-color: white;
+  padding: 5px;
+}
+
+.step-number {
+  background-color: #1a5536;
+  color: white;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 15px;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.step-content h3 {
+  color: #1a5536;
+  font-size: 18px;
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.step-content p {
+  color: #5a3e0b;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .guide-steps {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .guide-section {
+    padding: 20px 15px;
+  }
+  
+  .guide-step {
+    padding: 15px;
+  }
+  
+  .step-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .step-number {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+  
+  .step-content h3 {
+    font-size: 16px;
+  }
+  
+  .step-content p {
+    font-size: 13px;
+  }
 }
 
 .tab-navigation {
