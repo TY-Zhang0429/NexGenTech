@@ -390,13 +390,18 @@ app.get("/api/recipes/search", async (req, res) => {
       // teen_recipes doesn't have ingredients column, so exclude from ingredient filtering
     }
 
-    // Combine both queries
+    // Combine both queries with duplicate handling
     let combinedQuery = `
       SELECT * FROM (
         (${recipesQuery})
         UNION ALL
         (${teenRecipesQuery})
       ) combined
+      WHERE NOT EXISTS (
+        SELECT 1 FROM \`${DB}\`.recipes r2 
+        WHERE r2.title = combined.recipe_name 
+        AND combined.source_table = 'teen_recipes'
+      )
     `;
 
     // Apply sorting
@@ -410,13 +415,18 @@ app.get("/api/recipes/search", async (req, res) => {
     const allParams = [...params, ...teenParams, Number(limit), offset];
     const [recipes] = await pool.query(combinedQuery, allParams);
 
-    // Get total count for pagination
+    // Get total count for pagination with duplicate handling
     let countQuery = `
       SELECT COUNT(*) as total FROM (
         (${recipesQuery})
         UNION ALL
         (${teenRecipesQuery})
       ) combined
+      WHERE NOT EXISTS (
+        SELECT 1 FROM \`${DB}\`.recipes r2 
+        WHERE r2.title = combined.recipe_name 
+        AND combined.source_table = 'teen_recipes'
+      )
     `;
     const countParams = [...params, ...teenParams];
     const [countResult] = await pool.query(countQuery, countParams);

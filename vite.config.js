@@ -21,8 +21,7 @@ export default defineConfig({
       overlay: false
     },
     fs: {
-      strict: false,
-      allow: ['..']
+      strict: false
     },
     proxy: {
       '/api': {

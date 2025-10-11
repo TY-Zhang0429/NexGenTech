@@ -197,10 +197,14 @@
                   :src="`/food_icons/${recipe.image_filename}.png`" 
                   :alt="recipe.recipe_name"
                   class="recipe-image"
+                  @click.stop="populateMeasurements(recipe)"
+                  title="Click to auto-populate measurements"
                 />
                 <div class="recipe-overlay">
                   <button class="favorite-btn" @click.stop="toggleFavorite(recipe)">
-                    <span class="heart-icon">♡</span>
+                    <span class="heart-icon" :class="{ liked: favoriteRecipes.has(`${recipe.source}_${recipe.id}`) }">
+                      {{ favoriteRecipes.has(`${recipe.source}_${recipe.id}`) ? '♥' : '♡' }}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -224,100 +228,128 @@
 
     <!-- Recipe Detail Modal -->
     <div v-if="selectedRecipe" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
+      <div class="modal-content-large" @click.stop>
         <button class="close-modal" @click="closeModal">×</button>
         
-        <!-- Measurements Flash Card -->
-        <div class="measurements-card">
-          <h2 class="measurements-title">Recipe Details</h2>
-          <div class="measurements-grid">
-            <div class="measurement-item">
-              <span class="measurement-label">Serving Size</span>
-              <span class="measurement-value">{{ selectedRecipe.serving_size || 'Varies' }}</span>
+        <!-- Three Column Layout -->
+        <div class="modal-three-columns">
+          
+          <!-- Left Column: Recipe Details, Nutrition Summary, Serving Size, Ingredients -->
+          <div class="modal-left-column">
+            <!-- Measurements Flash Card -->
+            <div class="measurements-card">
+              <h2 class="measurements-title">Recipe Details</h2>
+              <div class="measurements-grid">
+                <div class="measurement-item">
+                  <span class="measurement-label">Serving Size</span>
+                  <span class="measurement-value">{{ selectedRecipe.serving_size || 'Varies' }}</span>
+                </div>
+                <div class="measurement-item">
+                  <span class="measurement-label">Prep Time</span>
+                  <span class="measurement-value">{{ selectedRecipe.time_display || 'Quick prep' }}</span>
+                </div>
+                <div class="measurement-item">
+                  <span class="measurement-label">Calories</span>
+                  <span class="measurement-value">{{ selectedRecipe.calories }} per serving</span>
+                </div>
+                <div class="measurement-item">
+                  <span class="measurement-label">Category</span>
+                  <span class="measurement-value">{{ capitalizeFirst(selectedRecipe.category) }}</span>
+                </div>
+              </div>
             </div>
-            <div class="measurement-item">
-              <span class="measurement-label">Prep Time</span>
-              <span class="measurement-value">{{ selectedRecipe.time_display || 'Quick prep' }}</span>
-            </div>
-            <div class="measurement-item">
-              <span class="measurement-label">Calories</span>
-              <span class="measurement-value">{{ selectedRecipe.calories }} per serving</span>
-            </div>
-            <div class="measurement-item">
-              <span class="measurement-label">Category</span>
-              <span class="measurement-value">{{ capitalizeFirst(selectedRecipe.category) }}</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- Nutrition Summary (Moved to top) -->
-        <div class="nutrition-summary">
-          <h3 class="section-title">Nutrition Summary</h3>
-          <div class="nutrition-grid">
-            <div class="nutrition-item">
-              <span class="nutrition-label">Calories</span>
-              <span class="nutrition-value">{{ calculatedNutrition.Calories }}</span>
+            <!-- Nutrition Summary -->
+            <div class="nutrition-summary">
+              <h3 class="section-title">Nutrition Summary</h3>
+              <div class="nutrition-grid">
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Calories</span>
+                  <span class="nutrition-value">{{ calculatedNutrition.Calories }}</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Protein</span>
+                  <span class="nutrition-value">{{ calculatedNutrition.Protein }}</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Carbs</span>
+                  <span class="nutrition-value">{{ calculatedNutrition.Carbs }}</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Fat</span>
+                  <span class="nutrition-value">{{ calculatedNutrition.Fat }}</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Fiber</span>
+                  <span class="nutrition-value">{{ calculatedNutrition.Fiber }}</span>
+                </div>
+              </div>
             </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Protein</span>
-              <span class="nutrition-value">{{ calculatedNutrition.Protein }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Carbs</span>
-              <span class="nutrition-value">{{ calculatedNutrition.Carbs }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Fat</span>
-              <span class="nutrition-value">{{ calculatedNutrition.Fat }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="nutrition-label">Fiber</span>
-              <span class="nutrition-value">{{ calculatedNutrition.Fiber }}</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- Ingredients List with Interactive Measurements -->
-        <div v-if="selectedRecipe.ingredients" class="ingredients-section">
-          <h3 class="section-title">Ingredients</h3>
-          <div class="ingredients-list">
-            <div 
-              v-for="(ingredient, index) in ingredientsWithMeasurements" 
-              :key="index" 
-              class="ingredient-item"
-            >
-              <div class="ingredient-info">
-                <span class="ingredient-name">{{ capitalizeFirst(ingredient.name || ingredient) }}</span>
-                <div class="measurement-controls">
-                  <select 
-                    v-model="ingredient.unit" 
-                    @change="updateNutrition(ingredient)"
-                    class="unit-dropdown"
-                  >
-                    <option value="cup">Cup</option>
-                    <option value="grams">Grams</option>
-                    <option value="oz">Oz</option>
-                    <option value="tbsp">Tablespoon</option>
-                    <option value="tsp">Teaspoon</option>
-                    <option value="piece">Piece</option>
-                  </select>
+            <!-- Ingredients List with Interactive Measurements -->
+            <div v-if="selectedRecipe.ingredients" class="ingredients-section">
+              <!-- Serving Portion Display -->
+              <div class="serving-portion-display">
+                <div class="serving-info">
+                  <span class="serving-label">Serving Size:</span>
+                  <span class="serving-value">{{ selectedRecipe.serving_size || '1 serving' }}</span>
+                </div>
+                <div class="serving-controls">
+                  <label class="serving-multiplier-label">Adjust Servings:</label>
                   <input 
-                    v-model.number="ingredient.quantity" 
-                    @input="updateNutrition"
+                    v-model.number="servingMultiplier" 
+                    @input="updateServings"
                     type="number" 
-                    min="0" 
-                    step="0.1"
-                    class="quantity-input"
-                    placeholder="1"
+                    min="1" 
+                    max="10" 
+                    step="1"
+                    class="serving-multiplier-input"
                   />
+                </div>
+              </div>
+              
+              <h3 class="section-title">Ingredients</h3>
+              <div class="ingredients-list">
+                <div 
+                  v-for="(ingredient, index) in ingredientsWithMeasurements" 
+                  :key="index" 
+                  class="ingredient-item"
+                >
+                  <div class="ingredient-info">
+                    <span class="ingredient-name">{{ capitalizeFirst(ingredient.name || ingredient) }}</span>
+                    <div class="measurement-controls">
+                      <select 
+                        v-model="ingredient.unit" 
+                        @change="updateNutrition(ingredient)"
+                        class="unit-dropdown"
+                      >
+                        <option value="cup">Cup</option>
+                        <option value="grams">Grams</option>
+                        <option value="oz">Oz</option>
+                        <option value="tbsp">Tablespoon</option>
+                        <option value="tsp">Teaspoon</option>
+                        <option value="piece">Piece</option>
+                      </select>
+                      <input 
+                        v-model.number="ingredient.quantity" 
+                        @input="updateNutrition"
+                        type="number" 
+                        min="0" 
+                        step="0.1"
+                        class="quantity-input"
+                        placeholder="1"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Directions -->
-        <div v-if="selectedRecipe.directions" class="directions-section">
+          <!-- Center Column: Cooking Directions -->
+          <div class="modal-center-column">
+            <!-- Directions -->
+            <div v-if="selectedRecipe.directions" class="directions-section">
           <h3 class="section-title">Cooking Directions</h3>
           <ol class="directions-list">
             <li v-for="(direction, index) in selectedRecipe.directions" :key="index" class="direction-item">
@@ -326,13 +358,7 @@
           </ol>
         </div>
 
-        <!-- Combined Visualizations -->
-        <div class="combined-visualizations">
-          <h3 class="section-title">Nutrition Analysis</h3>
-          <p class="analysis-description">Comprehensive view of food groups and health benefits in your recipe.</p>
-          
-          <div class="visualizations-container">
-            <!-- Food Groups Analysis (Left) -->
+            <!-- Food Groups Analysis -->
             <div class="food-groups-analysis">
               <h4 class="subsection-title">Food Groups in This Recipe</h4>
               <div class="food-groups-list">
@@ -345,8 +371,11 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Nutrition Radar Chart (Right) -->
+          <!-- Right Column: Nutrition Analysis -->
+          <div class="modal-right-column">
+            <!-- Nutrition Radar Chart -->
             <div class="nutrition-radar">
               <h4 class="subsection-title">Health Benefits Radar</h4>
               <div class="radar-chart">
@@ -407,11 +436,9 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Nutrition Comparison Visualization -->
-        <div class="nutrition-comparison">
+            <!-- Nutrition Comparison Visualization -->
+            <div class="nutrition-comparison">
           <h3 class="section-title">Nutrition vs Australian Guidelines (15-19 years)</h3>
           <div class="comparison-container">
             <div class="comparison-chart">
@@ -533,6 +560,8 @@
                 <p v-else>💡 Consider balancing this meal with other nutritious foods throughout the day.</p>
               </div>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -898,6 +927,12 @@ const tooltip = ref({
   score: 0
 });
 
+// Favorites state
+const favoriteRecipes = ref(new Set());
+
+// Serving multiplier state
+const servingMultiplier = ref(1);
+
 // Radar Chart Data - Order must match the SVG labels
 const radarCategories = computed(() => [
   { name: 'Energy Boost', score: Math.min(caloriesPercentage.value * 0.8, 100), color: '#ff6b6b' },
@@ -1000,6 +1035,7 @@ const prevPage = () => {
 
 const selectRecipe = (recipe) => {
   selectedRecipe.value = recipe;
+  servingMultiplier.value = 1; // Reset serving multiplier
   setupIngredientsWithMeasurements();
   setBaseNutrition();
 };
@@ -1008,24 +1044,41 @@ const setupIngredientsWithMeasurements = () => {
   if (!selectedRecipe.value?.ingredients) return;
   
   let ingredients = [];
+  let measurements = [];
+  
   try {
+    // Parse ingredients
     if (typeof selectedRecipe.value.ingredients === 'string') {
       ingredients = JSON.parse(selectedRecipe.value.ingredients);
     } else if (Array.isArray(selectedRecipe.value.ingredients)) {
       ingredients = selectedRecipe.value.ingredients;
     }
+    
+    // Parse measurements
+    if (typeof selectedRecipe.value.measurements === 'string') {
+      measurements = JSON.parse(selectedRecipe.value.measurements);
+    } else if (Array.isArray(selectedRecipe.value.measurements)) {
+      measurements = selectedRecipe.value.measurements;
+    }
   } catch (e) {
-    console.error('Error parsing ingredients:', e);
+    console.error('Error parsing ingredients/measurements:', e);
     return;
   }
   
-  ingredientsWithMeasurements.value = ingredients.map(ing => ({
-    name: typeof ing === 'string' ? ing : ing.name,
-    unit: 'grams', // Default to grams
-    quantity: 100, // Default quantity for grams
-    originalQuantity: extractQuantity(ing),
-    originalUnit: extractUnit(ing)
-  }));
+  // Combine ingredients with their measurements
+  ingredientsWithMeasurements.value = ingredients.map((ing, index) => {
+    const measurement = measurements[index] || ing;
+    const parsedMeasurement = parseMeasurement(measurement);
+    
+    return {
+      name: typeof ing === 'string' ? ing : ing.name,
+      unit: parsedMeasurement.unit,
+      quantity: parsedMeasurement.quantity,
+      originalQuantity: parsedMeasurement.quantity,
+      originalUnit: parsedMeasurement.unit,
+      originalMeasurement: measurement
+    };
+  });
 };
 
 const getDefaultQuantity = (unit) => {
@@ -1052,20 +1105,63 @@ const setBaseNutrition = () => {
   }
 };
 
-const extractQuantity = (ingredient) => {
-  if (typeof ingredient === 'string') {
-    const match = ingredient.match(/(\d+(?:\.\d+)?(?:\/\d+)?)/);
-    return match ? parseFloat(match[1]) : 1;
+const parseMeasurement = (measurement) => {
+  if (typeof measurement !== 'string') {
+    return { quantity: 1, unit: 'piece' };
   }
-  return 1;
+  
+  // Regex to extract quantity and unit from measurements like "1/2 cup corn kernels", "2 tbsp fresh lemon juice", "12 fl oz sparkling water"
+  const match = measurement.match(/^(\d+(?:\.\d+)?(?:\/\d+)?)\s*(cup|tbsp|tsp|gram|oz|piece|fl\s*oz|ml|lb|kg|inch|cm|slice|clove|bunch|head|can|bag|box|pack|serving)/i);
+  
+  if (match) {
+    let quantity = parseFloat(match[1]);
+    if (match[1].includes('/')) {
+      const [numerator, denominator] = match[1].split('/');
+      quantity = parseFloat(numerator) / parseFloat(denominator);
+    }
+    
+    let unit = match[2].toLowerCase().trim();
+    
+    // Normalize fl oz to oz
+    if (unit === 'fl oz' || unit === 'floz') {
+      unit = 'oz';
+    }
+    
+    console.log(`Parsed measurement: "${measurement}" → quantity: ${quantity}, unit: ${unit}`);
+    return { quantity, unit };
+  }
+  
+  // Fallback: try to extract just a number
+  const numberMatch = measurement.match(/(\d+(?:\.\d+)?(?:\/\d+)?)/);
+  if (numberMatch) {
+    let quantity = parseFloat(numberMatch[1]);
+    if (numberMatch[1].includes('/')) {
+      const [numerator, denominator] = numberMatch[1].split('/');
+      quantity = parseFloat(numerator) / parseFloat(denominator);
+    }
+    return { quantity, unit: 'piece' };
+  }
+  
+  return { quantity: 1, unit: 'piece' };
 };
 
-const extractUnit = (ingredient) => {
-  if (typeof ingredient === 'string') {
-    const unitMatch = ingredient.match(/(cup|tbsp|tsp|gram|oz|piece)/i);
-    return unitMatch ? unitMatch[1].toLowerCase() : 'piece';
-  }
-  return 'piece';
+const populateMeasurements = (recipe) => {
+  // Select the recipe first
+  selectRecipe(recipe);
+  
+  // Reset serving multiplier to 1
+  servingMultiplier.value = 1;
+  
+  // Show a brief success message
+  console.log(`Auto-populated measurements for: ${recipe.recipe_name}`);
+  
+  // Scroll to the ingredients section if it's visible
+  setTimeout(() => {
+    const ingredientsSection = document.querySelector('.ingredients-section');
+    if (ingredientsSection) {
+      ingredientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
 };
 
 const calculateTotalMultiplier = () => {
@@ -1089,6 +1185,16 @@ const getUnitMultiplier = (unit) => {
     'piece': 50 // average piece weight
   };
   return multipliers[unit] || 1;
+};
+
+const updateServings = () => {
+  // Update all ingredient quantities based on serving multiplier
+  ingredientsWithMeasurements.value.forEach(ingredient => {
+    ingredient.quantity = ingredient.originalQuantity * servingMultiplier.value;
+  });
+  
+  // Update nutrition calculations
+  updateNutrition();
 };
 
 const updateNutrition = (ingredient) => {
@@ -1145,7 +1251,16 @@ const closeModal = () => {
 };
 
 const toggleFavorite = (recipe) => {
-  // TODO: Implement favorite functionality
+  const recipeId = `${recipe.source}_${recipe.id}`;
+  
+  if (favoriteRecipes.value.has(recipeId)) {
+    favoriteRecipes.value.delete(recipeId);
+  } else {
+    favoriteRecipes.value.add(recipeId);
+  }
+  
+  // Optional: Save to localStorage for persistence
+  localStorage.setItem('favoriteRecipes', JSON.stringify([...favoriteRecipes.value]));
 };
 
 // Removed handleImageError to prevent repeated placeholder calls
@@ -1219,6 +1334,16 @@ const fetchFilterOptions = async () => {
 
 // Lifecycle
 onMounted(() => {
+  // Load favorites from localStorage
+  const savedFavorites = localStorage.getItem('favoriteRecipes');
+  if (savedFavorites) {
+    try {
+      favoriteRecipes.value = new Set(JSON.parse(savedFavorites));
+    } catch (error) {
+      console.warn('Failed to load favorites from localStorage:', error);
+    }
+  }
+  
   fetchFilterOptions();
   fetchRecipes();
 });
@@ -1834,10 +1959,16 @@ const recipeImg = (c) => {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
 .recipe-card:hover .recipe-image {
   transform: scale(1.05);
+}
+
+.recipe-image:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
 }
 
 .recipe-overlay {
@@ -1868,6 +1999,12 @@ const recipeImg = (c) => {
 .heart-icon {
   font-size: 1.2rem;
   color: #ff6b6b;
+  transition: all 0.3s ease;
+}
+
+.heart-icon.liked {
+  color: #ff1744;
+  transform: scale(1.2);
 }
 
 .recipe-info {
@@ -1936,6 +2073,95 @@ const recipeImg = (c) => {
   width: 100%;
 }
 
+/* Large modal for 3-column layout */
+.modal-content-large {
+  background: white;
+  border-radius: 15px;
+  max-width: 95vw;
+  width: 1400px;
+  max-height: 95vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Three column layout */
+.modal-three-columns {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  min-height: 80vh;
+}
+
+.modal-left-column {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-center-column {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-right-column {
+  flex: 0.6;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1200px) {
+  .modal-content-large {
+    width: 95vw;
+    max-width: 1200px;
+  }
+  
+  .modal-three-columns {
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+  }
+  
+  .subsection-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content-large {
+    width: 98vw;
+    max-width: none;
+    max-height: 98vh;
+  }
+  
+  .modal-three-columns {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+  
+  .modal-left-column,
+  .modal-center-column,
+  .modal-right-column {
+    flex: none;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+  
+  .subsection-title {
+    font-size: 1rem;
+  }
+}
+
 .close-modal {
   position: absolute;
   top: 15px;
@@ -1950,7 +2176,7 @@ const recipeImg = (c) => {
 
 .measurements-card {
   background: white;
-  padding: 30px;
+  padding: 15px;
   border-radius: 20px 20px 0 0;
   margin-bottom: 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -1958,23 +2184,23 @@ const recipeImg = (c) => {
 
 .measurements-title {
   color: #8b7765;
-  font-size: 1.8rem;
-  margin-bottom: 20px;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
   text-align: center;
   font-family: 'Merriweather', serif;
 }
 
 .measurements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
 
 .measurement-item {
   text-align: center;
-  padding: 20px;
+  padding: 12px;
   background: linear-gradient(135deg, #ff9a56 0%, #ffad7a 100%);
-  border-radius: 15px;
+  border-radius: 10px;
   box-shadow: 0 4px 15px rgba(255, 154, 86, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -2007,8 +2233,8 @@ const recipeImg = (c) => {
 .measurement-label {
   display: block;
   color: white;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
+  font-size: 0.7rem;
+  margin-bottom: 4px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2018,7 +2244,7 @@ const recipeImg = (c) => {
 .measurement-value {
   display: block;
   color: white;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
@@ -2026,8 +2252,69 @@ const recipeImg = (c) => {
 .ingredients-section,
 .directions-section,
 .nutrition-summary {
-  padding: 30px;
+  padding: 20px;
   border-bottom: 1px solid #e0e0e0;
+}
+
+/* Serving Portion Display */
+.serving-portion-display {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.serving-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.serving-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.serving-value {
+  font-size: 1.1rem;
+  color: #495057;
+  font-weight: 600;
+  font-family: 'Merriweather', serif;
+}
+
+.serving-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.serving-multiplier-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.serving-multiplier-input {
+  width: 80px;
+  padding: 8px 12px;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1rem;
+  text-align: center;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.serving-multiplier-input:focus {
+  outline: none;
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
 }
 
 .section-title {
@@ -2134,15 +2421,15 @@ const recipeImg = (c) => {
 
 .nutrition-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
 
 .nutrition-item {
   text-align: center;
-  padding: 18px;
+  padding: 10px;
   background: linear-gradient(135deg, #ff7f50 0%, #ffa07a 100%);
-  border-radius: 15px;
+  border-radius: 10px;
   box-shadow: 0 4px 15px rgba(255, 127, 80, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -2175,8 +2462,8 @@ const recipeImg = (c) => {
 .nutrition-label {
   display: block;
   color: white;
-  font-size: 0.85rem;
-  margin-bottom: 8px;
+  font-size: 0.65rem;
+  margin-bottom: 4px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2186,7 +2473,7 @@ const recipeImg = (c) => {
 .nutrition-value {
   display: block;
   color: white;
-  font-size: 1.3rem;
+  font-size: 0.95rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
