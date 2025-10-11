@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- root carries CSS vars like --topnav-h -->
   <div ref="pageRoot" class="catcher-game game-wrapper">
     <!-- import draggable avatar component -->
@@ -12,7 +12,6 @@
     
     <!-- Top Navigation -->
     <div class="top-nav">
-      <button class="back-btn" @click="goBack">← Back</button>
       <h1>Healthier Catcher</h1>
     </div>
 
@@ -20,6 +19,11 @@
     <div class="game-container">
       <!-- Left Panel: Game Controls -->
       <div class="left-panel">
+        <!-- Back Button Section -->
+        <div class="back-section">
+          <button class="back-btn" @click="goBack">Back To Discover Games</button>
+        </div>
+        
         <div class="control-section">
           <h3>Game Difficulty</h3>
           <select v-model="selectedDifficulty" :disabled="gameState === 'playing'" class="difficulty-selector">
@@ -49,15 +53,15 @@
         <div class="rules-section">
           <h3>How to Play</h3>
           <div class="rules-content">
-            <p><strong>Controls:</strong> Use A/D keys or ← → arrow keys to move the bowl</p>
+            <p><strong>Controls:</strong> Use A/D keys or arrow keys to move the bowl</p>
             <p><strong>Goal:</strong> Catch healthy foods, avoid unhealthy ones!</p>
             <p><strong>Difficulty:</strong> You can change difficulty even during gameplay</p>
             <p><strong>Scoring:</strong></p>
             <ul>
-              <li>🍎 Fruits: +2 points</li>
-              <li>🥕 Vegetables: +1 point</li>
-              <li>🍟 French Fries: -1 point</li>
-              <li>🍔 Burgers: -2 points</li>
+              <li> Fruits: +1 point</li>
+              <li> Vegetables: +2 points</li>
+              <li> Fried Foods: -1 point</li>
+              <li> Desserts: -2 points</li>
             </ul>
             <p><strong>Win Condition:</strong> Reach 20 points to win!</p>
             <div v-if="selectedDifficulty === 'easy'">
@@ -111,10 +115,11 @@
             :style="{ 
               left: food.x + 'px', 
               top: food.y + 'px',
-              fontSize: food.size + 'px'
+              width: food.size + 'px',
+              height: food.size + 'px'
             }"
           >
-            {{ food.emoji }}
+            <img :src="`/assets/${food.image}`" :alt="food.image" class="food-image" />
           </div>
         </div>
 
@@ -123,58 +128,136 @@
           Select difficulty and click "Start Game" to begin!
         </div>
         <div v-if="gameState === 'won'" class="game-message success">
-          🎉 Congratulations! You reached 20 points! 🎉
+           Congratulations! You reached 20 points! 
         </div>
         <div v-if="gameState === 'lost'" class="game-message failure">
-          😞 Game Over! {{ selectedDifficulty === 'hard' ? 'Time\'s up!' : 'Try again!' }}
+           Game Over! {{ selectedDifficulty === 'hard' ? 'Time\'s up!' : 'Try again!' }}
         </div>
       </div>
 
       <!-- Right Panel: Food Education -->
       <div class="right-panel">
         <h3>Object Introduction</h3>
-        <div class="food-info">
-          <div class="food-category">
-            <h4>Healthy Foods (+Points)</h4>
-            <div class="food-items">
-              <div class="food-item">
-                <span class="food-icon">🍎</span>
-                <div class="food-details">
-                  <strong>Fruits</strong>
-                  <p>Rich in vitamins, fiber, and antioxidants. Great for energy and immune support.</p>
-                  <span class="score-value">+2 points</span>
-                </div>
-              </div>
-              <div class="food-item">
-                <span class="food-icon">🥕</span>
-                <div class="food-details">
-                  <strong>Vegetables</strong>
-                  <p>Packed with nutrients, minerals, and fiber. Essential for overall health.</p>
-                  <span class="score-value">+1 point</span>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'healthy' }"
+            @click="activeTab = 'healthy'"
+          >
+            Healthy Foods
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'unhealthy' }"
+            @click="activeTab = 'unhealthy'"
+          >
+            Unhealthy Foods
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- Healthy Foods Tab -->
+          <div v-if="activeTab === 'healthy'" class="tab-panel">
+            <!-- 1-Point Foods Page -->
+            <div v-if="healthyFoodPage === 0" class="food-page">
+              <h4 class="page-title">Fruits (+1 Point Each)</h4>
+              <div class="food-grid">
+                <div 
+                  v-for="food in foodDisplayData.healthy.onePoint" 
+                  :key="food.image"
+                  class="food-card"
+                >
+                  <div class="food-image-container">
+                    <img :src="`/assets/${food.image}`" :alt="food.name" class="food-image" />
+                  </div>
+                  <div class="food-name">{{ food.name }}</div>
+                  <div class="food-desc">{{ food.description }}</div>
+                  <span class="score-badge positive">+1</span>
                 </div>
               </div>
             </div>
+            
+            <!-- 2-Point Foods Page -->
+            <div v-if="healthyFoodPage === 1" class="food-page">
+              <h4 class="page-title">Vegetables (+2 Points Each)</h4>
+              <div class="food-grid">
+                <div 
+                  v-for="food in foodDisplayData.healthy.twoPoints" 
+                  :key="food.image"
+                  class="food-card"
+                >
+                  <div class="food-image-container">
+                    <img :src="`/assets/${food.image}`" :alt="food.name" class="food-image" />
+                  </div>
+                  <div class="food-name">{{ food.name }}</div>
+                  <div class="food-desc">{{ food.description }}</div>
+                  <span class="score-badge positive">+2</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Pagination Controls for Healthy Foods -->
+            <div class="pagination-controls">
+              <button @click="prevHealthyPage" class="nav-btn" :disabled="healthyFoodPage === 0">
+                <
+              </button>
+              <button @click="nextHealthyPage" class="nav-btn" :disabled="healthyFoodPage === 1">
+                >
+              </button>
+            </div>
           </div>
 
-          <div class="food-category">
-            <h4>Unhealthy Foods (-Points)</h4>
-            <div class="food-items">
-              <div class="food-item">
-                <span class="food-icon">🍟</span>
-                <div class="food-details">
-                  <strong>French Fries</strong>
-                  <p>High in unhealthy fats and calories. Best enjoyed in moderation.</p>
-                  <span class="score-value negative">-1 point</span>
+          <!-- Unhealthy Foods Tab -->
+          <div v-if="activeTab === 'unhealthy'" class="tab-panel">
+            <!-- -1-Point Foods Page -->
+            <div v-if="unhealthyFoodPage === 0" class="food-page">
+              <h4 class="page-title">Fried Foods (-1 Point Each)</h4>
+              <div class="food-grid">
+                <div 
+                  v-for="food in foodDisplayData.unhealthy.onePointLoss" 
+                  :key="food.image"
+                  class="food-card"
+                >
+                  <div class="food-image-container">
+                    <img :src="`/assets/${food.image}`" :alt="food.name" class="food-image" />
+                  </div>
+                  <div class="food-name">{{ food.name }}</div>
+                  <div class="food-desc">{{ food.description }}</div>
+                  <span class="score-badge negative">-1</span>
                 </div>
               </div>
-              <div class="food-item">
-                <span class="food-icon">🍔</span>
-                <div class="food-details">
-                  <strong>Burgers</strong>
-                  <p>High in saturated fats and calories. Choose healthier alternatives when possible.</p>
-                  <span class="score-value negative">-2 points</span>
+            </div>
+            
+            <!-- -2-Point Foods Page -->
+            <div v-if="unhealthyFoodPage === 1" class="food-page">
+              <h4 class="page-title">Desserts (-2 Points Each)</h4>
+              <div class="food-grid">
+                <div 
+                  v-for="food in foodDisplayData.unhealthy.twoPointsLoss" 
+                  :key="food.image"
+                  class="food-card"
+                >
+                  <div class="food-image-container">
+                    <img :src="`/assets/${food.image}`" :alt="food.name" class="food-image" />
+                  </div>
+                  <div class="food-name">{{ food.name }}</div>
+                  <div class="food-desc">{{ food.description }}</div>
+                  <span class="score-badge negative">-2</span>
                 </div>
               </div>
+            </div>
+            
+            <!-- Pagination Controls for Unhealthy Foods -->
+            <div class="pagination-controls">
+              <button @click="prevUnhealthyPage" class="nav-btn" :disabled="unhealthyFoodPage === 0">
+                <
+              </button>
+              <button @click="nextUnhealthyPage" class="nav-btn" :disabled="unhealthyFoodPage === 1">
+                >
+              </button>
             </div>
           </div>
         </div>
@@ -188,7 +271,6 @@
       @click="tipsOpen = true"
       aria-label="Open Food Info"
     >
-      💡
     </button>
 
     <div
@@ -207,16 +289,16 @@
             <h4>Healthy Foods (+Points)</h4>
             <div class="food-items">
               <div class="food-item">
-                <span class="food-icon">🍎</span>
+                <span class="food-icon"></span>
                 <div class="food-details">
-                  <strong>Fruits (+2)</strong>
+                  <strong>Fruits (+1)</strong>
                   <p>Rich in vitamins and antioxidants</p>
                 </div>
               </div>
               <div class="food-item">
-                <span class="food-icon">🥕</span>
+                <span class="food-icon"></span>
                 <div class="food-details">
-                  <strong>Vegetables (+1)</strong>
+                  <strong>Vegetables (+2)</strong>
                   <p>Packed with nutrients and fiber</p>
                 </div>
               </div>
@@ -226,17 +308,17 @@
             <h4>Unhealthy Foods (-Points)</h4>
             <div class="food-items">
               <div class="food-item">
-                <span class="food-icon">🍟</span>
+                <span class="food-icon"></span>
                 <div class="food-details">
-                  <strong>French Fries (-1)</strong>
+                  <strong>Fried Foods (-1)</strong>
                   <p>High in unhealthy fats</p>
                 </div>
               </div>
               <div class="food-item">
-                <span class="food-icon">🍔</span>
+                <span class="food-icon"></span>
                 <div class="food-details">
-                  <strong>Burgers (-2)</strong>
-                  <p>High in saturated fats</p>
+                  <strong>Desserts (-2)</strong>
+                  <p>High in sugar and calories</p>
                 </div>
               </div>
             </div>
@@ -282,30 +364,63 @@ export default {
       // Food types with their properties
       foodTypes: {
         fruits: {
-          emojis: ['🍎', '🍌', '🍊', '🍇', '🥝', '🍓'],
-          score: 2,
-          probability: 0.3 // 30% chance in easy mode
-        },
-        vegetables: {
-          emojis: ['🥕', '🥦', '🌽', '🥬', '🫑', '🍅'],
+          images: ['fruit1.png', 'fruit2.png', 'fruit3.png'],
           score: 1,
           probability: 0.3 // 30% chance in easy mode
         },
-        fries: {
-          emojis: ['🍟'],
+        vegetables: {
+          images: ['veg1.png', 'veg2.png', 'veg3.png'],
+          score: 2,
+          probability: 0.3 // 30% chance in easy mode
+        },
+        friedFoods: {
+          images: ['fried1.png', 'fried2.png', 'fried3.png'],
           score: -1,
           probability: 0.2 // 20% chance in easy mode
         },
-        burgers: {
-          emojis: ['🍔', '🍕', '🌭', '🥪'],
+        desserts: {
+          images: ['dess1.png', 'dess2.png', 'dess3.png'],
           score: -2,
           probability: 0.2 // 20% chance in easy mode
+        }
+      },
+      
+      // Food display data with game assets
+      foodDisplayData: {
+        healthy: {
+          onePoint: [
+            { name: 'Fruit 1', image: 'fruit1.png', description: 'Nutritious and energizing fruit.' },
+            { name: 'Fruit 2', image: 'fruit2.png', description: 'Sweet and vitamin-rich.' },
+            { name: 'Fruit 3', image: 'fruit3.png', description: 'Fresh and healthy snack.' }
+          ],
+          twoPoints: [
+            { name: 'Vegetable 1', image: 'veg1.png', description: 'Packed with essential nutrients.' },
+            { name: 'Vegetable 2', image: 'veg2.png', description: 'High in vitamins and minerals.' },
+            { name: 'Vegetable 3', image: 'veg3.png', description: 'Great for overall health.' }
+          ]
+        },
+        unhealthy: {
+          onePointLoss: [
+            { name: 'Fried Food 1', image: 'fried1.png', description: 'High in unhealthy fats.' },
+            { name: 'Fried Food 2', image: 'fried2.png', description: 'Deep fried and greasy.' },
+            { name: 'Fried Food 3', image: 'fried3.png', description: 'Contains excess oil.' }
+          ],
+          twoPointsLoss: [
+            { name: 'Dessert 1', image: 'dess1.png', description: 'High in sugar and calories.' },
+            { name: 'Dessert 2', image: 'dess2.png', description: 'Sweet but unhealthy treat.' },
+            { name: 'Dessert 3', image: 'dess3.png', description: 'Rich dessert with lots of sugar.' }
+          ]
         }
       },
       
       // Mobile state
       isNarrow: false,
       tipsOpen: false,
+      
+      // Tab state for right panel
+      activeTab: 'healthy',
+      healthyFoodPage: 0, // 0 for 1-point foods, 1 for 2-point foods
+      unhealthyFoodPage: 0, // 0 for -1-point foods, 1 for -2-point foods
       
       // Game complete state
       showGameCompleteMessage: false,
@@ -365,8 +480,8 @@ export default {
           probabilities: {
             fruits: 0.35,
             vegetables: 0.35,
-            fries: 0.15,
-            burgers: 0.15
+            friedFoods: 0.15,
+            desserts: 0.15
           }
         };
       } else {
@@ -377,8 +492,8 @@ export default {
           probabilities: {
             fruits: 0.25,
             vegetables: 0.25,
-            fries: 0.25,
-            burgers: 0.25
+            friedFoods: 0.25,
+            desserts: 0.25
           }
         };
       }
@@ -478,7 +593,7 @@ export default {
       
       if (result === 'won') {
         this.showGameCompleteMessage = true;
-        this.gameCompleteMessage = '🎉 Congratulations! You reached 20 points! 🎉';
+        this.gameCompleteMessage = ' Congratulations! You reached 20 points! ';
         this.triggerConfetti();
         setTimeout(() => {
           this.showGameCompleteMessage = false;
@@ -548,15 +663,15 @@ export default {
       if (!foodType) foodType = 'fruits'; // fallback
       
       const typeData = this.foodTypes[foodType];
-      const emoji = typeData.emojis[Math.floor(Math.random() * typeData.emojis.length)];
+      const imageName = typeData.images[Math.floor(Math.random() * typeData.images.length)];
       
       const food = {
         id: this.nextFoodId++,
-        x: Math.random() * (this.canvasWidth - 40),
-        y: -40,
-        emoji: emoji,
+        x: Math.random() * (this.canvasWidth - 60),
+        y: -60,
+        image: imageName,
         score: typeData.score,
-        size: 30 + Math.random() * 10 // Random size between 30-40px
+        size: 50 + Math.random() * 15 // Random size between 50-65px
       };
       
       this.fallingFoods.push(food);
@@ -657,6 +772,23 @@ export default {
       }
     },
     
+    // Pagination methods
+    nextHealthyPage() {
+      this.healthyFoodPage = (this.healthyFoodPage + 1) % 2;
+    },
+    
+    prevHealthyPage() {
+      this.healthyFoodPage = (this.healthyFoodPage - 1 + 2) % 2;
+    },
+    
+    nextUnhealthyPage() {
+      this.unhealthyFoodPage = (this.unhealthyFoodPage + 1) % 2;
+    },
+    
+    prevUnhealthyPage() {
+      this.unhealthyFoodPage = (this.unhealthyFoodPage - 1 + 2) % 2;
+    },
+    
     // Utility methods
     checkScreenSize() {
       this.isNarrow = window.matchMedia('(max-width: 980px)').matches;
@@ -731,28 +863,6 @@ export default {
   margin-bottom: 20px;
 }
 
-.top-nav .back-btn {
-  position: absolute;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-family: 'Merriweather', serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.top-nav .back-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
 .top-nav h1 {
   color: white;
   font-size: 2.5rem;
@@ -777,6 +887,33 @@ export default {
   padding: 20px;
   height: fit-content;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.back-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.back-section .back-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #2d5016;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: 'Merriweather', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d5016;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-section .back-btn:hover {
+  background: #2d5016;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(45, 80, 22, 0.3);
 }
 
 .control-section {
@@ -1036,13 +1173,20 @@ export default {
 
 .falling-food {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
   transition: top 0.05s linear;
+}
+
+.food-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .game-message {
@@ -1073,6 +1217,8 @@ export default {
   padding: 20px;
   height: fit-content;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .right-panel h3 {
@@ -1081,6 +1227,207 @@ export default {
   font-size: 1.3rem;
   text-align: center;
 }
+
+/* Tab Navigation Styles */
+.tab-navigation {
+  display: flex;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(248, 249, 250, 0.9);
+  border: none;
+  font-family: 'Merriweather', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:first-child {
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tab-btn:hover {
+  background: rgba(103, 126, 234, 0.1);
+  color: #333;
+}
+
+.tab-btn.active {
+  background: #4CAF50;
+  color: white;
+  font-weight: bold;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Tab Content Styles */
+.tab-content {
+  flex: 1;
+  max-height: 450px;
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* New food grid and card styles */
+.food-page {
+  min-height: 320px;
+}
+
+.page-title {
+  margin: 0 0 20px 0;
+  color: #555;
+  font-size: 1.2rem;
+  text-align: center;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.food-card {
+  background: rgba(248, 249, 250, 0.9);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.food-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #4CAF50;
+}
+
+.food-image-container {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.food-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.food-name {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.food-desc {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.3;
+  margin-bottom: 10px;
+}
+
+.score-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.score-badge.positive {
+  background: #4CAF50;
+  color: white;
+}
+
+.score-badge.negative {
+  background: #f44336;
+  color: white;
+}
+
+/* Pagination controls */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Merriweather', serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.nav-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 
 .food-category {
   margin-bottom: 25px;
@@ -1176,7 +1523,7 @@ export default {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #667eea, #764ba2);
+  background: #4CAF50;
   border: none;
   font-size: 24px;
   cursor: pointer;
@@ -1237,6 +1584,25 @@ export default {
   font-size: 0.8rem;
 }
 
+/* Mobile Tab Navigation */
+.tab-navigation.mobile {
+  margin-bottom: 15px;
+}
+
+.tab-navigation.mobile .tab-btn {
+  font-size: 0.85rem;
+  padding: 10px 12px;
+}
+
+.mobile-tabs .food-item {
+  margin-bottom: 12px;
+  padding: 8px;
+}
+
+.mobile-tabs .food-details p {
+  font-size: 0.8rem;
+}
+
 .drawer-mask {
   position: fixed;
   top: var(--topnav-h-safe, var(--topnav-h, 66px));
@@ -1256,6 +1622,38 @@ export default {
 }
 
 /* Responsive design */
+@media (max-width: 768px) {
+  .food-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .food-card {
+    padding: 12px;
+  }
+  
+  .food-image-container {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .pagination-controls {
+    gap: 15px;
+  }
+  
+  .nav-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .game-container {
     grid-template-columns: 1fr;
@@ -1316,13 +1714,14 @@ export default {
   }
   
   .player-bowl {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
   }
   
   .falling-food {
-    width: 35px;
-    height: 35px;
+    width: 50px;
+    height: 50px;
   }
 }
 </style>
+
