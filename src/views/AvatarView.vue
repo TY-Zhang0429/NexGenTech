@@ -466,6 +466,7 @@ const selectCreatedAvatar = () => {
   // set selection state and store to sessionStorage
   sessionStorage.setItem('avatarSelected', 'true');
   sessionStorage.setItem('avatarType', getAvatarType());
+  sessionStorage.setItem('avatarEvolutionLevel', '1'); // initial level for all avatar types
   sessionStorage.setItem('avatarCustomName', customAvatarName.value.trim()); // save custom name
   console.log('保存的自定义avatar名字:', customAvatarName.value.trim()); // debug log
   isAvatarAlreadySelected.value = true;

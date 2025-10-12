@@ -11,6 +11,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { getAvatarImageByTypeAndLevel } from '@/utils/avatarUtils';
 
 const props = defineProps({
   avatarSrc: {
@@ -34,29 +35,7 @@ const currentAvatarSrc = computed(() => {
   const avatarType = sessionStorage.getItem('avatarType');
   const evolutionLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
   
-  switch (avatarType) {
-    case 'avatara':
-      // use different Sol avatars: 1=avatara, 2=avatara2, 3=avatara3, 4=avatara4
-      if (evolutionLevel >= 4) {
-        return '/assets/avatara4.png';
-      } else if (evolutionLevel >= 3) {
-        return '/assets/avatara3.png';
-      } else if (evolutionLevel >= 2) {
-        return '/assets/avatara2.png';
-      } else {
-        return '/assets/avatara.png';
-      }
-    case 'avatarb':
-      return '/assets/avatarb.png';
-    case 'avatarc':
-      return '/assets/avatarc.png';
-    case 'avatard':
-      return '/assets/avatard.png';
-    case 'avatare':
-      return '/assets/avatare.png';
-    default:
-      return props.avatarSrc;
-  }
+  return getAvatarImageByTypeAndLevel(avatarType, evolutionLevel);
 });
 
 // watch localStorage changes
