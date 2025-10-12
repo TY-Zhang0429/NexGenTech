@@ -29,6 +29,7 @@
           <select v-model="selectedDifficulty" :disabled="gameState === 'playing'" class="difficulty-selector">
             <option value="easy">Easy</option>
             <option value="hard">Hard</option>
+            <option value="test">Test (Auto Win)</option>
           </select>
         </div>
 
@@ -67,8 +68,11 @@
             <div v-if="selectedDifficulty === 'easy'">
               <p><strong>Easy Mode:</strong> No time limit, slower falling speed</p>
             </div>
-            <div v-else>
+            <div v-else-if="selectedDifficulty === 'hard'">
               <p><strong>Hard Mode:</strong> 60 seconds time limit, faster falling, more unhealthy foods</p>
+            </div>
+            <div v-else-if="selectedDifficulty === 'test'">
+              <p><strong>Test Mode:</strong> Instant win for testing purposes</p>
             </div>
           </div>
         </div>
@@ -449,6 +453,15 @@ export default {
         // Show difficulty change message
         this.showScoreChange(`Difficulty changed to ${newDifficulty.toUpperCase()}!`);
         
+        // Handle test mode instant win
+        if (newDifficulty === 'test') {
+          this.score = 20;
+          setTimeout(() => {
+            this.endGame('won');
+          }, 500);
+          return;
+        }
+        
         // Update timer logic when switching difficulty during gameplay
         if (newDifficulty === 'hard' && !this.gameTimer) {
           // Switching to hard mode - start timer
@@ -482,6 +495,18 @@ export default {
             vegetables: 0.35,
             friedFoods: 0.15,
             desserts: 0.15
+          }
+        };
+      } else if (this.selectedDifficulty === 'test') {
+        return {
+          fallSpeed: 1,
+          spawnRate: 999, // Very slow spawn rate for test mode
+          timeLimit: null,
+          probabilities: {
+            fruits: 1.0, // Only spawn fruits for instant win
+            vegetables: 0,
+            friedFoods: 0,
+            desserts: 0
           }
         };
       } else {
@@ -542,6 +567,16 @@ export default {
       this.nextFoodId = 1;
       this.spawnTimer = 0;
       this.playerPosition = this.canvasWidth / 2 - 25; // Center the bowl
+      
+      // Check for test mode - instant win
+      if (this.selectedDifficulty === 'test') {
+        // Set score to winning amount and end game immediately
+        this.score = 20;
+        setTimeout(() => {
+          this.endGame('won');
+        }, 500); // Small delay to show the score change
+        return;
+      }
       
       // Set up difficulty-specific settings
       if (this.selectedDifficulty === 'hard') {

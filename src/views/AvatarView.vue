@@ -138,10 +138,16 @@
               </div>
               
               <div class="avatar-name-section">
-                <div class="avatar-name-placeholder">{{ getAvatarName() }}</div>
+                <input 
+                  v-model="customAvatarName" 
+                  type="text" 
+                  placeholder="input your avatar name here" 
+                  class="avatar-name-input"
+                  maxlength="20"
+                />
               </div>
               
-              <button class="select-avatar-button" @click="selectCreatedAvatar">
+              <button class="select-avatar-button" @click="selectCreatedAvatar" :disabled="!customAvatarName.trim()">
                 Select Avatar
               </button>
               
@@ -264,6 +270,9 @@ const questions = ref([
 // user answers
 const userAnswers = ref([]);
 
+// custom avatar name input by user
+const customAvatarName = ref('');
+
 // reference to avatar component
 const avatarComponent = ref(null);
 
@@ -272,13 +281,13 @@ const isAvatarAlreadySelected = ref(false);
 
 // computed property to get selected avatar image
 onMounted(() => {
-  // check localStorage for avatar selection status
+  // check sessionStorage for avatar selection status
   checkAvatarSelectedState();
 });
 
-// check if avatar is already selected from localStorage
+// check if avatar is already selected from sessionStorage
 const checkAvatarSelectedState = () => {
-  const selected = localStorage.getItem('avatarSelected') === 'true';
+  const selected = sessionStorage.getItem('avatarSelected') === 'true';
   isAvatarAlreadySelected.value = selected;
 };
 
@@ -287,11 +296,19 @@ const selectSol = () => {
   // if user already selected, do nothing
   if (isAvatarAlreadySelected.value) return;
 
-  // set localStorage
-  localStorage.setItem('avatarSelected', 'true');
-  localStorage.setItem('avatarType', 'avatara');
-  localStorage.setItem('avatarEvolutionLevel', '1'); // initial level
+  // set sessionStorage
+  sessionStorage.setItem('avatarSelected', 'true');
+  sessionStorage.setItem('avatarType', 'avatara');
+  sessionStorage.setItem('avatarEvolutionLevel', '1'); // initial level
   isAvatarAlreadySelected.value = true;
+
+  // notify other components about avatar state change
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarSelected', value: 'true' }
+  }));
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarType', value: 'avatara' }
+  }));
 
   // set and show success message
   successMessage.value = 'Sol Selected!';
@@ -310,15 +327,22 @@ const selectSol = () => {
 
 // reset avatar
 const resetAvatar = () => {
-  // reset localStorage
-  localStorage.removeItem('avatarSelected');
-  localStorage.removeItem('avatarPosition');
-  localStorage.removeItem('avatarType');
-  localStorage.removeItem('avatarEvolved');
-  localStorage.removeItem('avatarEvolutionLevel');
+  // reset sessionStorage
+  sessionStorage.removeItem('avatarSelected');
+  sessionStorage.removeItem('avatarPosition');
+  sessionStorage.removeItem('avatarType');
+  sessionStorage.removeItem('avatarEvolved');
+  sessionStorage.removeItem('avatarEvolutionLevel');
+  sessionStorage.removeItem('avatarCustomName'); // also remove custom name
+
+  // notify other components about avatar reset
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarReset', value: 'true' }
+  }));
 
   // update current state
   isAvatarAlreadySelected.value = false;
+  customAvatarName.value = ''; // clear custom name input
 
   // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
@@ -423,16 +447,35 @@ const submitQuestionnaire = () => {
   // handle submission logic here (e.g., send to backend if needed)
   console.log('问卷已提交', userAnswers.value);
   
+  // clear previous custom name input for new avatar
+  customAvatarName.value = '';
+  
   // update display states
   showAvatarComplete.value = true;
 };
 
 // select created avatar
 const selectCreatedAvatar = () => {
-  // set selection state and store to localStorage
-  localStorage.setItem('avatarSelected', 'true');
-  localStorage.setItem('avatarType', getAvatarType());
+  // check if user entered a name
+  if (!customAvatarName.value.trim()) {
+    alert('Please input your avatar name here!');
+    return;
+  }
+
+  // set selection state and store to sessionStorage
+  sessionStorage.setItem('avatarSelected', 'true');
+  sessionStorage.setItem('avatarType', getAvatarType());
+  sessionStorage.setItem('avatarCustomName', customAvatarName.value.trim()); // save custom name
+  console.log('保存的自定义avatar名字:', customAvatarName.value.trim()); // debug log
   isAvatarAlreadySelected.value = true;
+
+  // notify other components about avatar state change
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarSelected', value: 'true' }
+  }));
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarType', value: getAvatarType() }
+  }));
 
   // set and show success message
   successMessage.value = 'Avatar Selected!';
@@ -1100,6 +1143,34 @@ const selectCreatedAvatar = () => {
   margin-bottom: 30px;
 }
 
+.avatar-name-input {
+  background-color: #a8c4a2;
+  color: #333333;
+  padding: 15px 25px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  border: 2px solid #a8c4a2;
+  outline: none;
+  min-width: 200px;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  font-family: 'Merriweather', serif;
+  transition: all 0.3s ease;
+}
+
+.avatar-name-input:focus {
+  border-color: #1a5536;
+  background-color: #b8d4b2;
+  box-shadow: 0 0 8px rgba(26, 85, 54, 0.3);
+}
+
+.avatar-name-input::placeholder {
+  color: #666666;
+  font-style: italic;
+}
+
 .avatar-name-placeholder {
   background-color: #a8c4a2;
   color: #333333;
@@ -1125,10 +1196,16 @@ const selectCreatedAvatar = () => {
   transition: all 0.3s ease;
 }
 
-.select-avatar-button:hover {
+.select-avatar-button:hover:not(:disabled) {
   background-color: #2c8a56;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.select-avatar-button:disabled {
+  background-color: #888888;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .completion-message {

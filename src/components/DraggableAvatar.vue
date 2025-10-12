@@ -26,13 +26,13 @@ const avatarElement = ref(null);
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 
-// according to localStorage avatarType and evolutionLevel dynamically calculate avatar image path
+// according to sessionStorage avatarType and evolutionLevel dynamically calculate avatar image path
 const currentAvatarSrc = computed(() => {
   // trigger reactive update
   storageWatcher.value;
   
-  const avatarType = localStorage.getItem('avatarType');
-  const evolutionLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
+  const avatarType = sessionStorage.getItem('avatarType');
+  const evolutionLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
   
   switch (avatarType) {
     case 'avatara':
@@ -60,13 +60,13 @@ const currentAvatarSrc = computed(() => {
 // watch localStorage changes
 const storageWatcher = ref(0);
 
-// check localStorage status
+// check sessionStorage status
 onMounted(() => {
   // check if avatar is selected
   checkAvatarSelected();
 
-  // load saved position from localStorage
-  const savedPosition = localStorage.getItem('avatarPosition');
+  // load saved position from sessionStorage
+  const savedPosition = sessionStorage.getItem('avatarPosition');
   if (savedPosition) {
     try {
       position.value = JSON.parse(savedPosition);
@@ -75,17 +75,17 @@ onMounted(() => {
     }
   }
 
-  // listen for storage events to keep in sync across pages
-  window.addEventListener('storage', handleStorageChange);
+  // listen for custom avatar update events
+  window.addEventListener('avatarStateChange', handleAvatarStateChange);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('storage', handleStorageChange);
+  window.removeEventListener('avatarStateChange', handleAvatarStateChange);
 });
 
-// check if avatar is selected in localStorage
+// check if avatar is selected in sessionStorage
 function checkAvatarSelected() {
-  const selected = localStorage.getItem('avatarSelected') === 'true';
+  const selected = sessionStorage.getItem('avatarSelected') === 'true';
   isVisible.value = selected;
   // trigger avatar image update
   storageWatcher.value++;
@@ -96,18 +96,22 @@ function triggerAvatarUpdate() {
   storageWatcher.value++;
 }
 
-// handle storage change events
-function handleStorageChange(event) {
-  if (event.key === 'avatarSelected') {
-    isVisible.value = event.newValue === 'true';
-  } else if (event.key === 'avatarPosition' && event.newValue) {
+// handle custom avatar state change events
+function handleAvatarStateChange(event) {
+  if (event.detail.type === 'avatarSelected') {
+    isVisible.value = event.detail.value === 'true';
+  } else if (event.detail.type === 'avatarPosition' && event.detail.value) {
     try {
-      position.value = JSON.parse(event.newValue);
+      position.value = JSON.parse(event.detail.value);
     } catch (e) {
       console.error('Error parsing updated avatar position:', e);
     }
-  } else if (event.key === 'avatarType' || event.key === 'avatarEvolutionLevel') {
+  } else if (event.detail.type === 'avatarType' || event.detail.type === 'avatarEvolutionLevel') {
     // when avatar type or evolution level changes, trigger re-render
+    storageWatcher.value++;
+  } else if (event.detail.type === 'avatarReset') {
+    // handle avatar reset
+    isVisible.value = false;
     storageWatcher.value++;
   }
 }
@@ -153,8 +157,13 @@ const onDrag = (event) => {
   position.value.x = clientX - dragOffset.x;
   position.value.y = clientY - dragOffset.y;
 
-  // save position to localStorage
-  localStorage.setItem('avatarPosition', JSON.stringify(position.value));
+  // save position to sessionStorage
+  sessionStorage.setItem('avatarPosition', JSON.stringify(position.value));
+  
+  // notify other components about position change
+  window.dispatchEvent(new CustomEvent('avatarStateChange', {
+    detail: { type: 'avatarPosition', value: JSON.stringify(position.value) }
+  }));
 };
 
 // stop dragging

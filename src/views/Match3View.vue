@@ -577,16 +577,21 @@ export default {
 
     // handle game complete
     handleGameComplete() {
-      const avatarType = localStorage.getItem('avatarType');
+      const avatarType = sessionStorage.getItem('avatarType');
       
       if (avatarType === 'avatara') {
         // If user selected Sol avatar, check current evolution level and trigger evolution
-        const currentLevel = parseInt(localStorage.getItem('avatarEvolutionLevel') || '1');
+        const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
         
         if (currentLevel < 3) {
           // evolve to next level
           const newLevel = currentLevel + 1;
-          localStorage.setItem('avatarEvolutionLevel', newLevel.toString());
+          sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
+
+          // notify other components about evolution level change
+          window.dispatchEvent(new CustomEvent('avatarStateChange', {
+            detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
+          }));
 
           // immediately trigger avatar update
           if (this.$refs.avatarComponent) {
