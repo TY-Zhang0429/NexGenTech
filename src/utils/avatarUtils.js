@@ -15,7 +15,20 @@ export const AVATAR_NAMES = {
   [AVATAR_TYPES.AVATARE]: 'Echo'
 };
 
+export const GAME_TYPES = {
+  WORDLE: 'wordle',
+  MATCH3: 'match3',
+  CATCHER: 'catcher'
+};
+
+export const GAME_NAMES = {
+  [GAME_TYPES.WORDLE]: 'Wordle Game',
+  [GAME_TYPES.MATCH3]: 'Match-3 Game',
+  [GAME_TYPES.CATCHER]: 'Food Catcher'
+};
+
 export const SUPPORTED_AVATAR_TYPES = Object.values(AVATAR_TYPES);
+export const ALL_GAMES = Object.values(GAME_TYPES);
 
 export const MAX_EVOLUTION_LEVEL = 4;
 export const MIN_EVOLUTION_LEVEL = 1;
@@ -80,4 +93,38 @@ export function getCurrentEvolutionLevel() {
 export function setEvolutionLevel(level) {
   const clampedLevel = Math.max(MIN_EVOLUTION_LEVEL, Math.min(MAX_EVOLUTION_LEVEL, level));
   sessionStorage.setItem('avatarEvolutionLevel', clampedLevel.toString());
+}
+
+/**
+ * Get completed games from sessionStorage
+ * @returns {Array<string>} Array of completed game types
+ */
+export function getCompletedGames() {
+  return JSON.parse(sessionStorage.getItem('completedGames') || '[]');
+}
+
+/**
+ * Get game progress information
+ * @returns {Object} Game progress data
+ */
+export function getGameProgress() {
+  const completedGames = getCompletedGames();
+  const progress = {
+    completed: completedGames,
+    incomplete: ALL_GAMES.filter(game => !completedGames.includes(game)),
+    totalGames: ALL_GAMES.length,
+    completedCount: completedGames.length,
+    progressPercentage: Math.round((completedGames.length / ALL_GAMES.length) * 100)
+  };
+
+  return progress;
+}
+
+/**
+ * Get formatted game names for display
+ * @param {Array<string>} gameTypes - Array of game type keys
+ * @returns {Array<string>} Array of formatted game names
+ */
+export function getFormattedGameNames(gameTypes) {
+  return gameTypes.map(gameType => GAME_NAMES[gameType] || gameType);
 }
