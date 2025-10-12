@@ -2,8 +2,11 @@
   <section ref="pageRoot" class="wordly wordly-page">
     <!-- Optional: draggable avatar -->
     <DraggableAvatar ref="avatarComponent" />
+    
+    <!-- Game victory message component -->
+    <GameVictoryMessage ref="victoryMessage" game-type="wordle" />
 
-    <!-- game complete overlay -->
+    <!-- game complete overlay (keep for backwards compatibility) -->
     <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
     <div v-if="showGameCompleteMessage" class="game-complete-message">
       {{ gameCompleteMessage }}
@@ -211,6 +214,7 @@ import { useRouter } from 'vue-router';
 /* Components */
 import DraggableAvatar from '@/components/DraggableAvatar.vue';
 import RightTips from '@/components/RightTips.vue';
+import GameVictoryMessage from '@/components/GameVictoryMessage.vue';
 
 /* Router back helper */
 const router = useRouter();
@@ -286,6 +290,7 @@ function handleMQ(e){ isNarrow.value = e.matches; if (!e.matches) tipsOpen.value
 /* === Local CSS var target (we won't touch other components) === */
 const pageRoot = ref(null);
 const avatarComponent = ref(null);
+const victoryMessage = ref(null);
 
 /* Measure the sticky top nav height WITHOUT modifying that component */
 function setLocalTopnavVar() {
@@ -444,52 +449,14 @@ function afterReveal(guess) {
     statusMsg.value = '🎉 You Win!';
     launchConfetti();
     
-    // check avatar evolution
-    handleAvatarEvolution('wordle');
+    // Show victory message using the new component
+    if (victoryMessage.value) {
+      victoryMessage.value.showVictory();
+    }
   } else if (guesses.length >= maxAttempts) {
     statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
   } else if (status[rowIndex]?.every(st => st === 'absent')) {
     triggerRowShake(rowIndex);
-  }
-}
-
-// Common avatar evolution function
-function handleAvatarEvolution(gameType) {
-  const avatarType = sessionStorage.getItem('avatarType');
-  if (avatarType === 'avatara') {
-    // Check if this game has already triggered evolution
-    const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
-    
-    if (!completedGames.includes(gameType)) {
-      const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
-      if (currentLevel < 4) { // Updated to support 4 levels
-        // evolve to next level
-        const newLevel = currentLevel + 1;
-        sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-
-        // mark this game as completed
-        completedGames.push(gameType);
-        sessionStorage.setItem('completedGames', JSON.stringify(completedGames));
-
-        // notify other components about evolution level change
-        window.dispatchEvent(new CustomEvent('avatarStateChange', {
-          detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
-        }));
-
-        // immediately trigger avatar update
-        if (avatarComponent.value) {
-          avatarComponent.value.triggerAvatarUpdate();
-        }
-
-        // Show evolution message overlay
-        gameCompleteMessage.value = `🎉 Your avatar evolved to level ${newLevel}!`;
-        showGameCompleteMessage.value = true;
-        
-        setTimeout(() => {
-          showGameCompleteMessage.value = false;
-        }, 3000);
-      }
-    }
   }
 }
 

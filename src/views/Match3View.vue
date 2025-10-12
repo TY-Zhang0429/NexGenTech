@@ -3,12 +3,9 @@
   <div ref="pageRoot" class="match3 game-wrapper">
     <!-- import draggable avatar component -->
     <DraggableAvatar ref="avatarComponent" />
-
-    <!-- game complete overlay -->
-    <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
-    <div v-if="showGameCompleteMessage" class="game-complete-message">
-      {{ gameCompleteMessage }}
-    </div>
+    
+    <!-- Game victory message component -->
+    <GameVictoryMessage ref="victoryMessage" game-type="match3" />
     
     <h1>Healthy Match-3</h1>
 
@@ -95,13 +92,14 @@
  *   --topnav-h and --topnav-h-safe (with safe-area inset).
  * - Mobile drawer & mask are offset from the TopNav height, so they won't be covered.
  */
-// import confetti from "canvas-confetti";
+import confetti from "canvas-confetti";
 import RightTips from "@/components/RightTips.vue";
 import DraggableAvatar from "@/components/DraggableAvatar.vue";
+import GameVictoryMessage from "@/components/GameVictoryMessage.vue";
 
 export default {
   name: "Match3View",
-  components: { RightTips, DraggableAvatar },
+  components: { RightTips, DraggableAvatar, GameVictoryMessage },
   data() {
     return {
       // Game constants/state
@@ -119,10 +117,6 @@ export default {
 
       // Mobile drawer state
       tipsOpen: false,
-
-      // game complete state
-      showGameCompleteMessage: false,
-      gameCompleteMessage: '',
 
       // internal observer
       navRO: null,
@@ -577,64 +571,19 @@ export default {
 
     // handle game complete
     handleGameComplete() {
-      const avatarType = sessionStorage.getItem('avatarType');
+      // Show victory message using the new component
+      if (this.$refs.victoryMessage) {
+        this.$refs.victoryMessage.showVictory();
+      }
       
-      if (avatarType === 'avatara') {
-        // Check if this game has already triggered evolution
-        const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
-        
-        if (!completedGames.includes('match3')) {
-          const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
-          
-          if (currentLevel < 4) { // Updated to support 4 levels
-            // evolve to next level
-            const newLevel = currentLevel + 1;
-            sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-
-            // mark this game as completed
-            completedGames.push('match3');
-            sessionStorage.setItem('completedGames', JSON.stringify(completedGames));
-
-            // notify other components about evolution level change
-            window.dispatchEvent(new CustomEvent('avatarStateChange', {
-              detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
-            }));
-
-            // immediately trigger avatar update
-            if (this.$refs.avatarComponent) {
-              this.$refs.avatarComponent.triggerAvatarUpdate();
-            }
-            
-            this.gameCompleteMessage = `🎉 Your avatar evolved to level ${newLevel}!`;
-            this.showGameCompleteMessage = true;
-            
-            // after 2 seconds, hide message and reset game
-            setTimeout(() => {
-              this.showGameCompleteMessage = false;
-
-              // Notify DraggableAvatar component to check status
-              if (this.$refs.avatarComponent) {
-                this.$refs.avatarComponent.checkAvatarSelected();
-              }
-              
-              alert("🏆 All Levels Complete!");
-              this.init();
-            }, 3000);
-          } else {
-            // Already at max level, just show complete message
-            alert("🏆 All Levels Complete!");
-            this.init();
-          }
-        } else {
-          // Game already completed, just show win effect
-          alert("🏆 All Levels Complete!");
-          this.init();
-        }
-      } else {
-        // If user selected custom avatar, just show win effect
+      // Show confetti effect regardless of avatar
+      confetti({ particleCount:200, spread:120, origin:{ y:.6 } });
+      
+      // Reset game after delay
+      setTimeout(() => {
         alert("🏆 All Levels Complete!");
         this.init();
-      }
+      }, 4000);
     },
   }
 };
@@ -873,42 +822,5 @@ export default {
   .match3 .bar{ width:min(260px,56vw); }
 }
 
-/* ===== game completion ===== */
-.match3 .overlay-blur {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  z-index: 1000;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
-}
 
-.match3 .game-complete-message {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #ffffff; /* dark green */
-  font-family: 'Merriweather', serif; /* Merriweather font */
-  font-size: 36px;
-  font-weight: bold;
-  z-index: 1001;
-  text-align: center;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
 </style>

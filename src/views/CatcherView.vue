@@ -3,6 +3,9 @@
   <div ref="pageRoot" class="catcher-game game-wrapper">
     <!-- import draggable avatar component -->
     <DraggableAvatar ref="avatarComponent" />
+    
+    <!-- Game victory message component -->
+    <GameVictoryMessage ref="victoryMessage" game-type="catcher" />
 
     <!-- game complete overlay -->
     <div v-if="showGameCompleteMessage" class="overlay-blur"></div>
@@ -339,11 +342,12 @@
 <script>
 import confetti from "canvas-confetti";
 import DraggableAvatar from "@/components/DraggableAvatar.vue";
+import GameVictoryMessage from "@/components/GameVictoryMessage.vue";
 import { useRouter } from 'vue-router';
 
 export default {
   name: "CatcherView",
-  components: { DraggableAvatar },
+  components: { DraggableAvatar, GameVictoryMessage },
   data() {
     return {
       // Game state
@@ -627,51 +631,12 @@ export default {
       this.gameState = result;
       
       if (result === 'won') {
-        this.showGameCompleteMessage = true;
-        this.gameCompleteMessage = ' Congratulations! You reached 20 points! ';
-        this.triggerConfetti();
-        
-        // Handle avatar evolution for game win
-        this.handleAvatarEvolution('catcher');
-        
-        setTimeout(() => {
-          this.showGameCompleteMessage = false;
-        }, 3000);
-      }
-    },
-    
-    // Handle avatar evolution logic
-    handleAvatarEvolution(gameType) {
-      const avatarType = sessionStorage.getItem('avatarType');
-      if (avatarType === 'avatara') {
-        // Check if this game has already triggered evolution
-        const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
-        
-        if (!completedGames.includes(gameType)) {
-          const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
-          if (currentLevel < 4) { // Updated to support 4 levels
-            // evolve to next level
-            const newLevel = currentLevel + 1;
-            sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-
-            // mark this game as completed
-            completedGames.push(gameType);
-            sessionStorage.setItem('completedGames', JSON.stringify(completedGames));
-
-            // notify other components about evolution level change
-            window.dispatchEvent(new CustomEvent('avatarStateChange', {
-              detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
-            }));
-
-            // immediately trigger avatar update
-            if (this.$refs.avatarComponent) {
-              this.$refs.avatarComponent.triggerAvatarUpdate();
-            }
-
-            // Update the game complete message to include evolution
-            this.gameCompleteMessage = `🎉 Congratulations! You won and your avatar evolved to level ${newLevel}!`;
-          }
+        // Show victory message using the new component
+        if (this.$refs.victoryMessage) {
+          this.$refs.victoryMessage.showVictory();
         }
+        
+        this.triggerConfetti();
       }
     },
     
