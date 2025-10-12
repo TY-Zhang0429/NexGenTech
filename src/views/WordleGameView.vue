@@ -24,6 +24,7 @@
           <option value="Hard">Hard (6)</option>
         </select>
         <button class="wd-btn" @click="startGame">New Game</button>
+        <button class="wd-btn ghost" @click="testWin">Test Win</button>
         <span class="wd-status" v-if="statusMsg">{{ statusMsg }}</span>
       </div>
 
@@ -444,13 +445,31 @@ function afterReveal(guess) {
     launchConfetti();
     
     // check avatar evolution
-    const avatarType = sessionStorage.getItem('avatarType');
-    if (avatarType === 'avatara') {
+    handleAvatarEvolution('wordle');
+  } else if (guesses.length >= maxAttempts) {
+    statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
+  } else if (status[rowIndex]?.every(st => st === 'absent')) {
+    triggerRowShake(rowIndex);
+  }
+}
+
+// Common avatar evolution function
+function handleAvatarEvolution(gameType) {
+  const avatarType = sessionStorage.getItem('avatarType');
+  if (avatarType === 'avatara') {
+    // Check if this game has already triggered evolution
+    const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
+    
+    if (!completedGames.includes(gameType)) {
       const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
-      if (currentLevel < 3) {
+      if (currentLevel < 4) { // Updated to support 4 levels
         // evolve to next level
         const newLevel = currentLevel + 1;
         sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
+
+        // mark this game as completed
+        completedGames.push(gameType);
+        sessionStorage.setItem('completedGames', JSON.stringify(completedGames));
 
         // notify other components about evolution level change
         window.dispatchEvent(new CustomEvent('avatarStateChange', {
@@ -462,20 +481,15 @@ function afterReveal(guess) {
           avatarComponent.value.triggerAvatarUpdate();
         }
 
-        // Show evolution message overlay instead of alert
-        gameCompleteMessage.value = `Congratulations! Your avatar evolved to level ${newLevel}`;
+        // Show evolution message overlay
+        gameCompleteMessage.value = `🎉 Your avatar evolved to level ${newLevel}!`;
         showGameCompleteMessage.value = true;
-
-        // Hide message after 2 seconds
+        
         setTimeout(() => {
           showGameCompleteMessage.value = false;
-        }, 2000);
+        }, 3000);
       }
     }
-  } else if (guesses.length >= maxAttempts) {
-    statusMsg.value = `😵 You Lose — Answer: ${answer.value.toUpperCase()}`;
-  } else if (status[rowIndex]?.every(st => st === 'absent')) {
-    triggerRowShake(rowIndex);
   }
 }
 
@@ -563,6 +577,15 @@ const shakingRows = reactive(new Set());
 function triggerRowShake(r) {
   shakingRows.add(r);
   setTimeout(() => shakingRows.delete(r), 600);
+}
+
+/* ===== Test Win Function ===== */
+function testWin() {
+  if (answer.value && !statusMsg.value.includes('You Win')) {
+    // Set current guess to the correct answer
+    cur.value = answer.value.toUpperCase();
+    submitGuess();
+  }
 }
 </script>
 

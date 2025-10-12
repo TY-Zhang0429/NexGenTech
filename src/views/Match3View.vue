@@ -580,41 +580,53 @@ export default {
       const avatarType = sessionStorage.getItem('avatarType');
       
       if (avatarType === 'avatara') {
-        // If user selected Sol avatar, check current evolution level and trigger evolution
-        const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
+        // Check if this game has already triggered evolution
+        const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
         
-        if (currentLevel < 3) {
-          // evolve to next level
-          const newLevel = currentLevel + 1;
-          sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
-
-          // notify other components about evolution level change
-          window.dispatchEvent(new CustomEvent('avatarStateChange', {
-            detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
-          }));
-
-          // immediately trigger avatar update
-          if (this.$refs.avatarComponent) {
-            this.$refs.avatarComponent.triggerAvatarUpdate();
-          }
+        if (!completedGames.includes('match3')) {
+          const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
           
-          this.gameCompleteMessage = `Congratulations! Your avatar evolved to level ${newLevel}`;
-          this.showGameCompleteMessage = true;
-          
-          // after 2 seconds, hide message and reset game
-          setTimeout(() => {
-            this.showGameCompleteMessage = false;
+          if (currentLevel < 4) { // Updated to support 4 levels
+            // evolve to next level
+            const newLevel = currentLevel + 1;
+            sessionStorage.setItem('avatarEvolutionLevel', newLevel.toString());
 
-            // Notify DraggableAvatar component to check status
+            // mark this game as completed
+            completedGames.push('match3');
+            sessionStorage.setItem('completedGames', JSON.stringify(completedGames));
+
+            // notify other components about evolution level change
+            window.dispatchEvent(new CustomEvent('avatarStateChange', {
+              detail: { type: 'avatarEvolutionLevel', value: newLevel.toString() }
+            }));
+
+            // immediately trigger avatar update
             if (this.$refs.avatarComponent) {
-              this.$refs.avatarComponent.checkAvatarSelected();
+              this.$refs.avatarComponent.triggerAvatarUpdate();
             }
             
+            this.gameCompleteMessage = `🎉 Your avatar evolved to level ${newLevel}!`;
+            this.showGameCompleteMessage = true;
+            
+            // after 2 seconds, hide message and reset game
+            setTimeout(() => {
+              this.showGameCompleteMessage = false;
+
+              // Notify DraggableAvatar component to check status
+              if (this.$refs.avatarComponent) {
+                this.$refs.avatarComponent.checkAvatarSelected();
+              }
+              
+              alert("🏆 All Levels Complete!");
+              this.init();
+            }, 3000);
+          } else {
+            // Already at max level, just show complete message
             alert("🏆 All Levels Complete!");
             this.init();
-          }, 2000);
+          }
         } else {
-          // Already at max level, just show complete message
+          // Game already completed, just show win effect
           alert("🏆 All Levels Complete!");
           this.init();
         }

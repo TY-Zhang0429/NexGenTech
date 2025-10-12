@@ -334,6 +334,7 @@ const resetAvatar = () => {
   sessionStorage.removeItem('avatarEvolved');
   sessionStorage.removeItem('avatarEvolutionLevel');
   sessionStorage.removeItem('avatarCustomName'); // also remove custom name
+  sessionStorage.removeItem('completedGames'); // also remove completed games
 
   // notify other components about avatar reset
   window.dispatchEvent(new CustomEvent('avatarStateChange', {

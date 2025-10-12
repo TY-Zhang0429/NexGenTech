@@ -36,8 +36,10 @@ const currentAvatarSrc = computed(() => {
   
   switch (avatarType) {
     case 'avatara':
-      // use different Sol avatars: 1=avatara, 2=avatara2, 3=avatara3
-      if (evolutionLevel >= 3) {
+      // use different Sol avatars: 1=avatara, 2=avatara2, 3=avatara3, 4=avatara4
+      if (evolutionLevel >= 4) {
+        return '/assets/avatara4.png';
+      } else if (evolutionLevel >= 3) {
         return '/assets/avatara3.png';
       } else if (evolutionLevel >= 2) {
         return '/assets/avatara2.png';
