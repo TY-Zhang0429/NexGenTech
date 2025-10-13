@@ -668,6 +668,19 @@ app.get("/api/recipes/quick-stats", async (_req, res) => {
   }
 });
 
+// === HEALTH TIPS API ===
+app.get("/api/health-tips", async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, title, content AS text, category FROM health_tips ORDER BY RAND() LIMIT 10;"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching health tips:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 // ---------- HELPER FUNCTIONS ----------
 
 function getCategoryEmoji(category) {
