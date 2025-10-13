@@ -4,6 +4,7 @@ import WordleGameView from '@/views/WordleGameView.vue'
 import FoodSwapView from '@/views/FoodSwapView.vue'
 import GamePage from '@/views/GamePage.vue'
 import CalculatorView from '@/views/CalculatorView.vue'
+import GenerateRecipe from '@/views/GenerateRecipe.vue'
 import AvatarView from '@/views/AvatarView.vue'
 import SupportView from '@/views/SupportView.vue'
 import Match3View from '@/views/Match3View.vue'
@@ -14,6 +15,7 @@ const routes = [
   { path: '/avatar', name: 'avatar', component: AvatarView },
   { path: '/game', name: 'game', component: GamePage },
   { path: '/calculator', name: 'calculator', component: CalculatorView },
+  { path: '/generate-recipe', name: 'generate-recipe', component: GenerateRecipe },
   { path: '/food-swap', name: 'food-swap', component: FoodSwapView },
   { path: '/support', name: 'support', component: SupportView },
   { path: '/wordle-game', name: 'wordle-game', component: WordleGameView },

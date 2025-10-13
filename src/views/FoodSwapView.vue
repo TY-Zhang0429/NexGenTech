@@ -552,6 +552,12 @@ const getCategoryEmoji = (category) => {
   return emojiMap[category?.toLowerCase()] || '🍽️';
 };
 
+// Function to capitalize first letter
+const capitalizeFirst = (str) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 // Utility function to get image with fallback formats
 const getImageSrc = (foodName) => {
   // Start with the most common format (png) and let error handler try others
