@@ -14,8 +14,11 @@
       
       <div class="info-banner">
         <p>Select Sol or create your own personalized companion for your health journey</p>
-        <button class="get-avatar-button" @click="showAvatarSelection = true" v-if="!showAvatarSelection">
-          Get Avatar
+        <button 
+          class="get-avatar-button" 
+          @click="isAvatarAlreadySelected ? resetAvatar() : showAvatarSelection = true" 
+          v-if="!showAvatarSelection">
+          {{ isAvatarAlreadySelected ? 'Reset Avatar' : 'Get Avatar' }}
         </button>
       </div>
 
@@ -124,7 +127,7 @@
             </div>
             
             <button class="questionnaire-button" @click="openQuestionnaire">
-              Fill Questionnaire
+              {{ hasCompletedQuestionnaire ? 'Fill and Reset Avatar' : 'Fill Questionnaire' }}
             </button>
           </div>
 
@@ -279,16 +282,26 @@ const avatarComponent = ref(null);
 // check if avatar is already selected
 const isAvatarAlreadySelected = ref(false);
 
+// check if user has completed questionnaire before
+const hasCompletedQuestionnaire = ref(false);
+
 // computed property to get selected avatar image
 onMounted(() => {
   // check sessionStorage for avatar selection status
   checkAvatarSelectedState();
+  checkQuestionnaireCompletedState();
 });
 
 // check if avatar is already selected from sessionStorage
 const checkAvatarSelectedState = () => {
   const selected = sessionStorage.getItem('avatarSelected') === 'true';
   isAvatarAlreadySelected.value = selected;
+};
+
+// check if user has completed questionnaire before
+const checkQuestionnaireCompletedState = () => {
+  const completed = sessionStorage.getItem('questionnaireCompleted') === 'true';
+  hasCompletedQuestionnaire.value = completed;
 };
 
 // select Sol as avatar
@@ -335,6 +348,7 @@ const resetAvatar = () => {
   sessionStorage.removeItem('avatarEvolutionLevel');
   sessionStorage.removeItem('avatarCustomName'); // also remove custom name
   sessionStorage.removeItem('completedGames'); // also remove completed games
+  sessionStorage.removeItem('questionnaireCompleted'); // also remove questionnaire completed state
 
   // notify other components about avatar reset
   window.dispatchEvent(new CustomEvent('avatarStateChange', {
@@ -343,6 +357,7 @@ const resetAvatar = () => {
 
   // update current state
   isAvatarAlreadySelected.value = false;
+  hasCompletedQuestionnaire.value = false;
   customAvatarName.value = ''; // clear custom name input
 
   // notify DraggableAvatar component to update status
@@ -360,6 +375,11 @@ const resetAvatar = () => {
 
 // open questionnaire
 const openQuestionnaire = () => {
+  // If user has completed questionnaire before, reset the avatar first
+  if (hasCompletedQuestionnaire.value) {
+    resetAvatar();
+  }
+  
   showQuestionnaire.value = true;
   showAvatarComplete.value = false;
   currentQuestion.value = 1;
@@ -447,6 +467,10 @@ const getAvatarType = () => {
 const submitQuestionnaire = () => {
   // handle submission logic here (e.g., send to backend if needed)
   console.log('问卷已提交', userAnswers.value);
+  
+  // Mark questionnaire as completed
+  sessionStorage.setItem('questionnaireCompleted', 'true');
+  hasCompletedQuestionnaire.value = true;
   
   // clear previous custom name input for new avatar
   customAvatarName.value = '';

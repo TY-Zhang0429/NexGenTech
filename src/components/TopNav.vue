@@ -43,8 +43,32 @@
           </RouterLink>
         </div>
       </div>
-      <RouterLink to="/calculator" class="link" @click="closeMenu">Nutrient Calculator</RouterLink>
-      <RouterLink to="/food-swap" class="link" @click="closeMenu">Healthier Swaps</RouterLink>
+      <div class="menu-group" @mouseenter="openNutrientAnalyzer(true)" @mouseleave="scheduleCloseNutrientAnalyzer">
+        <!-- parent item: clickable, goes to /calculator -->
+        <RouterLink
+          to="/calculator"
+          class="link link-parent"
+          @click="closeAllMenus"
+          :aria-expanded="isNutrientAnalyzerOpen"
+        >
+          Food Lab
+          <span class="caret" :class="{ open: isNutrientAnalyzerOpen }">▾</span>
+        </RouterLink>
+
+        <!-- submenu -->
+        <div class="submenu" :class="{ show: isNutrientAnalyzerOpen }" @mouseenter="cancelCloseNutrientAnalyzer" @mouseleave="scheduleCloseNutrientAnalyzer">
+          <RouterLink to="/calculator" class="sub-link" @click="closeAllMenus">
+            Nutrient Calculator
+          </RouterLink>
+          <RouterLink to="/generate-recipe" class="sub-link" @click="closeAllMenus">
+            Generate Recipe
+          </RouterLink>
+          <RouterLink to="/food-swap" class="sub-link" @click="closeAllMenus">
+            Healthier Swaps
+          </RouterLink>
+
+        </div>
+      </div>
       <RouterLink to="/support" class="link" @click="closeMenu">How it Works</RouterLink>
     </nav>
   </header>
@@ -55,7 +79,9 @@ import { ref } from 'vue'
 
 const isMenuOpen = ref(false)
 const isGamesOpen = ref(false)
+const isNutrientAnalyzerOpen = ref(false)
 let closeGamesTimeout = null
+let closeNutrientAnalyzerTimeout = null
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -67,6 +93,7 @@ const closeMenu = () => {
   isMenuOpen.value = false
   document.body.style.overflow = ''
   isGamesOpen.value = false
+  isNutrientAnalyzerOpen.value = false
 }
 
 // desktop hover；mobile click
@@ -106,13 +133,55 @@ const toggleGames = (e) => {
   isGamesOpen.value = !isGamesOpen.value
 }
 
+// Nutrient Analyzer dropdown functions (same as Games)
+const openNutrientAnalyzer = (val) => {
+  // only use hover
+  if (window.matchMedia('(min-width: 1001px)').matches) {
+    // Clear any pending close timeout
+    if (closeNutrientAnalyzerTimeout) {
+      clearTimeout(closeNutrientAnalyzerTimeout)
+      closeNutrientAnalyzerTimeout = null
+    }
+    isNutrientAnalyzerOpen.value = val
+  }
+}
+
+// Schedule closing with delay
+const scheduleCloseNutrientAnalyzer = () => {
+  if (window.matchMedia('(min-width: 1001px)').matches) {
+    closeNutrientAnalyzerTimeout = setTimeout(() => {
+      isNutrientAnalyzerOpen.value = false
+      closeNutrientAnalyzerTimeout = null
+    }, 300) // 300ms delay before closing
+  }
+}
+
+// Cancel the scheduled close
+const cancelCloseNutrientAnalyzer = () => {
+  if (closeNutrientAnalyzerTimeout) {
+    clearTimeout(closeNutrientAnalyzerTimeout)
+    closeNutrientAnalyzerTimeout = null
+  }
+}
+
+const toggleNutrientAnalyzer = (e) => {
+  // mobile folder click
+  e?.preventDefault?.()
+  isNutrientAnalyzerOpen.value = !isNutrientAnalyzerOpen.value
+}
+
 const closeAllMenus = () => {
   // Clear any pending timeouts
   if (closeGamesTimeout) {
     clearTimeout(closeGamesTimeout)
     closeGamesTimeout = null
   }
+  if (closeNutrientAnalyzerTimeout) {
+    clearTimeout(closeNutrientAnalyzerTimeout)
+    closeNutrientAnalyzerTimeout = null
+  }
   isGamesOpen.value = false
+  isNutrientAnalyzerOpen.value = false
   closeMenu()
 }
 
@@ -355,7 +424,7 @@ const closeAllMenus = () => {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 180px;
+  min-width: 220px;
   background: #ffffff;
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 10px;
