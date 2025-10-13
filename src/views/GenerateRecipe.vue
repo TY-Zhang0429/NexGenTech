@@ -764,35 +764,6 @@ const DEFAULT_QTY = {
   grams: 100, cup: 240, oz: 28.35, tbsp: 15, tsp: 5, piece: 50
 };
 
-// according to candidate card -> from loaded recipes list find“entire recipe”
-function resolveFromDB(candidate) {
-  if (!candidate) return null;
-
-  const cid = candidate.id ?? candidate.recipe_id ?? candidate.unique_id;
-  const csrc = candidate.source ?? candidate.source_table ?? candidate.sourceName;
-
-
-  const isSameId = (a, b) => String(a ?? '') === String(b ?? '');
-
-  // 1) use source + id to match first
-  let match = recipes.value.find(r =>
-    (isSameId(r.id, cid) || isSameId(r.recipe_id, cid) || isSameId(r.unique_id, cid)) &&
-    ( (r.source && csrc && String(r.source) === String(csrc)) ||
-      (r.source_table && csrc && String(r.source_table) === String(csrc)) ||
-      (!csrc) // sometimes with no source, just rely on id
-    )
-  );
-
-  // 2) fallback: use name fuzzy matching (if necessary)
-  if (!match && candidate.recipe_name) {
-    const name = String(candidate.recipe_name).trim().toLowerCase();
-    match = recipes.value.find(r => String(r.recipe_name||'').trim().toLowerCase() === name);
-  }
-
-  return match || candidate; // if not found, return candidate (at least see basic info)
-}
-
-
 // Filter options
 const timeRanges = ref([
   { value: '0-5', label: 'Super Quick (0-5 min)' },
@@ -1171,14 +1142,12 @@ const prevPage = () => {
   }
 };
 
-const selectRecipe = (candidate) => {
-  const fullRecipe = resolveFromDB(candidate);
-  selectedRecipe.value = fullRecipe;
-  servingMultiplier.value = 1;
+const selectRecipe = (recipe) => {
+  selectedRecipe.value = recipe;
+  servingMultiplier.value = 1; // Reset serving multiplier
   setupIngredientsWithMeasurements();
   setBaseNutrition();
 };
-
 
 const setupIngredientsWithMeasurements = () => {
   if (!selectedRecipe.value?.ingredients) return;
@@ -2594,7 +2563,7 @@ async function onImagePicked(e) {
 const detectedLabels = ref([]); 
 
 async function analyzePickedImage() {
-  const LAMBDA_URL = 'https://www.nexgentech.me/api/vision/detect';
+  const LAMBDA_URL = 'https://ujfitbo3467ezuajq4ahqlup2u0iaasm.lambda-url.us-east-1.on.aws/';
   if (!pickedFile.value) return;
 
   analyzeError.value = '';

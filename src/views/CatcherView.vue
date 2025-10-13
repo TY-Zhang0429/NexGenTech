@@ -57,7 +57,11 @@
         <div class="rules-section">
           <h3>How to Play</h3>
           <div class="rules-content">
-            <p><strong>Controls:</strong> Use A/D keys or arrow keys to move the bowl</p>
+            <p><strong>Controls:</strong></p>
+            <ul>
+              <li><strong>Desktop:</strong> Use A/D keys or arrow keys to move the bowl</li>
+              <li><strong>Mobile:</strong> Touch and drag in the game area to move the bowl</li>
+            </ul>
             <p><strong>Goal:</strong> Catch healthy foods, avoid unhealthy ones!</p>
             <p><strong>Difficulty:</strong> You can change difficulty even during gameplay</p>
             <p><strong>Scoring:</strong></p>
@@ -87,6 +91,9 @@
           <div class="score-display">Score: <strong>{{ score }}</strong></div>
           <div v-if="selectedDifficulty === 'hard'" class="time-display">
             Time: <strong>{{ timeRemaining }}s</strong>
+          </div>
+          <div v-if="isNarrow && gameState === 'playing'" class="mobile-hint">
+            Touch & drag to move bowl
           </div>
         </div>
 
@@ -442,6 +449,14 @@ export default {
         d: false
       },
       
+      // Touch controls
+      touchControls: {
+        isDragging: false,
+        touchStartX: 0,
+        touchCurrentX: 0,
+        lastTouchX: 0
+      },
+      
       // Visual effects
       showBowlGlow: false,
       showBowlScale: false,
@@ -482,10 +497,18 @@ export default {
   
   computed: {
     canvasWidth() {
-      return 600; // Fixed canvas width
+      // Dynamic canvas width based on screen size
+      if (this.isNarrow) {
+        return Math.min(window.innerWidth - 40, 600); // Mobile width with padding
+      }
+      return 600; // Fixed canvas width for desktop
     },
     canvasHeight() {
-      return 400; // Fixed canvas height
+      // Dynamic canvas height based on screen size
+      if (this.isNarrow) {
+        return window.innerWidth < 480 ? 320 : 350; // Responsive height for mobile
+      }
+      return 400; // Fixed canvas height for desktop
     },
     
     currentDifficultySettings() {
@@ -538,6 +561,9 @@ export default {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     
+    // Set up touch listeners for mobile controls
+    this.setupTouchControls();
+    
     // Set CSS vars for TopNav height
     this.setLocalTopnavVar();
     window.addEventListener("resize", this.setLocalTopnavVar);
@@ -549,6 +575,9 @@ export default {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener("resize", this.setLocalTopnavVar);
+    
+    // Clean up touch listeners
+    this.removeTouchControls();
     
     this.stopGame();
   },
@@ -571,6 +600,17 @@ export default {
       this.nextFoodId = 1;
       this.spawnTimer = 0;
       this.playerPosition = this.canvasWidth / 2 - 25; // Center the bowl
+      
+      // Reset touch controls
+      this.touchControls.isDragging = false;
+      this.touchControls.touchStartX = 0;
+      this.touchControls.touchCurrentX = 0;
+      this.touchControls.lastTouchX = 0;
+      
+      // Ensure touch controls are set up
+      this.$nextTick(() => {
+        this.setupTouchControls();
+      });
       
       // Check for test mode - instant win
       if (this.selectedDifficulty === 'test') {
@@ -604,6 +644,12 @@ export default {
       this.spawnTimer = 0;
       this.timeRemaining = 60;
       this.playerPosition = this.canvasWidth / 2 - 25; // Center the bowl
+      
+      // Reset touch controls
+      this.touchControls.isDragging = false;
+      this.touchControls.touchStartX = 0;
+      this.touchControls.touchCurrentX = 0;
+      this.touchControls.lastTouchX = 0;
     },
     
     stopGame() {
@@ -650,12 +696,28 @@ export default {
     },
     
     updatePlayer() {
-      // Move player based on key states
-      if ((this.keys.left || this.keys.a) && this.playerPosition > 0) {
-        this.playerPosition -= this.playerSpeed;
-      }
-      if ((this.keys.right || this.keys.d) && this.playerPosition < this.canvasWidth - 50) {
-        this.playerPosition += this.playerSpeed;
+      // Handle touch controls
+      if (this.touchControls.isDragging) {
+        // Calculate bowl position based on touch position
+        const gameCanvas = this.$refs.gameCanvas;
+        if (gameCanvas) {
+          const rect = gameCanvas.getBoundingClientRect();
+          const relativeX = this.touchControls.touchCurrentX;
+          const bowlWidth = 50;
+          
+          // Set bowl position to touch position, clamped to canvas bounds
+          let newPosition = relativeX - (bowlWidth / 2);
+          newPosition = Math.max(0, Math.min(newPosition, this.canvasWidth - bowlWidth));
+          this.playerPosition = newPosition;
+        }
+      } else {
+        // Handle keyboard controls (existing logic)
+        if ((this.keys.left || this.keys.a) && this.playerPosition > 0) {
+          this.playerPosition -= this.playerSpeed;
+        }
+        if ((this.keys.right || this.keys.d) && this.playerPosition < this.canvasWidth - 50) {
+          this.playerPosition += this.playerSpeed;
+        }
       }
     },
     
@@ -793,7 +855,7 @@ export default {
           break;
       }
     },
-    
+
     handleKeyUp(event) {
       switch (event.key.toLowerCase()) {
         case 'a':
@@ -811,7 +873,71 @@ export default {
       }
     },
     
-    // Pagination methods
+    // Touch control methods
+    setupTouchControls() {
+      this.$nextTick(() => {
+        const gameCanvas = this.$refs.gameCanvas;
+        if (gameCanvas) {
+          // Remove existing listeners first to avoid duplicates
+          gameCanvas.removeEventListener('touchstart', this.handleTouchStart);
+          gameCanvas.removeEventListener('touchmove', this.handleTouchMove);
+          gameCanvas.removeEventListener('touchend', this.handleTouchEnd);
+          
+          // Add new listeners
+          gameCanvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+          gameCanvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+          gameCanvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        }
+      });
+    },
+    
+    removeTouchControls() {
+      const gameCanvas = this.$refs.gameCanvas;
+      if (gameCanvas) {
+        gameCanvas.removeEventListener('touchstart', this.handleTouchStart);
+        gameCanvas.removeEventListener('touchmove', this.handleTouchMove);
+        gameCanvas.removeEventListener('touchend', this.handleTouchEnd);
+      }
+    },
+    
+    handleTouchStart(event) {
+      if (this.gameState !== 'playing') return;
+      
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const touch = event.touches[0];
+      const rect = event.currentTarget.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      
+      this.touchControls.isDragging = true;
+      this.touchControls.touchStartX = touchX;
+      this.touchControls.touchCurrentX = touchX;
+      this.touchControls.lastTouchX = touchX;
+    },
+    
+    handleTouchMove(event) {
+      if (this.gameState !== 'playing' || !this.touchControls.isDragging) return;
+      
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const touch = event.touches[0];
+      const rect = event.currentTarget.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      
+      this.touchControls.touchCurrentX = touchX;
+    },
+    
+    handleTouchEnd(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      this.touchControls.isDragging = false;
+      this.touchControls.touchStartX = 0;
+      this.touchControls.touchCurrentX = 0;
+      this.touchControls.lastTouchX = 0;
+    },    // Pagination methods
     nextHealthyPage() {
       this.healthyFoodPage = (this.healthyFoodPage + 1) % 2;
     },
@@ -1089,13 +1215,28 @@ export default {
   color: #333;
 }
 
+.mobile-hint {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 8px;
+  border-radius: 12px;
+  margin-top: 5px;
+}
+
 .game-canvas {
   position: relative;
   width: 100%;
+  max-width: 600px; /* Constrain maximum width */
+  margin: 0 auto; /* Center the canvas */
   height: 400px;
   border: 3px solid #333;
   border-radius: 10px;
   overflow: hidden;
+  cursor: crosshair; /* Indicate interactive area */
+  touch-action: none; /* Prevent scrolling on touch */
+  user-select: none; /* Prevent text selection */
 }
 
 .game-background {
@@ -1743,7 +1884,9 @@ export default {
   }
   
   .game-canvas {
-    height: 300px;
+    height: 350px; /* Increased height for better mobile experience */
+    touch-action: none; /* Prevent scrolling when touching game area */
+    user-select: none; /* Prevent text selection */
   }
   
   .game-info {
@@ -1753,13 +1896,57 @@ export default {
   }
   
   .player-bowl {
-    width: 45px;
-    height: 45px;
+    width: 50px; /* Slightly larger for better touch precision */
+    height: 50px;
   }
   
   .falling-food {
-    width: 50px;
-    height: 50px;
+    width: 45px; /* Adjusted for better mobile balance */
+    height: 45px;
+  }
+  
+  /* Make buttons more touch-friendly */
+  .start-btn, .reset-btn {
+    padding: 18px;
+    font-size: 1.1rem;
+    min-height: 56px; /* Touch-friendly size */
+  }
+  
+  .difficulty-selector {
+    padding: 15px;
+    font-size: 1.1rem;
+    min-height: 56px;
+  }
+  
+  .back-btn {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+}
+
+/* Extra optimizations for very small screens */
+@media (max-width: 480px) {
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .game-canvas {
+    height: 320px;
+    margin: 10px 0;
+  }
+  
+  .left-panel {
+    padding: 15px;
+  }
+  
+  .control-section {
+    margin-bottom: 15px;
+  }
+  
+  /* Improve touch feedback */
+  .start-btn:active, .reset-btn:active, .back-btn:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
   }
 }
 </style>
