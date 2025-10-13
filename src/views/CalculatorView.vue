@@ -7,48 +7,38 @@
       <h1 class="main-title">Mix, Match, Make It Yours</h1>
       <p class="subtitle">Use the filters below to discover recipes that fit your vibe. Pick your prep time, choose your category, search ingredients - Find exactly what you're craving.</p>
 
-      <!-- ============ NEW: Image → Recipe/Nutrition Analyzer (Front-end only) ============ -->
-      <div class="filters-section" style="margin-bottom: 28px;">
+      <!-- Meal Type Selection -->
+      <div class="meal-type-section" :class="{ 'has-selection': selectedMealType }">
         <div class="white-overlay"></div>
-        <div class="filters-container">
-          <label class="filter-label">Image Recognition (Beta)</label>
-
-          <div class="image-analyze-row">
-            <input
-              class="image-input"
-              type="file"
-              accept="image/png,image/jpeg"
-              @change="onImagePicked"
-            />
-            <button
-              class="analyze-btn"
-              :disabled="!pickedFile || analyzing"
-              @click="analyzePickedImage"
+        <div class="meal-type-container">
+          <h2 class="meal-type-title">Choose Your Cooking Style</h2>
+          <div class="meal-type-buttons">
+            <button 
+              class="meal-type-btn"
+              :class="{ active: selectedMealType === 'quick' }"
+              @click="selectMealType('quick')"
             >
-              {{ analyzing ? 'Analyzing…' : 'Analyze Image → Recipe & Nutrition' }}
+              <span class="meal-icon">⚡</span>
+              <span class="meal-text">Quick Meals</span>
+              <span class="meal-desc">Fast & Easy</span>
             </button>
-          </div>
-
-          <div class="image-preview-wrap" v-if="previewUrl || analyzeError || analyzeTips.length">
-            <div v-if="previewUrl" class="image-preview">
-              <img :src="previewUrl" alt="preview"/>
-            </div>
-
-            <div v-if="analyzeError" class="analyze-error">⚠️ {{ analyzeError }}</div>
-
-            <ul v-if="analyzeTips.length" class="analyze-tips">
-              <li v-for="(t,i) in analyzeTips" :key="i">💡 {{ t }}</li>
-            </ul>
-
-            <p class="disclaimer" style="margin-top:8px">
-              For learning purposes only, not medical advice.
-            </p>
+            <button 
+              class="meal-type-btn"
+              :class="{ active: selectedMealType === 'smart' }"
+              @click="selectMealType('smart')"
+            >
+              <span class="meal-icon">🧠</span>
+              <span class="meal-text">Smart Meal Plan</span>
+              <span class="meal-desc">Advanced & Detailed</span>
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- ============ NEW: Image → Recipe/Nutrition Analyzer (Front-end only) ============ -->
       
-      <!-- Filter Section -->
-      <div class="filters-section">
+      <!-- Filter Section - Only show after meal type selection -->
+      <div v-if="selectedMealType" class="filters-section">
         <div class="white-overlay"></div>
         <div class="filters-container">
           <!-- Prep Time Filter -->
@@ -86,10 +76,37 @@
             </div>
           </div>
 
+          <!-- Plant-Based Filter (Only for Smart Meal Plan) -->
+          <div v-if="selectedMealType === 'smart'" class="filter-group">
+            <label class="filter-label">Dietary Preference</label>
+            <div class="dietary-preference">
+              <label class="radio-option">
+                <input 
+                  type="radio" 
+                  :value="false" 
+                  v-model="isPlantBased"
+                  @change="fetchRecipes"
+                />
+                <span class="radio-label">All Foods</span>
+              </label>
+              <label class="radio-option">
+                <input 
+                  type="radio" 
+                  :value="true" 
+                  v-model="isPlantBased"
+                  @change="fetchRecipes"
+                />
+                <span class="radio-label">🌱 Plant-Based Only</span>
+              </label>
+            </div>
+          </div>
+
           <!-- Ingredients Filter -->
           <div class="filter-group">
             <label class="filter-label">Ingredients</label>
-            <div class="ingredients-search">
+            
+            <!-- Quick Meals: Simple search -->
+            <div v-if="selectedMealType === 'quick'" class="ingredients-search">
               <input 
                 v-model="ingredientSearch"
                 type="text" 
@@ -111,15 +128,39 @@
                 </div>
               </div>
             </div>
-            <div v-if="selectedIngredients.length > 0" class="selected-ingredients">
-              <span 
-                v-for="ingredient in selectedIngredients" 
-                :key="ingredient"
-                class="selected-ingredient"
-              >
-                {{ ingredient }}
-                <button @click="removeIngredient(ingredient)" class="remove-ingredient">×</button>
-              </span>
+
+            <!-- Smart Meal Plan: 4-row expandable grid -->
+            <div v-if="selectedMealType === 'smart'" class="smart-ingredients-grid">
+              <div class="ingredient-category" v-for="(ingredients, category) in filteredSmartMealIngredients" :key="category">
+                <div class="category-header">
+                  <span class="category-icon">{{ getCategoryIcon(category) }}</span>
+                  <span class="category-name">{{ capitalizeFirst(category) }}</span>
+                </div>
+                
+                <!-- Search input for additional ingredients -->
+                <div class="category-search">
+                  <input 
+                    v-model="categorySearch[category]"
+                    type="text" 
+                    :placeholder="`Add more ${category}...`"
+                    class="category-search-input"
+                    @input="searchCategoryIngredients(category)"
+                  />
+                </div>
+                
+                <div class="ingredient-pills">
+                  <button 
+                    v-for="ingredient in getDisplayedIngredients(category)" 
+                    :key="ingredient"
+                    class="ingredient-pill"
+                    :class="{ selected: smartMealSelectedIngredients.includes(ingredient) }"
+                    @click="toggleSmartMealIngredient(ingredient)"
+                  >
+                    <span class="ingredient-name">{{ ingredient }}</span>
+                    <span class="ingredient-action">{{ smartMealSelectedIngredients.includes(ingredient) ? '×' : '+' }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -133,8 +174,8 @@
         </div>
       </div>
 
-      <!-- Pagination Controls (Top) -->
-      <div v-if="totalPages > 1" class="pagination-container-top">
+      <!-- Pagination Controls (Top) - Only show for Quick Meals -->
+      <div v-if="totalPages > 1 && selectedMealType !== 'smart'" class="pagination-container-top">
         <div class="pagination">
           <button 
             @click="prevPage" 
@@ -169,8 +210,8 @@
           </div>
       </div>
 
-      <!-- Recipe Grid Section -->
-      <div class="recipes-section">
+      <!-- Recipe Grid Section - Only show after meal type selection -->
+      <div v-if="selectedMealType" class="recipes-section">
         <div class="white-overlay"></div>
         <div class="recipes-container">
           <div v-if="loading" class="loading-state">
@@ -185,40 +226,96 @@
             <button @click="clearFilters" class="clear-filters-btn">Clear All Filters</button>
           </div>
 
-          <div v-else class="recipes-grid">
-            <div 
-              v-for="recipe in paginatedRecipes" 
-              :key="recipe.unique_id"
-              class="recipe-card"
-              @click="selectRecipe(recipe)"
-            >
-              <div class="recipe-image-container">
-                <img 
-                  :src="getImageSrc(recipe.image_filename)" 
-                  :alt="recipe.recipe_name"
-                  class="recipe-image"
-                  @click.stop="populateMeasurements(recipe)"
-                  @error="handleImageError($event, recipe.image_filename)"
-                  title="Click to auto-populate measurements"
-                />
-                <div class="recipe-overlay">
-                  <button class="favorite-btn" @click.stop="toggleFavorite(recipe)">
-                    <span class="heart-icon" :class="{ liked: favoriteRecipes.has(`${recipe.source}_${recipe.id}`) }">
-                      {{ favoriteRecipes.has(`${recipe.source}_${recipe.id}`) ? '♥' : '♡' }}
-                    </span>
-                  </button>
+          <!-- Smart Meal Plan: Grouped by Category -->
+          <div v-if="selectedMealType === 'smart'" class="smart-meal-categories">
+              <div 
+                v-for="category in smartMealCategories" 
+                :key="category.name"
+                class="category-group"
+              >
+                <h3 class="category-title">{{ category.emoji }} {{ category.displayName }}</h3>
+                <div class="category-recipe">
+                  <div 
+                    v-if="getCurrentRecipeForCategory(category.name)"
+                    class="recipe-card"
+                    @click="selectRecipe(getCurrentRecipeForCategory(category.name))"
+                  >
+                    <div class="recipe-image-container">
+                      <img 
+                        :src="getImageSrc(getCurrentRecipeForCategory(category.name).image_filename)" 
+                        :alt="getCurrentRecipeForCategory(category.name).recipe_name"
+                        class="recipe-image"
+                        @click.stop="populateMeasurements(getCurrentRecipeForCategory(category.name))"
+                        @error="handleImageError($event, getCurrentRecipeForCategory(category.name).image_filename)"
+                        title="Click to auto-populate measurements"
+                      />
+                      <div class="recipe-overlay">
+                        <button class="favorite-btn" @click.stop="toggleFavorite(getCurrentRecipeForCategory(category.name))">
+                          <span class="heart-icon" :class="{ liked: favoriteRecipes.has(`${getCurrentRecipeForCategory(category.name).source}_${getCurrentRecipeForCategory(category.name).id}`) }">
+                            {{ favoriteRecipes.has(`${getCurrentRecipeForCategory(category.name).source}_${getCurrentRecipeForCategory(category.name).id}`) ? '♥' : '♡' }}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div class="recipe-info">
+                      <h3 class="recipe-title">{{ getCurrentRecipeForCategory(category.name).recipe_name }}</h3>
+                      <div class="recipe-meta">
+                        <span class="recipe-category">{{ getCategoryEmoji(getCurrentRecipeForCategory(category.name).category) }} {{ capitalizeFirst(getCurrentRecipeForCategory(category.name).category) }}</span>
+                        <span v-if="getCurrentRecipeForCategory(category.name).time_display" class="recipe-time">{{ getCurrentRecipeForCategory(category.name).time_display }}</span>
+                      </div>
+                      <div class="recipe-stats">
+                        <span class="cal-info">{{ getCurrentRecipeForCategory(category.name).calories }} cal</span>
+                        <span class="protein-info">{{ getCurrentRecipeForCategory(category.name).protein_g }}g protein</span>
+                        <button 
+                          class="quick-swap-btn" 
+                          @click.stop="quickSwapRecipe(category.name)"
+                        >
+                          Quick Swap
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div class="recipe-info">
-                <h3 class="recipe-title">{{ recipe.recipe_name }}</h3>
-                <div class="recipe-meta">
-                  <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ capitalizeFirst(recipe.category) }}</span>
-                  <span v-if="recipe.time_display" class="recipe-time">{{ recipe.time_display }}</span>
+          </div>
+
+          <!-- Quick Meals: Original Grid Layout -->
+          <div v-else class="recipes-grid">
+              <div 
+                v-for="recipe in paginatedRecipes" 
+                :key="recipe.unique_id"
+                class="recipe-card"
+                @click="selectRecipe(recipe)"
+              >
+                <div class="recipe-image-container">
+                  <img 
+                    :src="getImageSrc(recipe.image_filename)" 
+                    :alt="recipe.recipe_name"
+                    class="recipe-image"
+                    @click.stop="populateMeasurements(recipe)"
+                    @error="handleImageError($event, recipe.image_filename)"
+                    title="Click to auto-populate measurements"
+                  />
+                  <div class="recipe-overlay">
+                    <button class="favorite-btn" @click.stop="toggleFavorite(recipe)">
+                      <span class="heart-icon" :class="{ liked: favoriteRecipes.has(`${recipe.source}_${recipe.id}`) }">
+                        {{ favoriteRecipes.has(`${recipe.source}_${recipe.id}`) ? '♥' : '♡' }}
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <div class="recipe-nutrition">
-                  <span class="nutrition-item">{{ recipe.calories }} cal</span>
-                  <span class="nutrition-item">{{ recipe.protein_g }}g protein</span>
+                
+                <div class="recipe-info">
+                  <h3 class="recipe-title">{{ recipe.recipe_name }}</h3>
+                  <div class="recipe-meta">
+                    <span class="recipe-category">{{ getCategoryEmoji(recipe.category) }} {{ capitalizeFirst(recipe.category) }}</span>
+                    <span v-if="recipe.time_display" class="recipe-time">{{ recipe.time_display }}</span>
+                  </div>
+                  <div class="recipe-nutrition">
+                    <span class="nutrition-item">{{ recipe.calories }} cal</span>
+                    <span class="nutrition-item">{{ recipe.protein_g }}g protein</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -667,7 +764,6 @@
         <button class="close-btn" @click="showCandidateModal=false">Cancel</button>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -688,7 +784,47 @@ const analyzeTips = ref([]);
 const loading = ref(false);
 const recipes = ref([]);
 const selectedRecipe = ref(null);
+const selectedMealType = ref(null); // null = no selection yet, 'quick' or 'smart'
+const isPlantBased = ref(false); // Plant-based dietary preference
+const quickMealIngredients = ref([]); // Ingredients for Quick Meals
+const smartMealSelectedIngredients = ref([]); // Selected ingredients for Smart Meal Plan
 const ingredientSearch = ref('');
+const categorySearch = ref({
+  breakfast: '',
+  protein: '',
+  fruits: '',
+  vegetables: ''
+});
+const categorySearchResults = ref({
+  breakfast: [],
+  protein: [],
+  fruits: [],
+  vegetables: []
+});
+
+// Smart Meal Plan categories and current recipe indices
+const smartMealCategories = ref([
+  { name: 'breakfast', displayName: 'Breakfast', emoji: '🍳' },
+  { name: 'main-meals', displayName: 'Main Meal', emoji: '🍚' },
+  { name: 'side-dishes', displayName: 'Side Dish', emoji: '🥗' },
+  { name: 'desserts', displayName: 'Dessert', emoji: '🍰' }
+]);
+
+const currentRecipeIndices = ref({
+  breakfast: 0,
+  'main-meals': 0,
+  'side-dishes': 0,
+  desserts: 0
+});
+
+// Smart Meal Plan ingredient categories
+const smartMealIngredientCategories = ref({
+  breakfast: ['eggs', 'bread', 'butter', 'oats', 'Greek yogurt', 'milk', 'cereal', 'pancakes', 'waffles', 'toast'],
+  protein: ['chicken', 'tofu', 'lentils', 'beef', 'chickpeas', 'fish', 'turkey', 'beans', 'quinoa', 'tempeh'],
+  fruits: ['apple', 'banana', 'grapes', 'berries', 'dates', 'orange', 'strawberry', 'blueberry', 'avocado', 'lemon'],
+  vegetables: ['spinach', 'broccoli', 'bell pepper', 'carrots', 'cauliflower', 'tomatoes', 'onions', 'garlic', 'zucchini', 'mushrooms']
+});
+
 const filteredIngredients = ref([]);
 const ingredientsWithMeasurements = ref([]);
 const baseNutrition = ref({
@@ -712,7 +848,6 @@ const australianGuidelines = ref({
 // Filter state
 const selectedTimeRange = ref('');
 const selectedCategories = ref([]);
-const selectedIngredients = ref([]);
 
 // Pagination state
 const currentPage = ref(1);
@@ -797,8 +932,7 @@ function resolveFromDB(candidate) {
 const timeRanges = ref([
   { value: '0-5', label: 'Super Quick (0-5 min)' },
   { value: '5-15', label: 'Quick Prep (5-15 min)' },
-  { value: '15-30', label: 'Half-Hour Hero (15-30 min)' },
-  { value: '30+', label: 'Smart Meal Plan (30+ min)' }
+  { value: '15-30', label: 'Half-Hour Hero (15-30 min)' }
 ]);
 
 const categories = ref([]);
@@ -835,7 +969,7 @@ const filteredRecipes = computed(() => {
     }
 
     // Ingredients filter - Only apply if ingredients are selected
-    if (selectedIngredients.value.length > 0) {
+    if (currentIngredients.value.length > 0) {
       if (!recipe.ingredients) return false;
       
       // Parse ingredients from JSON
@@ -860,7 +994,7 @@ const filteredRecipes = computed(() => {
       
       // Check for ingredient matches - recipe must contain ANY selected ingredient (OR logic)
       // Use word boundary matching to avoid partial matches (e.g., "ice" matching "lime juice")
-      const hasMatchingIngredient = selectedIngredients.value.some(selectedIng => 
+      const hasMatchingIngredient = currentIngredients.value.some(selectedIng => 
         ingredientNames.some(recipeIng => {
           // Create word boundary regex for exact word matching
           const regex = new RegExp(`\\b${selectedIng.toLowerCase()}\\b`);
@@ -877,10 +1011,89 @@ const filteredRecipes = computed(() => {
   return filtered;
 });
 
+// Get current ingredient selection based on meal type
+const currentIngredients = computed(() => {
+  return selectedMealType.value === 'quick' ? quickMealIngredients.value : smartMealSelectedIngredients.value;
+});
+
+// Get filtered ingredients for Smart Meal Plan (Plant-Based filtering)
+const filteredSmartMealIngredients = computed(() => {
+  if (!isPlantBased.value) {
+    return smartMealIngredientCategories.value;
+  }
+  
+  const plantBasedIngredients = {
+    breakfast: ['bread', 'oats', 'cereal', 'pancakes', 'waffles', 'toast'],
+    protein: ['tofu', 'lentils', 'chickpeas', 'beans', 'quinoa', 'tempeh'],
+    fruits: ['apple', 'banana', 'grapes', 'berries', 'dates', 'orange', 'strawberry', 'blueberry', 'avocado', 'lemon'],
+    vegetables: ['spinach', 'broccoli', 'bell pepper', 'carrots', 'cauliflower', 'tomatoes', 'onions', 'garlic', 'zucchini', 'mushrooms']
+  };
+  
+  return plantBasedIngredients;
+});
+
+// Get recipes grouped by category for Smart Meal Plan
+const recipesByCategory = computed(() => {
+  const grouped = {
+    breakfast: [],
+    'main-meals': [],
+    'side-dishes': [],
+    desserts: []
+  };
+  
+  filteredRecipes.value.forEach(recipe => {
+    if (grouped[recipe.category]) {
+      grouped[recipe.category].push(recipe);
+    }
+  });
+  
+  return grouped;
+});
+
+// Get current recipe for a specific category
+const getCurrentRecipeForCategory = (categoryName) => {
+  const categoryRecipes = recipesByCategory.value[categoryName];
+  if (!categoryRecipes || categoryRecipes.length === 0) return null;
+  
+  const currentIndex = currentRecipeIndices.value[categoryName];
+  return categoryRecipes[currentIndex] || categoryRecipes[0];
+};
+
+// Quick swap function to cycle through recipes in a category
+const quickSwapRecipe = (categoryName) => {
+  const categoryRecipes = recipesByCategory.value[categoryName];
+  if (!categoryRecipes || categoryRecipes.length <= 1) return;
+  
+  const currentIndex = currentRecipeIndices.value[categoryName];
+  const nextIndex = (currentIndex + 1) % categoryRecipes.length;
+  currentRecipeIndices.value[categoryName] = nextIndex;
+};
+
+// Watch for Plant-Based changes and update selected ingredients
+watch(isPlantBased, (newValue) => {
+  if (selectedMealType.value === 'smart') {
+    const ingredientsToUse = newValue ? 
+      Object.values(filteredSmartMealIngredients.value).flat() :
+      Object.values(smartMealIngredientCategories.value).flat();
+    
+    // Keep only ingredients that are available in the current filter
+    smartMealSelectedIngredients.value = smartMealSelectedIngredients.value.filter(ingredient => 
+      ingredientsToUse.includes(ingredient)
+    );
+    
+    // Add any new ingredients that weren't previously selected
+    ingredientsToUse.forEach(ingredient => {
+      if (!smartMealSelectedIngredients.value.includes(ingredient)) {
+        smartMealSelectedIngredients.value.push(ingredient);
+      }
+    });
+  }
+});
+
 const hasActiveFilters = computed(() => {
   return selectedTimeRange.value || 
          selectedCategories.value.length > 0 || 
-         selectedIngredients.value.length > 0;
+         currentIngredients.value.length > 0;
 });
 
 // Pagination computed properties
@@ -1129,24 +1342,25 @@ const onIngredientSearch = () => {
 };
 
 const addIngredient = (ingredient) => {
-  if (!selectedIngredients.value.includes(ingredient)) {
-    selectedIngredients.value.push(ingredient);
+  if (!quickMealIngredients.value.includes(ingredient)) {
+    quickMealIngredients.value.push(ingredient);
   }
   ingredientSearch.value = '';
   filteredIngredients.value = [];
 };
 
 const removeIngredient = (ingredient) => {
-  const index = selectedIngredients.value.indexOf(ingredient);
+  const index = quickMealIngredients.value.indexOf(ingredient);
   if (index > -1) {
-    selectedIngredients.value.splice(index, 1);
+    quickMealIngredients.value.splice(index, 1);
   }
 };
 
 const clearFilters = () => {
   selectedTimeRange.value = '';
   selectedCategories.value = [];
-  selectedIngredients.value = [];
+  quickMealIngredients.value = [];
+  smartMealSelectedIngredients.value = [];
   ingredientSearch.value = '';
   filteredIngredients.value = [];
   currentPage.value = 1; // Reset to first page when clearing filters
@@ -1177,6 +1391,11 @@ const selectRecipe = (candidate) => {
   servingMultiplier.value = 1;
   setupIngredientsWithMeasurements();
   setBaseNutrition();
+  
+  // Prevent automatic scrolling when modal opens
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 0);
 };
 
 
@@ -2524,8 +2743,110 @@ onMounted(() => {
   }
   
   fetchFilterOptions();
-  fetchRecipes();
+  // Don't fetch recipes automatically - wait for meal type selection
+  // fetchRecipes();
+  
+  // Initialize Smart Meal Plan with all ingredients selected by default
+  initializeSmartMealIngredients();
 });
+
+// Initialize Smart Meal Plan ingredients as selected by default
+function initializeSmartMealIngredients() {
+  const allIngredients = [];
+  Object.values(smartMealIngredientCategories.value).forEach(categoryIngredients => {
+    allIngredients.push(...categoryIngredients);
+  });
+  smartMealSelectedIngredients.value = [...allIngredients];
+}
+
+// Meal type selection function
+function selectMealType(type) {
+  selectedMealType.value = type;
+  
+  if (type === 'smart') {
+    // Auto-select categories for Smart Meal Plan
+    selectedCategories.value = ['breakfast', 'desserts', 'main-meals', 'side-dishes'];
+  } else {
+    // Reset categories for Quick Meals
+    selectedCategories.value = [];
+  }
+  
+  // Fetch recipes when meal type is selected
+  fetchRecipes();
+}
+
+// Smart Meal Plan helper functions
+function getCategoryIcon(category) {
+  const icons = {
+    breakfast: '🥣',
+    protein: '🍗',
+    vegetables: '🥦',
+    fruits: '🍎'
+  };
+  return icons[category] || '🍽️';
+}
+
+function toggleIngredient(ingredient) {
+  const index = quickMealIngredients.value.indexOf(ingredient);
+  if (index > -1) {
+    quickMealIngredients.value.splice(index, 1);
+  } else {
+    quickMealIngredients.value.push(ingredient);
+  }
+  // Trigger recipe filtering when ingredients change
+  fetchRecipes();
+}
+
+function toggleSmartMealIngredient(ingredient) {
+  const index = smartMealSelectedIngredients.value.indexOf(ingredient);
+  if (index > -1) {
+    smartMealSelectedIngredients.value.splice(index, 1);
+  } else {
+    smartMealSelectedIngredients.value.push(ingredient);
+  }
+  // Trigger recipe filtering when ingredients change
+  fetchRecipes();
+}
+
+function removeCurrentIngredient(ingredient) {
+  if (selectedMealType.value === 'quick') {
+    const index = quickMealIngredients.value.indexOf(ingredient);
+    if (index > -1) {
+      quickMealIngredients.value.splice(index, 1);
+    }
+  } else {
+    const index = smartMealSelectedIngredients.value.indexOf(ingredient);
+    if (index > -1) {
+      smartMealSelectedIngredients.value.splice(index, 1);
+    }
+  }
+  fetchRecipes();
+}
+
+// Category search functions
+function searchCategoryIngredients(category) {
+  const searchTerm = categorySearch.value[category].toLowerCase();
+  if (!searchTerm) {
+    categorySearchResults.value[category] = [];
+    return;
+  }
+  
+  // Search in all ingredients for matches
+  const matches = allIngredients.value.filter(ingredient => 
+    ingredient.toLowerCase().includes(searchTerm) &&
+    !filteredSmartMealIngredients.value[category].includes(ingredient)
+  );
+  
+  categorySearchResults.value[category] = matches.slice(0, 5); // Limit to 5 results
+}
+
+function getDisplayedIngredients(category) {
+  const baseIngredients = filteredSmartMealIngredients.value[category];
+  const searchResults = categorySearchResults.value[category];
+  
+  // Show base ingredients + search results
+  return [...baseIngredients, ...searchResults];
+}
 
 async function ensureJpegOrPng(file) {
   if (!file) return null;
@@ -2772,6 +3093,372 @@ const recipeImg = (c) => {
   z-index: -2;
   filter: brightness(0.6) blur(4px);
   transform: scale(1.05);
+}
+
+/* Meal Type Selection Styles */
+.meal-type-section {
+  position: relative;
+  margin-bottom: 24px;
+  z-index: 1;
+}
+
+.meal-type-container {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 20px;
+}
+
+.meal-type-title {
+  font-family: 'Merriweather', serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #294B0A;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.meal-type-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.meal-type-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(41, 75, 10, 0.2);
+  border-radius: 16px;
+  padding: 20px 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.meal-type-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  border-color: rgba(41, 75, 10, 0.4);
+}
+
+.meal-type-btn.active {
+  background: linear-gradient(135deg, #8b7765 0%, #a68a6b 100%);
+  border-color: #8b7765;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 119, 101, 0.3);
+}
+
+/* Enhanced styling when no selection is made */
+.meal-type-section:not(.has-selection) .meal-type-btn {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 0 rgba(41, 75, 10, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 8px rgba(41, 75, 10, 0.1);
+  }
+}
+
+.meal-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.meal-text {
+  font-family: 'Merriweather', serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.meal-desc {
+  font-family: 'Merriweather', serif;
+  font-size: 14px;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .meal-type-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .meal-type-btn {
+    min-width: 200px;
+  }
+  
+  .meal-type-title {
+    font-size: 20px;
+  }
+}
+
+/* Plant-Based Filter Styles */
+.dietary-preference {
+  display: flex;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 14px;
+  color: #294B0A;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  accent-color: #8b7765;
+}
+
+.radio-label {
+  font-weight: 500;
+}
+
+/* Smart Ingredients Grid Styles */
+.smart-ingredients-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(41, 75, 10, 0.1);
+}
+
+/* Specific positioning for categories */
+.smart-ingredients-grid .ingredient-category:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.smart-ingredients-grid .ingredient-category:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.smart-ingredients-grid .ingredient-category:nth-child(3) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.smart-ingredients-grid .ingredient-category:nth-child(4) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.ingredient-category {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid rgba(41, 75, 10, 0.1);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(41, 75, 10, 0.1);
+}
+
+.category-icon {
+  font-size: 20px;
+}
+
+.category-name {
+  font-family: 'Merriweather', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #294B0A;
+}
+
+.category-search {
+  margin-bottom: 12px;
+}
+
+.category-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(41, 75, 10, 0.2);
+  border-radius: 8px;
+  font-family: 'Merriweather', serif;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.9);
+  transition: border-color 0.2s ease;
+}
+
+.category-search-input:focus {
+  outline: none;
+  border-color: #8b7765;
+}
+
+.category-search-input::placeholder {
+  color: rgba(41, 75, 10, 0.5);
+}
+
+.ingredient-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ingredient-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(41, 75, 10, 0.2);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Merriweather', serif;
+  font-size: 13px;
+}
+
+.ingredient-pill:hover {
+  background: rgba(41, 75, 10, 0.1);
+  border-color: rgba(41, 75, 10, 0.4);
+}
+
+.ingredient-pill.selected {
+  background: linear-gradient(135deg, #8b7765 0%, #a68a6b 100%);
+  border-color: #8b7765;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.ingredient-name {
+  font-weight: 500;
+}
+
+.ingredient-action {
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+}
+
+/* Smart Meal Plan Categories Layout */
+.smart-meal-categories {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.category-group {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(41, 75, 10, 0.1);
+}
+
+.category-title {
+  font-family: 'Merriweather', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #294B0A;
+  margin-bottom: 15px;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(41, 75, 10, 0.2);
+}
+
+.category-recipe {
+  display: flex;
+  justify-content: center;
+}
+
+.category-recipe .recipe-card {
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Quick Swap Button */
+.recipe-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cal-info, .protein-info {
+  background: linear-gradient(135deg, #ff7f50 0%, #ff6b35 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(255, 127, 80, 0.3);
+}
+
+.quick-swap-btn {
+  background: linear-gradient(135deg, #ff7f50 0%, #ff6b35 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 127, 80, 0.3);
+  font-family: 'Merriweather', serif;
+}
+
+.quick-swap-btn:hover {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 127, 80, 0.4);
+}
+
+.quick-swap-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(255, 127, 80, 0.3);
+}
+
+/* Responsive adjustments for Smart Meal Plan */
+@media (max-width: 1200px) {
+  .smart-meal-categories {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .smart-meal-categories {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .category-group {
+    padding: 15px;
+    min-height: auto;
+  }
+  
+  .category-title {
+    font-size: 16px;
+  }
 }
 
 .calculator-page::before {
@@ -3527,7 +4214,6 @@ const recipeImg = (c) => {
 
 .ingredient-name {
   font-weight: 500;
-  color: #8b7765;
   flex: 1;
 }
 
