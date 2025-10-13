@@ -561,14 +561,14 @@ const capitalizeFirst = (str) => {
 // Utility function to get image with fallback formats
 const getImageSrc = (foodName) => {
   // Start with the most common format (png) and let error handler try others
-  return `/food_icons/${foodName}.png`
+  return `https://nexgentech-api.onrender.com/food_icons/${foodName}.png`
 }
 
 // Image error handler with format fallback
 const handleImageError = (event, foodName) => {
   const formats = ['png', 'webp', 'jpg', 'jpeg', 'avif']
   const currentSrc = event.target.src
-  const basePath = '/food_icons/'
+  const basePath = 'https://nexgentech-api.onrender.com/food_icons/'
   
   // Extract current format from src
   const currentFormat = currentSrc.split('.').pop()
