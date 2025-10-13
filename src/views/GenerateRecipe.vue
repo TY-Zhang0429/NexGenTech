@@ -659,7 +659,11 @@
         <div class="candidate-grid">
           <div class="candidate-card" v-for="c in candidateRecipes" :key="c.id"
               @click="() => { selectRecipe(c); showCandidateModal=false; }">
-            <img :src="recipeImg(c)" alt="">
+            <img
+              :src="recipeImg(c)"
+              :alt="c.recipe_name"
+              @error="handleImageError($event, c.image_filename)"
+            />
             <div class="title">{{ c.recipe_name }}</div>
             <div class="meta">{{ c.calories }} cal · {{ c.protein_g }}g protein</div>
           </div>
@@ -2699,28 +2703,27 @@ function computeNutritionFromIngredients(ings) {
 function round1(n){ return Math.round(n*10)/10; }
 
 const recipeImg = (c) => {
-  // 1)  image_filename first
+  const BASE = '/food_icons/'; 
+  const EXT_RE = /\.(png|jpe?g|webp|gif|avif)$/i;
+
+  // 1)image_filename first（with getImageSrc same try .png，error @error change）
   if (c?.image_filename) {
-    let name = String(c.image_filename);
-    // make sure there's a valid extension, otherwise add .png
-    if (!/\.(png|jpe?g|webp|gif)$/i.test(name)) name += '.png';
-    return `https://nexgentech-api.onrender.com/food_icons/${encodeURIComponent(name)}`;
+    const name = String(c.image_filename).trim();
+    const file = name.replace(/^.*\//, '');      // strip any path
+    // if have backstr .png
+    const withExt = EXT_RE.test(file) ? file : `${file}.png`;
+    return `${BASE}${encodeURIComponent(withExt)}`;
   }
 
-  // 2) fallback to image_url
-  let url = String(c?.image_url || '');
-  if (!url) return 'https://nexgentech-api.onrender.com/food_icons/placeholder.png'; // default placeholder
+  // 2) fallback use image_url
+  const url = String(c?.image_url || '').trim();
+  if (!url) return `${BASE}placeholder.png`;
 
-  // Check the last segment of the file
-  const i = url.lastIndexOf('/');
-  const base = i >= 0 ? url.slice(0, i + 1) : '';
-  let file = i >= 0 ? url.slice(i + 1) : url;
-
-  // If no valid extension, add .png
-  if (!/\.(png|jpe?g|webp|gif)$/i.test(file)) file += '.png';
-
-  return base + encodeURIComponent(file);
+  // full URL（http/https）directly； relative URL (start with /) keep as is
+  if (/^https?:\/\//i.test(url) || url.startsWith('/')) return url;
+  return `${BASE}${encodeURIComponent(url)}`;
 };
+
 function resolveFromDB(candidate) {
   if (!candidate) return null;
 
