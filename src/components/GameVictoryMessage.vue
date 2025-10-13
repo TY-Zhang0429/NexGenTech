@@ -1,7 +1,7 @@
 <template>
-  <div v-if="isVisible" class="victory-overlay">
+  <div v-if="isVisible" class="victory-overlay" @click="handleOverlayClick">
     <div class="overlay-blur"></div>
-    <div class="victory-content">
+    <div class="victory-content" @click.stop>
       <!-- Avatar image display -->
       <div v-if="showAvatarImage" class="avatar-display" :class="{ 'evolution-glow': avatarEvolved }">
         <img :src="currentAvatarImage" alt="Avatar" class="avatar-image" :class="{ 'evolving': avatarEvolved }" />
@@ -26,6 +26,11 @@
         <div v-else-if="showSimpleVictory" class="simple-victory-text">
           <p>{{ simpleVictoryMessage }}</p>
         </div>
+        
+        <!-- Click hint -->
+        <div class="click-hint">
+          <p>Click anywhere to continue</p>
+        </div>
       </div>
     </div>
   </div>
@@ -33,6 +38,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { 
+  getAvatarImageByTypeAndLevel, 
+  getAvatarDisplayName, 
+  isEvolutionSupportedAvatar,
+  getCurrentEvolutionLevel,
+  setEvolutionLevel
+} from '@/utils/avatarUtils';
 
 // Props
 const props = defineProps({
@@ -58,6 +70,7 @@ const newLevel = ref(1);
 const showSimpleVictory = ref(false);
 const showAvatarImage = ref(false);
 const currentAvatarImage = ref('');
+const autoHideTimer = ref(null);
 
 // Computed messages
 const gameTitle = ref('');
@@ -98,21 +111,22 @@ const showVictory = () => {
 
   // Check avatar evolution
   const avatarType = sessionStorage.getItem('avatarType');
-  if (avatarType === 'avatara') {
+  if (isEvolutionSupportedAvatar(avatarType)) {
     const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
     
     if (!completedGames.includes(props.gameType)) {
-      const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
+      const currentLevel = getCurrentEvolutionLevel();
       if (currentLevel < 4) {
         // This game will trigger evolution
         const nextLevel = currentLevel + 1;
         newLevel.value = nextLevel;
         avatarEvolved.value = true;
-        evolutionMessage.value = `Your avatar Sol has evolved to level ${nextLevel}!`;
+        const avatarName = getAvatarDisplayName(avatarType);
+        evolutionMessage.value = `Your avatar ${avatarName} has evolved to level ${nextLevel}!`;
         
         // Set avatar image for the new level
         showAvatarImage.value = true;
-        currentAvatarImage.value = getAvatarImageByLevel(nextLevel);
+        currentAvatarImage.value = getAvatarImageByTypeAndLevel(avatarType, nextLevel);
         
         // Handle the actual evolution
         handleAvatarEvolution();
@@ -123,7 +137,7 @@ const showVictory = () => {
         
         // Show current max level avatar
         showAvatarImage.value = true;
-        currentAvatarImage.value = getAvatarImageByLevel(4);
+        currentAvatarImage.value = getAvatarImageByTypeAndLevel(avatarType, 4);
       }
     } else {
       // Game already completed
@@ -131,12 +145,12 @@ const showVictory = () => {
       simpleVictoryMessage.value = config.simpleMsg + ' (Already completed)';
       
       // Show current avatar level
-      const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
+      const currentLevel = getCurrentEvolutionLevel();
       showAvatarImage.value = true;
-      currentAvatarImage.value = getAvatarImageByLevel(currentLevel);
+      currentAvatarImage.value = getAvatarImageByTypeAndLevel(avatarType, currentLevel);
     }
   } else {
-    // No Sol avatar or custom avatar
+    // No supported avatar
     showSimpleVictory.value = true;
     simpleVictoryMessage.value = config.simpleMsg;
     showAvatarImage.value = false;
@@ -145,13 +159,32 @@ const showVictory = () => {
   // Show the victory message
   isVisible.value = true;
 
+  // Clear any existing timer
+  if (autoHideTimer.value) {
+    clearTimeout(autoHideTimer.value);
+  }
+
+  // Dynamic duration based on evolution
+  let displayDuration = props.duration;
+  if (avatarEvolved.value) {
+    // Longer duration for evolution animations:
+    // - 4s rotation (two rounds) + 4s+ glow effects + buffer time
+    displayDuration = Math.max(props.duration, 10000); // At least 10 seconds for evolution
+  }
+
   // Auto hide after duration
-  setTimeout(() => {
+  autoHideTimer.value = setTimeout(() => {
     hideVictory();
-  }, props.duration);
+  }, displayDuration);
 };
 
 const hideVictory = () => {
+  // Clear auto hide timer
+  if (autoHideTimer.value) {
+    clearTimeout(autoHideTimer.value);
+    autoHideTimer.value = null;
+  }
+  
   isVisible.value = false;
   // Reset states
   avatarEvolved.value = false;
@@ -161,28 +194,17 @@ const hideVictory = () => {
   currentAvatarImage.value = '';
 };
 
-// Get avatar image path by level
-const getAvatarImageByLevel = (level) => {
-  switch (level) {
-    case 1:
-      return '/assets/avatara.png';
-    case 2:
-      return '/assets/avatara2.png';
-    case 3:
-      return '/assets/avatara3.png';
-    case 4:
-      return '/assets/avatara4.png';
-    default:
-      return '/assets/avatara.png';
-  }
+// Handle overlay click to close
+const handleOverlayClick = () => {
+  hideVictory();
 };
 
 const handleAvatarEvolution = () => {
-  const currentLevel = parseInt(sessionStorage.getItem('avatarEvolutionLevel') || '1');
+  const currentLevel = getCurrentEvolutionLevel();
   const nextLevel = currentLevel + 1;
   
   // Update evolution level
-  sessionStorage.setItem('avatarEvolutionLevel', nextLevel.toString());
+  setEvolutionLevel(nextLevel);
   
   // Mark game as completed
   const completedGames = JSON.parse(sessionStorage.getItem('completedGames') || '[]');
@@ -200,6 +222,13 @@ defineExpose({
   showVictory,
   hideVictory
 });
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (autoHideTimer.value) {
+    clearTimeout(autoHideTimer.value);
+  }
+});
 </script>
 
 <style scoped>
@@ -213,6 +242,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .overlay-blur {
@@ -248,6 +278,7 @@ defineExpose({
   color: white;
   text-align: center;
   animation: slideInUp 0.6s ease-out;
+  cursor: default;
 }
 
 @keyframes slideInUp {
@@ -296,44 +327,53 @@ defineExpose({
     0 0 40px rgba(255, 215, 0, 0.6),
     0 0 80px rgba(255, 215, 0, 0.4),
     0 0 120px rgba(255, 215, 0, 0.2);
-  animation: evolutionRotateGlow 3s ease-in-out infinite;
+  animation: 
+    evolutionRotateTwoRounds 4s ease-in-out forwards,
+    evolutionGlowContinuous 2s ease-in-out infinite 4s;
 }
 
-@keyframes evolutionRotateGlow {
+@keyframes evolutionRotateTwoRounds {
   0% {
     transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(180deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(360deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(540deg);
+  }
+  100% {
+    transform: scale(1) rotate(720deg);
+  }
+}
+
+@keyframes evolutionGlowContinuous {
+  0%, 100% {
     box-shadow: 
       0 0 40px rgba(255, 215, 0, 0.6),
       0 0 80px rgba(255, 215, 0, 0.4),
       0 0 120px rgba(255, 215, 0, 0.2);
   }
   25% {
-    transform: scale(1.1) rotate(90deg);
     box-shadow: 
       0 0 60px rgba(255, 165, 0, 0.8),
       0 0 100px rgba(255, 165, 0, 0.6),
       0 0 140px rgba(255, 165, 0, 0.3);
   }
   50% {
-    transform: scale(1.15) rotate(180deg);
     box-shadow: 
       0 0 80px rgba(255, 69, 0, 0.9),
       0 0 120px rgba(255, 69, 0, 0.7),
       0 0 160px rgba(255, 69, 0, 0.4);
   }
   75% {
-    transform: scale(1.1) rotate(270deg);
     box-shadow: 
       0 0 60px rgba(255, 165, 0, 0.8),
       0 0 100px rgba(255, 165, 0, 0.6),
       0 0 140px rgba(255, 165, 0, 0.3);
-  }
-  100% {
-    transform: scale(1) rotate(360deg);
-    box-shadow: 
-      0 0 40px rgba(255, 215, 0, 0.6),
-      0 0 80px rgba(255, 215, 0, 0.4),
-      0 0 120px rgba(255, 215, 0, 0.2);
   }
 }
 
@@ -564,6 +604,30 @@ defineExpose({
   font-family: 'Merriweather', serif;
 }
 
+/* Click hint */
+.click-hint {
+  margin-top: 25px;
+  opacity: 0.7;
+  animation: clickHintFade 2s ease-in-out infinite;
+}
+
+.click-hint p {
+  font-size: 1rem;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Merriweather', serif;
+  font-style: italic;
+}
+
+@keyframes clickHintFade {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .victory-content {
@@ -592,6 +656,10 @@ defineExpose({
     font-size: 1.1rem;
     padding: 8px 20px;
   }
+  
+  .click-hint p {
+    font-size: 0.9rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -606,6 +674,10 @@ defineExpose({
   
   .victory-message {
     font-size: 1.1rem;
+  }
+  
+  .click-hint p {
+    font-size: 0.85rem;
   }
 }
 </style>

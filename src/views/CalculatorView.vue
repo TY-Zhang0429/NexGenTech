@@ -1415,7 +1415,7 @@ async function onImagePicked(e) {
 const detectedLabels = ref([]); 
 
 async function analyzePickedImage() {
-  const LAMBDA_URL = 'https://ujfitbo3467ezuajq4ahqlup2u0iaasm.lambda-url.us-east-1.on.aws/';
+  const LAMBDA_URL = 'https://www.nexgentech.me/api/vision/detect';
   if (!pickedFile.value) return;
 
   analyzeError.value = '';
