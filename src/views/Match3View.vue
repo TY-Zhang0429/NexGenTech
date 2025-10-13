@@ -29,7 +29,7 @@
           </div>
         </div>
         <div class="tip">Reminder: {{ tip }}</div>
-        <button class="btn" @click="init">Restart</button>
+        <button class="btn" @click="restartGame">Restart</button>
 
 
 
@@ -45,12 +45,42 @@
     <!-- Main area: Left legend | Center board | Right tips (desktop only) -->
     <div class="board-row">
       <!-- Left: Legend card (brown background for higher readability) -->
-      <div class="legend">
-        <h3>Special Blocks</h3>
-        <ul>
-          <li>💥 (4 in a row) → Clears an entire row (Click to trigger)</li>
-          <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
-        </ul>
+      <div class="left-panel">
+        <div class="legend">
+          <h3>Special Blocks</h3>
+          <ul>
+            <li>💥 (4 in a row) → Clears an entire row (Click to trigger)</li>
+            <li>🌈 (5 in a row) → Clears all tiles of one type (Click to trigger)</li>
+          </ul>
+        </div>
+
+        <div class="nutrition-meter">
+          <h3>Nutrition Balance</h3>
+          <div class="meter-bar">
+            <span>🥦🥕 Veggies</span>
+            <div class="bar"><div class="fill" :style="{width: nutritionPercent.veggies + '%', background:'#4caf50'}"></div></div>
+          </div>
+          <div class="meter-bar">
+            <span>🍎🍌🍇 Fruits</span>
+            <div class="bar"><div class="fill" :style="{width: nutritionPercent.fruits + '%', background:'#ff9800'}"></div></div>
+          </div>
+          <div class="meter-bar">
+            <span>🥛 Dairy</span>
+            <div class="bar"><div class="fill" :style="{width: nutritionPercent.dairy + '%', background:'#2196f3'}"></div></div>
+          </div>
+          <div class="meter-bar">
+            <span>🍞 Grains</span>
+            <div class="bar"><div class="fill" :style="{ width: nutritionPercent.grains + '%', background: '#c0a060' }"></div></div>
+          </div>
+          <div class="meter-bar">
+            <span>🧃 Sugary</span>
+            <div class="bar"><div class="fill" :style="{width: nutritionPercent.sugary + '%', background:'#e53935'}"></div></div>
+          </div>
+
+          <!-- Total health score -->
+          <p class="health-score">Health Score: {{ healthScore }}/100</p>
+          <p class="health-feedback">{{ healthFeedback }}</p>
+        </div>
       </div>
 
       <!-- Center: Board -->
@@ -115,6 +145,16 @@ export default {
       selected: null,
       animating: false,
 
+     // Nutrition Statistics
+      healthScore: 50, // Game initial health score
+      nutrition: {
+        veggies: 0,
+        fruits: 0,
+        dairy: 0,
+        grains: 0,
+        sugary: 0
+      },
+
       // Mobile drawer state
       tipsOpen: false,
 
@@ -143,7 +183,94 @@ export default {
     window.removeEventListener("orientationchange", this.setLocalTopnavVar);
     this.navRO?.disconnect?.();
   },
+
+
+
+  computed: {
+    // Simplified scale display
+    nutritionPercent() {
+      if (!this.nutrition) {
+        return { veggies: 0, fruits: 0, dairy: 0, grains: 0, sugary: 0 };
+      }
+
+      const total = Object.values(this.nutrition).reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        return { veggies: 0, fruits: 0, dairy: 0, grains: 0, sugary: 0 };
+      }
+      return {
+        veggies: Math.round((this.nutrition.veggies / total) * 100),
+        fruits: Math.round((this.nutrition.fruits / total) * 100),
+        dairy: Math.round((this.nutrition.dairy / total) * 100),
+        grains: Math.round((this.nutrition.grains / total) * 100),
+        sugary: Math.round((this.nutrition.sugary / total) * 100),
+      };
+    },
+
+    // Health feedback information
+    healthFeedback() {
+      const s = this.healthScore;
+      if (Object.values(this.nutrition).every(v => v === 0))
+        return "🧩 Start matching foods to see your nutrition balance!";
+      if (s >= 90) return "🌿 Excellent balance! You’re a health master!";
+      if (s >= 70) return "🙂 Great balance — keep it up!";
+      if (s >= 50) return "⚖️ Not bad, try matching more veggies!";
+      if (s >= 30) return "⚠️ Too many sugary foods — balance it!";
+      return "❌ Unhealthy level! Try again for a better diet!";
+    },
+  },
+
   methods: {
+    // Nutrition data + health points updated with each match
+    updateNutrition(icon) {
+      switch (icon) {
+        case "🥦":
+        case "🥕":
+          this.nutrition.veggies++;
+          this.healthScore += 3;
+          break;
+
+        case "🍎":
+        case "🍌":
+        case "🍇":
+          this.nutrition.fruits++;
+          this.healthScore += 2;
+          break;
+
+        case "🥛":
+          this.nutrition.dairy++;
+          this.healthScore += 1;
+          break;
+
+        case "🍞":
+          this.nutrition.grains++;
+          this.healthScore += 1;
+          break;
+
+        case "🧃":
+          this.nutrition.sugary++;
+          this.healthScore -= 3;
+          break;
+      }
+
+      // Limit score range
+      this.healthScore = Math.max(0, Math.min(100, this.healthScore));
+    },
+
+    // Click the button to manually reset the data and score
+    resetNutrition() {
+      this.nutrition.veggies = 0;
+      this.nutrition.fruits = 0;
+      this.nutrition.dairy = 0;
+      this.nutrition.grains = 0;
+      this.nutrition.sugary = 0;
+      this.healthScore = 50; // Reset to starting point
+    },
+
+    restartGame() {
+      this.resetNutrition();
+      this.init();
+    },
+
     /** Measure TopNav height and write --topnav-h(, --topnav-h-safe) onto the page root */
     setLocalTopnavVar() {
       const nav = document.querySelector("header.nav");
@@ -483,6 +610,9 @@ export default {
             el.style.filter="brightness(1.35)";
             setTimeout(()=>{ el.style.opacity="0"; el.style.transform=el.style.transform.replace("scale(1.25)","scale(0.7)"); },90);
           }
+
+          this.updateNutrition(this.grid[i]);
+
           const [r,c]=this.rc(i);
           const float=document.createElement("div");
           float.className="float-score";
@@ -582,6 +712,7 @@ export default {
       // Reset game after delay
       setTimeout(() => {
         alert("🏆 All Levels Complete!");
+        this.resetNutrition();
         this.init();
       }, 4000);
     },
@@ -662,6 +793,14 @@ export default {
 .match3 .legend h3{ margin:0 0 8px; font-size:16px; color:#ffd369; }
 .match3 .legend ul{ margin:0; padding-left:18px; font-size:14px; }
 .match3 .legend li{ margin-bottom:6px; }
+
+/* Left panel containing both legend and nutrition meter */
+.match3 .left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 0 0 220px;
+}
 
 /* Center: board shell (no clipping) */
 .match3 .board{
@@ -820,6 +959,75 @@ export default {
   .tips-drawer{ display: block; }
   .drawer-mask{ display: block; }
   .match3 .bar{ width:min(260px,56vw); }
+}
+
+/* Nutrition Meter: visually similar to legend but separate box */
+.match3 .nutrition-meter {
+  flex:0 0 220px;
+  padding:12px 14px;
+  margin-top:14px;
+  border:1px solid rgba(120,85,45,.55);
+  border-radius:12px;
+  background:rgba(60,40,20,.92);
+  color:#f7efe4;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+
+.match3 .nutrition-meter h3 {
+  margin:0 0 8px;
+  font-size:16px;
+  color:#ffd369;
+}
+
+.match3 .meter-bar {
+  margin-bottom:6px;
+}
+
+.match3 .meter-bar span {
+  display:block;
+  font-size:14px;
+  margin-bottom:2px;
+}
+
+.match3 .bar {
+  width:100%;
+  height:6px;
+  background:rgba(255,255,255,.2);
+  border-radius:3px;
+  overflow:hidden;
+}
+
+.match3 .fill {
+  height:100%;
+  border-radius:3px;
+  transition:width .4s ease;
+}
+
+.match3 .health-score {
+  margin-top: 8px;
+  font-size: 14px;
+  text-align: center;
+  color: #ffd369;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.match3 .health-feedback {
+  font-size: 13px;
+  text-align: center;
+  margin-top: -2px;
+  color: #ffd369;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  font-weight: 500;
+}
+
+.match3 .health-feedback::before {
+  content: "";
+  display: block;
+  margin: 4px auto 6px;
+  width: 60%;
+  height: 1px;
+  background: rgba(255,255,255,0.15);
 }
 
 
