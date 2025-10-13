@@ -8,7 +8,7 @@
       <button class="icon" @click="nextTip" aria-label="Next">›</button>
     </header>
 
-    <section class="tips-body">
+    <section class="tips-body" v-if="currentTip">
       <!-- Tip cards -->
       <article class="tip-card">
         <div class="tip-tag">{{ currentTip.tag }}</div>
@@ -87,7 +87,7 @@
   <!-- ===== MOBILE：only for content ===== -->
   <div v-else class="tips-mobile">
     <section class="tips-body">
-      <article class="tip-card">
+      <article v-if="currentTip" class="tip-card">
         <div class="tip-tag">{{ currentTip.tag }}</div>
         <h4 class="tip-title">{{ currentTip.title }}</h4>
         <p class="tip-text">{{ currentTip.text }}</p>
@@ -166,27 +166,67 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue';
 
 const props = defineProps({ mode: { type: String, default: 'desktop' } });
+const API_BASE =
+  import.meta.env.VITE_API_URL || "";  // 本地时用 .env，线上为空字符串
 
 /* ========= Tips ========= */
-const tipsList = ref([
-  { id: 'hydration', tag: 'Hydration', title: 'Drink a glass of water',
-    text: 'Dehydration can feel like hunger. Sip water before your next snack.',
-    bullets: ['Sparkling + lemon','Keep a bottle within reach'] },
-  { id: 'color', tag: 'Micronutrients', title: 'Eat the rainbow',
-    text: 'Add one colorful veggie/fruit to your next meal—fiber + vitamins!',
-    bullets: ['Bell pepper • Berries • Spinach'] },
-  { id: 'protein', tag: 'Protein', title: 'Palm-sized protein',
-    text: 'A palm-sized protein each meal helps satiety & recovery.' },
-  { id: 'move', tag: 'Movement', title: '1-minute reset',
-    text: 'Stand up, roll shoulders, stretch neck & wrists for a quick reset.' },
-  { id: 'swap', tag: 'Smart swap', title: 'Soda → sparkling water',
-    text: 'Cut ~140 kcal. Add citrus or mint for flavor without sugar.' },
-]);
+// Use ref to save the health prompt list obtained from the backend
+const tipsList = ref([]);
 const tipIndex = ref(0);
 const currentTip = computed(() => tipsList.value[tipIndex.value]);
-function nextTip(){ tipIndex.value = (tipIndex.value + 1) % tipsList.value.length; }
-function prevTip(){ tipIndex.value = (tipIndex.value - 1 + tipsList.value.length) % tipsList.value.length; }
-function shuffleTip(){ tipIndex.value = Math.floor(Math.random() * tipsList.value.length); }
+
+// Load health tips from the backend (using fetch)
+async function fetchTips() {
+  try {
+    const res = await fetch(`${API_BASE}/api/health-tips`);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Assign the data returned by the database to tipsList
+    tipsList.value = data;
+    shuffleTip();
+  } catch (err) {
+    console.error("Failed to load health tips:", err);
+    // fallback fake data (can still be displayed when the backend is not connected)
+    tipsList.value = [
+      { tag: "Hydration", title: "Drink a glass of water", text: "Dehydration can feel like hunger. Sip water before your next snack." },
+      { tag: "Micronutrients", title: "Eat the rainbow", text: "Add one colorful veggie/fruit to your next meal—fiber + vitamins!" },
+      { tag: "Protein", title: "Palm-sized protein", text: "A palm-sized protein each meal helps satiety & recovery." },
+      { tag: "Movement", title: "1-minute reset", text: "Stand up, roll shoulders, stretch neck & wrists for a quick reset." },
+      { tag: "Smart swap", title: "Soda → sparkling water", text: "Cut ~140 kcal. Add citrus or mint for flavor without sugar." },
+    ];
+    shuffleTip();
+  }
+}
+
+// Switch tips
+function nextTip() {
+  if (tipsList.value.length > 0)
+    tipIndex.value = (tipIndex.value + 1) % tipsList.value.length;
+}
+
+function prevTip() {
+  if (tipsList.value.length > 0)
+    tipIndex.value = (tipIndex.value - 1 + tipsList.value.length) % tipsList.value.length;
+}
+
+// Randomly pick a tip
+function shuffleTip() {
+  if (tipsList.value.length > 0)
+    tipIndex.value = Math.floor(Math.random() * tipsList.value.length);
+}
+
+// Automatically rotate tips (randomly switch every 5–10 seconds)
+function startAutoRotate() {
+  setInterval(() => shuffleTip(), Math.floor(Math.random() * 5000) + 5000);
+}
+
+// Execute after the page is loaded: get data first and then start automatic switching
+onMounted(async () => {
+  await fetchTips();
+  startAutoRotate();
+});
 
 /* ========= Like ========= */
 const liked = reactive(JSON.parse(localStorage.getItem('ht_liked') || '{}'));
