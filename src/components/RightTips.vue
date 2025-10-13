@@ -167,7 +167,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, watchEffect } from
 
 const props = defineProps({ mode: { type: String, default: 'desktop' } });
 const API_BASE =
-  import.meta.env.VITE_API_URL || "";  // 本地时用 .env，线上为空字符串
+  import.meta.env.VITE_API_URL || "";  // Use .env locally, empty string online
 
 /* ========= Tips ========= */
 // Use ref to save the health prompt list obtained from the backend
