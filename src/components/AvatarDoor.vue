@@ -111,6 +111,7 @@ function runToDoor(opts = {}) {
 
   // start animation
   requestAnimationFrame(() => {
+    if (!avatarRef.value) return;
     avatarRef.value.style.transition = ''
     const { tx } = calcDelta(extra, align)
     if (!sceneRef.value) return
