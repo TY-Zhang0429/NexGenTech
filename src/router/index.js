@@ -23,11 +23,11 @@ const routes = [
   { path: '/catcher', name: 'catcher', component: CatcherView },
 ]
 
-// Use hash history for archived versions to avoid 404 on refresh
-const isArchive = import.meta.env.VITE_ARCHIVE === '1'
+// Use hash history for production to avoid 404 on refresh with static hosting
+const isProduction = import.meta.env.PROD
 const base = import.meta.env.BASE_URL || '/'
 
-const history = isArchive
+const history = isProduction
   ? createWebHashHistory(base)
   : createWebHistory(base)
 
