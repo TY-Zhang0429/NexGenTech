@@ -12,9 +12,15 @@
         <div class="glow-effect"></div>
       </div>
       <div class="hero-content">
-        <p class="hero-subtitle">“Play, Learn and make smarter food choices while the avatar evolves with your progress.”</p>
+        <p class="hero-subtitle">"Play, Learn and make smarter food choices while the avatar evolves with your progress."</p>
         <h2 class="hero-tagline">Smarter choices! Stronger you! More fun!</h2>
-        <button class="avatar-btn" @click="navigateToAvatar">Start Your Journey!</button>
+        <button 
+          class="avatar-btn" 
+          :class="{ 'disabled': isAvatarSelected }"
+          @click="navigateToAvatar"
+          :disabled="isAvatarSelected">
+          {{ isAvatarSelected ? 'Journey Started!' : 'Start Your Journey!' }}
+        </button>
       </div>
       <div class="hero-avatar">
         <img src="../assets/homefruit.png" alt="Sol Avatar" class="avatar-image" />
@@ -70,12 +76,42 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AvatarView from './AvatarView.vue'
 import CalculatorView from './CalculatorView.vue'
 import Footer from '../components/Footer.vue'
 
 const router = useRouter()
+
+// Avatar selection state
+const isAvatarSelected = ref(false)
+
+// Check avatar selection status
+const checkAvatarSelectedState = () => {
+  const selected = sessionStorage.getItem('avatarSelected') === 'true'
+  isAvatarSelected.value = selected
+}
+
+// Listen for avatar state changes
+const handleAvatarStateChange = (event) => {
+  if (event.detail.type === 'avatarSelected') {
+    isAvatarSelected.value = event.detail.value === 'true'
+  } else if (event.detail.type === 'avatarReset') {
+    isAvatarSelected.value = false
+  }
+}
+
+onMounted(() => {
+  checkAvatarSelectedState()
+  // Listen for avatar state changes from other components
+  window.addEventListener('avatarStateChange', handleAvatarStateChange)
+})
+
+onUnmounted(() => {
+  // Clean up event listener
+  window.removeEventListener('avatarStateChange', handleAvatarStateChange)
+})
 
 const navigateToGames = () => {
   router.push('/game')
@@ -86,7 +122,10 @@ const navigateToFoodSwap = () => {
 }
 
 const navigateToAvatar = () => {
-  router.push('/avatar')
+  // Only navigate if avatar is not selected
+  if (!isAvatarSelected.value) {
+    router.push('/avatar')
+  }
 }
 
 const navigateToCalculator = () => {
@@ -792,15 +831,24 @@ const navigateToCalculator = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.avatar-btn:hover {
+.avatar-btn:hover:not(.disabled):not(:disabled) {
   background-color: #2c6a40;
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-.avatar-btn:active {
+.avatar-btn:active:not(.disabled):not(:disabled) {
   transform: translateY(1px);
+}
+
+.avatar-btn.disabled,
+.avatar-btn:disabled {
+  background-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 @media (max-width: 768px) {
