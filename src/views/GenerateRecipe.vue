@@ -2698,12 +2698,12 @@ const recipeImg = (c) => {
     let name = String(c.image_filename);
     // make sure there's a valid extension, otherwise add .png
     if (!/\.(png|jpe?g|webp|gif)$/i.test(name)) name += '.png';
-    return `/food_icons/${encodeURIComponent(name)}`;
+    return `https://nexgentech-api.onrender.com/food_icons/${encodeURIComponent(name)}`;
   }
 
   // 2) fallback to image_url
   let url = String(c?.image_url || '');
-  if (!url) return '/food_icons/placeholder.png'; // default placeholder
+  if (!url) return 'https://nexgentech-api.onrender.com/food_icons/placeholder.png'; // default placeholder
 
   // Check the last segment of the file
   const i = url.lastIndexOf('/');
