@@ -16,6 +16,15 @@
         </ul>
       </div>
 
+      <div class="footer-section sources-section">
+        <h3 class="footer-title">Source</h3>
+        <ul class="footer-list">
+          <li>
+            <a href="https://www.eatforhealth.gov.au/sites/default/files/2022-09/n55_australian_dietary_guidelines.pdf" target="_blank">Health tips: Australian Dietary Guidelines</a>
+          </li>
+        </ul>
+      </div>
+
       <div class="footer-section support-section">
         <h3 class="footer-title">Support</h3>
         <ul class="footer-list">
@@ -43,32 +52,28 @@ const currentYear = new Date().getFullYear()
 }
 
 .footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 0 20px;
+  padding-left: 150px;
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
-  gap: 40px;
-  justify-items: center;
+  grid-template-columns: 1.2fr 1fr 1.2fr 1fr;
+  gap: 20px;
+  justify-items: start;
 }
 
 .footer-section {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
-.nexgen-section {
-  justify-self: start;
-  padding-right: 40px;
-}
-
-.features-section {
-  justify-self: center;
-}
-
+.nexgen-section,
+.features-section,
+.sources-section,
 .support-section {
-  justify-self: end;
+  justify-self: unset;
 }
 
 .footer-title {
@@ -76,6 +81,7 @@ const currentYear = new Date().getFullYear()
   font-size: 1.25rem;
   margin-bottom: 1.2rem;
   font-weight: bold;
+  text-align: left;
 }
 
 .footer-desc {
