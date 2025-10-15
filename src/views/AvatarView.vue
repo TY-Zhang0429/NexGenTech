@@ -4,9 +4,30 @@
     <DraggableAvatar ref="avatarComponent" />
 
     <!-- selection success message -->
-    <div v-if="showSuccessMessage" class="overlay-blur"></div>
-    <div v-if="showSuccessMessage" class="success-message">
-      {{ successMessage }}
+    <div v-if="showSuccessMessage" class="overlay-blur" @click="closeSuccessMessage"></div>
+    <div v-if="showSuccessMessage" class="success-modal" @click.stop>
+      <div class="success-content">
+        <div class="success-icon">
+          <div class="checkmark">
+            <div class="checkmark-circle">
+              <div class="checkmark-stem"></div>
+              <div class="checkmark-kick"></div>
+            </div>
+          </div>
+        </div>
+        <h2 class="success-title">{{ successMessage }}</h2>
+        <p class="success-description">Your avatar is ready! Start exploring games and watch your avatar evolve with every challenge you complete.</p>
+        <div class="success-actions">
+          <button class="discover-games-btn" @click="navigateToGames">
+            <span class="btn-icon"></span>
+            Discover Games
+          </button>
+          <button class="close-btn" @click="closeSuccessMessage">
+            Close
+          </button>
+        </div>
+        <p class="tap-to-close">Tap anywhere to close</p>
+      </div>
     </div>
     
     <div class="content-container">
@@ -224,7 +245,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import DraggableAvatar from '../components/DraggableAvatar.vue';
+
+const router = useRouter();
 
 // default active tab
 const activeTab = ref('default');
@@ -326,11 +350,6 @@ const selectSol = () => {
   // set and show success message
   successMessage.value = 'Sol Selected!';
   showSuccessMessage.value = true;
-
-  // set timeout to hide success message after 2 seconds
-  setTimeout(() => {
-    showSuccessMessage.value = false;
-  }, 2000);
 
   // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
@@ -507,20 +526,25 @@ const selectCreatedAvatar = () => {
   successMessage.value = 'Avatar Selected!';
   showSuccessMessage.value = true;
 
-  // set timeout to hide success message after 2 seconds
-  setTimeout(() => {
-    showSuccessMessage.value = false;
-
-    // reset questionnaire state
-    showQuestionnaire.value = false;
-    showAvatarComplete.value = false;
-    
-  }, 2000);
+  // reset questionnaire state
+  showQuestionnaire.value = false;
+  showAvatarComplete.value = false;
 
   // notify DraggableAvatar component to update status
   if (avatarComponent.value) {
     avatarComponent.value.checkAvatarSelected();
   }
+};
+
+// close success message
+const closeSuccessMessage = () => {
+  showSuccessMessage.value = false;
+};
+
+// navigate to games page
+const navigateToGames = () => {
+  showSuccessMessage.value = false;
+  router.push('/game');
 };
 </script>
 
@@ -743,36 +767,289 @@ const selectCreatedAvatar = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  animation: fadeInOverlay 0.4s ease;
+  cursor: pointer;
 }
 
-/* success message box */
-.success-message {
+/* success modal container */
+.success-modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #1a5536; /* darker green */
-  font-size: 36px;
-  font-weight: bold;
   z-index: 1001;
+  animation: slideInUp 0.5s ease;
+}
+
+/* success content card */
+.success-content {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+  border-radius: 20px;
+  padding: 40px 30px;
+  box-shadow: 0 20px 40px rgba(76, 175, 80, 0.3);
   text-align: center;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  border: 2px solid rgba(76, 175, 80, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* success content background pattern */
+.success-content::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.1) 0%, transparent 70%);
+  animation: rotatePattern 10s linear infinite;
+  z-index: -1;
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+/* success icon */
+.success-icon {
+  margin-bottom: 20px;
+}
+
+/* animated checkmark */
+.checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  animation: bounceIn 0.6s ease 0.2s both;
+}
+
+.checkmark-circle {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.checkmark-circle::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #4CAF50, #81C784);
+  z-index: -1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.checkmark-stem {
+  position: absolute;
+  width: 3px;
+  height: 18px;
+  background-color: white;
+  left: 35px;
+  top: 31px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  animation: drawStem 0.3s ease 0.8s both;
+}
+
+.checkmark-kick {
+  position: absolute;
+  width: 10px;
+  height: 3px;
+  background-color: white;
+  left: 28px;
+  top: 46px;
+  transform: rotate(-45deg);
+  border-radius: 2px;
+  animation: drawKick 0.3s ease 0.9s both;
+}
+
+/* success title */
+.success-title {
+  color: #2E7D32;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-family: 'Merriweather', serif;
+  text-shadow: 0 2px 4px rgba(46, 125, 50, 0.1);
+}
+
+/* success description */
+.success-description {
+  color: #388E3C;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  font-family: 'Merriweather', serif;
+  opacity: 0.9;
+}
+
+/* action buttons container */
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* discover games button */
+.discover-games-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Merriweather', serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.discover-games-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, #43A047 0%, #5CB85C 100%);
+}
+
+.discover-games-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 20px;
+  animation: bounce 2s infinite;
+}
+
+/* close button */
+.close-btn {
+  background: transparent;
+  color: #66BB6A;
+  border: 2px solid #66BB6A;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Merriweather', serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background-color: #66BB6A;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* tap to close text */
+.tap-to-close {
+  color: #81C784;
+  font-size: 14px;
+  font-style: italic;
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Animation keyframes */
+@keyframes fadeInOverlay {
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes drawStem {
+  from {
+    height: 0;
+  }
+  to {
+    height: 18px;
+  }
+}
+
+@keyframes drawKick {
+  from {
+    width: 0;
+  }
+  to {
+    width: 10px;
+  }
+}
+
+@keyframes rotatePattern {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
 }
 
 .content-container {
@@ -1281,6 +1558,81 @@ const selectCreatedAvatar = () => {
   .completed-avatar-image {
     width: 150px;
     height: 150px;
+  }
+}
+
+/* Mobile responsive styles for success modal */
+@media (max-width: 768px) {
+  .success-content {
+    max-width: 320px;
+    padding: 30px 20px;
+    margin: 0 20px;
+  }
+
+  .success-title {
+    font-size: 24px;
+  }
+
+  .success-description {
+    font-size: 15px;
+  }
+
+  .checkmark {
+    width: 60px;
+    height: 60px;
+  }
+
+  .checkmark-circle {
+    width: 60px;
+    height: 60px;
+  }
+
+  .checkmark-stem {
+    width: 2px;
+    height: 14px;
+    left: 26px;
+    top: 23px;
+  }
+
+  .checkmark-kick {
+    width: 8px;
+    height: 2px;
+    left: 21px;
+    top: 35px;
+  }
+
+  .discover-games-btn {
+    font-size: 16px;
+    padding: 14px 20px;
+  }
+
+  .close-btn {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .success-content {
+    max-width: 280px;
+    padding: 25px 15px;
+  }
+
+  .success-title {
+    font-size: 22px;
+  }
+
+  .success-description {
+    font-size: 14px;
+  }
+
+  .discover-games-btn {
+    font-size: 15px;
+    padding: 12px 18px;
+  }
+
+  .btn-icon {
+    font-size: 18px;
   }
 }
 </style>

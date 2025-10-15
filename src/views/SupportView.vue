@@ -11,7 +11,7 @@
             <div class="feature-card">
               <h2 class="feature-title">Avatar</h2>
               <p class="feature-description">
-                Kick off your journey with Sol the Turtle, your default buddy or make it personal by creating your own avatar through a simple questionnaire. Your avatar isn't just a character—it's you in this adventure. It grows alongside your progress. Think of it like your game character powered by your own learning and choices. The better you play and explore, the more your avatar evolves.
+                Kick off your journey with Sol , your default buddy or make it personal by creating your own avatar through a simple questionnaire. Your avatar isn’t just a character - it’s you in this adventure. It evolves alongside your progress. Think of it like your game character powered by your own learning and choices. The better you play and explore, the more your avatar evolves.
               </p>
             </div>
             <div class="feature-image-wrapper right">
@@ -27,7 +27,8 @@
             <div class="feature-card">
               <h2 class="feature-title">Explore Features</h2>
               <p class="feature-description">
-                Dive into the Features Hub for fun, interactive challenges. Play food-themed games like Food Wordle, Match 3 game. Try Healthier Swaps to make smarter snack and meal choices. Explore how the Calculator to understand nutritional composition in your food. Discover hidden fun facts along the way. It's all designed like mini-games—so you're learning without it feeling like studying.
+                Dive into the Discover Games  for fun, interactive challenges. Play food-themed games like Food Wordle, Match 3 game and Healthier catcher. Try Healthier Swaps to make smarter snack and meal choices. Explore Nutrient Calculator to know about nutritional composition in your food. Discover hidden fun facts along the way.
+It’s all designed like mini-games—so you’re learning without it feeling like studying.
               </p>
             </div>
           </div>
@@ -37,7 +38,8 @@
             <div class="feature-card">
               <h2 class="feature-title">Track Your Session Progress</h2>
               <p class="feature-description">
-                Every time you finish a game or activity, you're not just learning—you're helping your avatar grow stronger and cooler. Complete more challenges, and watch your avatar evolve. It's like leveling up in your favorite game—but this time, you're leveling up your real-life food smarts.
+                Every time you finish a game , you’re not just learning—you’re helping your avatar grow stronger and cooler. Complete more challenges, and watch your avatar evolve. 
+It’s like leveling up in your favorite game—but this time, you’re leveling up your real-life food smarts.
               </p>
             </div>
             <div class="feature-image-wrapper right">
