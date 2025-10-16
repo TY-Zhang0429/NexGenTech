@@ -5,7 +5,7 @@
     
     <div class="content-container">
       <h1 class="main-title">Mix, Match, Make It Yours</h1>
-      <p class="subtitle">Use the filters below to discover recipes that fit your vibe. Pick your prep time, choose your category, search ingredients - Find exactly what you're craving.</p>
+      <p class="subtitle">Choose your cooking style below to get started. Whether you want quick meals, smart meal planning, or AI-powered recipe generation - we've got you covered!</p>
 
       <!-- Meal Type Selection -->
       <div class="meal-type-section" :class="{ 'has-selection': selectedMealType }">
@@ -21,6 +21,11 @@
               <span class="meal-icon">⚡</span>
               <span class="meal-text">Quick Meals</span>
               <span class="meal-desc">Fast & Easy</span>
+              <div class="meal-features">
+                <p>• Select prep time and food category</p>
+                <p>• Browse teen-friendly recipes</p>
+                <p>• Perfect for busy schedules</p>
+              </div>
             </button>
             <button 
               class="meal-type-btn"
@@ -30,6 +35,25 @@
               <span class="meal-icon">🧠</span>
               <span class="meal-text">Smart Meal Plan</span>
               <span class="meal-desc">Advanced & Detailed</span>
+              <div class="meal-features">
+                <p>• Choose ingredients by category</p>
+                <p>• Get complete daily meal plans</p>
+                <p>• Swap recipes to find your favorites</p>
+              </div>
+            </button>
+            <button 
+              class="meal-type-btn"
+              :class="{ active: selectedMealType === 'generate' }"
+              @click="selectMealType('generate')"
+            >
+              <span class="meal-icon">📸</span>
+              <span class="meal-text">Generate Recipe</span>
+              <span class="meal-desc">AI-Powered</span>
+              <div class="meal-features">
+                <p>• Upload food photos</p>
+                <p>• AI matches ingredients</p>
+                <p>• Discover new recipes</p>
+              </div>
             </button>
           </div>
         </div>
@@ -37,12 +61,53 @@
 
       <!-- ============ NEW: Image → Recipe/Nutrition Analyzer (Front-end only) ============ -->
       
+      <!-- Generate Recipe - Image Analyzer -->
+      <div v-if="selectedMealType === 'generate'" class="generate-recipe-section">
+        <div class="white-overlay"></div>
+        <div class="generate-container">
+          <h2 class="generate-title">AI Recipe Generator</h2>
+          <p class="generate-subtitle">Upload a food photo and let our AI suggest matching recipes!</p>
+          
+          <div class="image-analyze-row">
+            <input
+              class="image-input"
+              type="file"
+              accept="image/png,image/jpeg"
+              @change="onImagePicked"
+            />
+            <button
+              class="analyze-btn"
+              :disabled="!pickedFile || analyzing"
+              @click="analyzePickedImage"
+            >
+              {{ analyzing ? 'Analyzing…' : 'Analyze Image → Recipe & Nutrition' }}
+            </button>
+          </div>
+
+          <div class="image-preview-wrap" v-if="previewUrl || analyzeError || analyzeTips.length">
+            <div v-if="previewUrl" class="image-preview">
+              <img :src="previewUrl" alt="preview"/>
+            </div>
+
+            <div v-if="analyzeError" class="analyze-error">⚠️ {{ analyzeError }}</div>
+
+            <ul v-if="analyzeTips.length" class="analyze-tips">
+              <li v-for="(t,i) in analyzeTips" :key="i">💡 {{ t }}</li>
+            </ul>
+
+            <p class="disclaimer" style="margin-top:8px">
+              For learning purposes only, not medical advice.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <!-- Filter Section - Only show after meal type selection -->
-      <div v-if="selectedMealType" class="filters-section">
+      <div v-if="selectedMealType && selectedMealType !== 'generate'" class="filters-section">
         <div class="white-overlay"></div>
         <div class="filters-container">
-          <!-- Prep Time Filter -->
-          <div class="filter-group">
+          <!-- Prep Time Filter (Only for Quick Meals) -->
+          <div v-if="selectedMealType === 'quick'" class="filter-group">
             <label class="filter-label">Prep Time</label>
             <div class="time-range-container">
               <div class="time-options">
@@ -59,8 +124,8 @@
             </div>
           </div>
 
-          <!-- Category Filter -->
-          <div class="filter-group">
+          <!-- Category Filter (Only for Quick Meals) -->
+          <div v-if="selectedMealType === 'quick'" class="filter-group">
             <label class="filter-label">Category</label>
             <div class="category-pills">
               <button 
@@ -73,31 +138,6 @@
                 <span class="category-emoji">{{ getCategoryEmoji(category.name) }}</span>
                 {{ capitalizeFirst(category.name) }}
               </button>
-            </div>
-          </div>
-
-          <!-- Plant-Based Filter (Only for Smart Meal Plan) -->
-          <div v-if="selectedMealType === 'smart'" class="filter-group">
-            <label class="filter-label">Dietary Preference</label>
-            <div class="dietary-preference">
-              <label class="radio-option">
-                <input 
-                  type="radio" 
-                  :value="false" 
-                  v-model="isPlantBased"
-                  @change="fetchRecipes"
-                />
-                <span class="radio-label">All Foods</span>
-              </label>
-              <label class="radio-option">
-                <input 
-                  type="radio" 
-                  :value="true" 
-                  v-model="isPlantBased"
-                  @change="fetchRecipes"
-                />
-                <span class="radio-label">🌱 Plant-Based Only</span>
-              </label>
             </div>
           </div>
 
@@ -211,7 +251,7 @@
       </div>
 
       <!-- Recipe Grid Section - Only show after meal type selection -->
-      <div v-if="selectedMealType" class="recipes-section">
+      <div v-if="selectedMealType && (selectedMealType !== 'generate' || recipes.length > 0)" class="recipes-section">
         <div class="white-overlay"></div>
         <div class="recipes-container">
           <div v-if="loading" class="loading-state">
@@ -750,20 +790,6 @@
         </div>
       </div>
     </div>
-    <div v-if="showCandidateModal" class="candidate-overlay" @click="showCandidateModal=false">
-      <div class="candidate-panel" @click.stop>
-        <h3 class="section-title">Pick a recipe</h3>
-        <div class="candidate-grid">
-          <div class="candidate-card" v-for="c in candidateRecipes" :key="c.id"
-              @click="() => { selectRecipe(c); showCandidateModal=false; }">
-            <img :src="recipeImg(c)" alt="">
-            <div class="title">{{ c.recipe_name }}</div>
-            <div class="meta">{{ c.calories }} cal · {{ c.protein_g }}g protein</div>
-          </div>
-        </div>
-        <button class="close-btn" @click="showCandidateModal=false">Cancel</button>
-      </div>
-    </div>
 </template>
 
 <script setup>
@@ -779,13 +805,13 @@ const previewUrl = ref('');
 const analyzing = ref(false);
 const analyzeError = ref('');
 const analyzeTips = ref([]);
+const detectedLabels = ref([]);
 
 // Reactive data
 const loading = ref(false);
 const recipes = ref([]);
 const selectedRecipe = ref(null);
 const selectedMealType = ref(null); // null = no selection yet, 'quick' or 'smart'
-const isPlantBased = ref(false); // Plant-based dietary preference
 const quickMealIngredients = ref([]); // Ingredients for Quick Meals
 const smartMealSelectedIngredients = ref([]); // Selected ingredients for Smart Meal Plan
 const ingredientSearch = ref('');
@@ -940,6 +966,11 @@ const allIngredients = ref([]);
 
 // Computed properties
 const filteredRecipes = computed(() => {
+  // For Generate Recipe mode, return recipes directly without filtering
+  if (selectedMealType.value === 'generate') {
+    console.log('Generate mode - returning recipes directly:', recipes.value);
+    return recipes.value;
+  }
   
   const filtered = recipes.value.filter(recipe => {
     // Time filter
@@ -1016,20 +1047,9 @@ const currentIngredients = computed(() => {
   return selectedMealType.value === 'quick' ? quickMealIngredients.value : smartMealSelectedIngredients.value;
 });
 
-// Get filtered ingredients for Smart Meal Plan (Plant-Based filtering)
+// Get filtered ingredients for Smart Meal Plan
 const filteredSmartMealIngredients = computed(() => {
-  if (!isPlantBased.value) {
-    return smartMealIngredientCategories.value;
-  }
-  
-  const plantBasedIngredients = {
-    breakfast: ['bread', 'oats', 'cereal', 'pancakes', 'waffles', 'toast'],
-    protein: ['tofu', 'lentils', 'chickpeas', 'beans', 'quinoa', 'tempeh'],
-    fruits: ['apple', 'banana', 'grapes', 'berries', 'dates', 'orange', 'strawberry', 'blueberry', 'avocado', 'lemon'],
-    vegetables: ['spinach', 'broccoli', 'bell pepper', 'carrots', 'cauliflower', 'tomatoes', 'onions', 'garlic', 'zucchini', 'mushrooms']
-  };
-  
-  return plantBasedIngredients;
+  return smartMealIngredientCategories.value;
 });
 
 // Get recipes grouped by category for Smart Meal Plan
@@ -1068,27 +1088,6 @@ const quickSwapRecipe = (categoryName) => {
   const nextIndex = (currentIndex + 1) % categoryRecipes.length;
   currentRecipeIndices.value[categoryName] = nextIndex;
 };
-
-// Watch for Plant-Based changes and update selected ingredients
-watch(isPlantBased, (newValue) => {
-  if (selectedMealType.value === 'smart') {
-    const ingredientsToUse = newValue ? 
-      Object.values(filteredSmartMealIngredients.value).flat() :
-      Object.values(smartMealIngredientCategories.value).flat();
-    
-    // Keep only ingredients that are available in the current filter
-    smartMealSelectedIngredients.value = smartMealSelectedIngredients.value.filter(ingredient => 
-      ingredientsToUse.includes(ingredient)
-    );
-    
-    // Add any new ingredients that weren't previously selected
-    ingredientsToUse.forEach(ingredient => {
-      if (!smartMealSelectedIngredients.value.includes(ingredient)) {
-        smartMealSelectedIngredients.value.push(ingredient);
-      }
-    });
-  }
-});
 
 const hasActiveFilters = computed(() => {
   return selectedTimeRange.value || 
@@ -2764,15 +2763,21 @@ function selectMealType(type) {
   selectedMealType.value = type;
   
   if (type === 'smart') {
-    // Auto-select categories for Smart Meal Plan
-    selectedCategories.value = ['breakfast', 'desserts', 'main-meals', 'side-dishes'];
+    // For Smart Meal Plan, we don't auto-select categories anymore
+    selectedCategories.value = [];
+  } else if (type === 'generate') {
+    // Reset for Generate Recipe (will be implemented later)
+    selectedCategories.value = [];
+    recipes.value = []; // Clear recipes for generate mode
   } else {
     // Reset categories for Quick Meals
     selectedCategories.value = [];
   }
   
-  // Fetch recipes when meal type is selected
-  fetchRecipes();
+  // Fetch recipes when meal type is selected (except for generate mode)
+  if (type !== 'generate') {
+    fetchRecipes();
+  }
 }
 
 // Smart Meal Plan helper functions
@@ -2912,8 +2917,6 @@ async function onImagePicked(e) {
 }
 
 
-const detectedLabels = ref([]); 
-
 async function analyzePickedImage() {
   const LAMBDA_URL = 'https://www.nexgentech.me/api/vision/detect';
   if (!pickedFile.value) return;
@@ -2971,9 +2974,19 @@ async function analyzePickedImage() {
     }
 
     if (Array.isArray(data.candidates) && data.candidates.length) {
-      // card shows _matched_label(highest confidence)
-      candidateRecipes.value = data.candidates;
-      showCandidateModal.value = true;
+      // Display candidates in main recipe section instead of modal
+      console.log('Setting recipes from candidates:', data.candidates);
+      
+      // Transform API response to match expected structure
+      const transformedCandidates = data.candidates.map(recipe => ({
+        ...recipe,
+        unique_id: `recipe_${recipe.id}`, // Add unique_id field
+        source_table: 'api_candidates' // Add source for favorites
+      }));
+      
+      recipes.value = transformedCandidates;
+      analyzeTips.value.push(`Found ${data.candidates.length} matching recipes!`);
+      console.log('Recipes after setting:', recipes.value);
     } else {
       // 5) no candidates: generate a "synthetic recipe" using the highest confidence label
       const top = labels.sort((a, b) => (b.conf || 0) - (a.conf || 0))[0];
@@ -2986,7 +2999,9 @@ async function analyzePickedImage() {
         protein_g: round1(n.p), carbs_g: round1(n.c),
         fat_g: round1(n.f), fiber_g: round1(n.fi)
       });
-      selectRecipe(s);
+      // Display synthetic recipe in main section
+      recipes.value = [s];
+      analyzeTips.value.push('Generated a custom recipe based on detected ingredients!');
     }
   } catch (err) {
     console.error('[vision] fetch error:', err);
@@ -3119,10 +3134,12 @@ const recipeImg = (c) => {
 }
 
 .meal-type-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   justify-content: center;
-  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .meal-type-btn {
@@ -3187,14 +3204,29 @@ const recipeImg = (c) => {
   line-height: 1.2;
 }
 
+.meal-features {
+  margin-top: 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.meal-features p {
+  font-size: 11px;
+  color: #555;
+  margin: 4px 0;
+  line-height: 1.3;
+  font-weight: 400;
+}
+
 @media (max-width: 768px) {
   .meal-type-buttons {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 15px;
   }
   
   .meal-type-btn {
-    min-width: 200px;
+    min-width: 280px;
+    padding: 20px;
   }
   
   .meal-type-title {
@@ -3202,30 +3234,142 @@ const recipeImg = (c) => {
   }
 }
 
-/* Plant-Based Filter Styles */
-.dietary-preference {
-  display: flex;
-  gap: 20px;
-  margin-top: 8px;
+/* Generate Recipe Styles */
+.generate-recipe-section {
+  position: relative;
+  padding: 20px;
+  margin-bottom: 2rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
+.generate-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.generate-title {
   font-family: 'Merriweather', serif;
-  font-size: 14px;
+  font-size: 28px;
   color: #294B0A;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.radio-option input[type="radio"] {
-  margin: 0;
-  accent-color: #8b7765;
+.generate-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.5;
 }
 
-.radio-label {
-  font-weight: 500;
+.generate-placeholder {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.upload-area {
+  border: 3px dashed #294B0A;
+  border-radius: 16px;
+  padding: 40px 20px;
+  background: rgba(41, 75, 10, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  background: rgba(41, 75, 10, 0.1);
+  border-color: #1a3a05;
+}
+
+.upload-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.upload-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #294B0A;
+  margin-bottom: 8px;
+}
+
+.upload-desc {
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Image Analyzer Styles */
+.image-analyze-row { 
+  display: flex; 
+  gap: 10px; 
+  align-items: center; 
+  flex-wrap: wrap; 
+  margin-bottom: 10px; 
+}
+
+.image-input { 
+  padding: 10px 12px; 
+  border: 2px solid #d4c4a8; 
+  border-radius: 12px; 
+  background: white; 
+  color: #8b7765; 
+  font-family: 'Merriweather', serif; 
+}
+
+.analyze-btn { 
+  padding: 10px 16px; 
+  background: #1a5536; 
+  color: #fff; 
+  border: none; 
+  border-radius: 12px; 
+  cursor: pointer; 
+  font-family: 'Merriweather', serif; 
+  transition: .2s; 
+}
+
+.analyze-btn:disabled { 
+  background: #999; 
+  cursor: not-allowed; 
+}
+
+.analyze-btn:hover:not(:disabled) { 
+  background: #2d7a4a; 
+  transform: translateY(-1px); 
+}
+
+.image-preview-wrap { 
+  margin-top: 10px; 
+}
+
+.image-preview img { 
+  max-width: 220px; 
+  border-radius: 12px; 
+  border: 1px solid rgba(0,0,0,.1); 
+}
+
+.analyze-error { 
+  color: #b00020; 
+  margin-top: 6px; 
+}
+
+.analyze-tips { 
+  margin: 8px 0 0; 
+  padding-left: 1.1rem; 
+  color: #8b7765; 
+}
+
+.disclaimer {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
 }
 
 /* Smart Ingredients Grid Styles */
@@ -3793,7 +3937,7 @@ const recipeImg = (c) => {
 
 .recipes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 25px;
   padding: 20px 0;
 }
@@ -4743,7 +4887,7 @@ const recipeImg = (c) => {
 /* Responsive Design */
 @media (max-width: 1024px) {
   .recipes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
   
@@ -4759,7 +4903,7 @@ const recipeImg = (c) => {
   }
   
   .recipes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
   

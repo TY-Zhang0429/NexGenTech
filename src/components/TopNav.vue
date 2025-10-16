@@ -60,9 +60,6 @@
           <RouterLink to="/calculator" class="sub-link" @click="closeAllMenus">
             Nutrient Calculator
           </RouterLink>
-          <RouterLink to="/generate-recipe" class="sub-link" @click="closeAllMenus">
-            Generate Recipe
-          </RouterLink>
           <RouterLink to="/food-swap" class="sub-link" @click="closeAllMenus">
             Healthier Swaps
           </RouterLink>
